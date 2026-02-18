@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheFairMap — Admin</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.1.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body style="overflow:auto; height:auto;">
+  <div class="admin-wrap">
+    <h1>🗺️ TheFairMap Admin</h1>
+    <p class="subtitle">Manage vendor locations. <a href="/">← Back to map</a></p>
+
+    <!-- Stats -->
+    <div class="admin-section" style="display:flex;gap:24px;flex-wrap:wrap">
+      <div><strong id="stat-total">0</strong> <span style="color:#999">locations</span></div>
+      <div><strong id="stat-cats">0</strong> <span style="color:#999">categories</span></div>
+      <div class="toolbar" style="margin-top:0;margin-left:auto">
+        <button class="btn btn-primary" id="btn-export">⬇ Export JSON</button>
+      </div>
+    </div>
+
+    <!-- Location Table -->
+    <div class="admin-section">
+      <h2>Vendor Locations</h2>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Booth</th>
+            <th>Category</th>
+            <th>Coords</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="location-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Add / Edit Form -->
+    <div class="admin-section">
+      <h2>Add / Edit Location</h2>
+      <p style="font-size:12px;color:#999;margin-bottom:8px">Click the map below to set coordinates.</p>
+      <div id="admin-map"></div>
+      <form class="admin-form" id="add-form">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+          <div>
+            <label>Name *</label>
+            <input type="text" id="loc-name" required>
+          </div>
+          <div>
+            <label>ID (auto-generated if blank)</label>
+            <input type="text" id="loc-id" placeholder="auto">
+          </div>
+          <div>
+            <label>Category *</label>
+            <select id="loc-category" required></select>
+          </div>
+          <div>
+            <label>Booth / Location</label>
+            <input type="text" id="loc-booth" placeholder="e.g. Arbor 1, Booth 65">
+          </div>
+          <div>
+            <label>Latitude *</label>
+            <input type="number" step="any" id="loc-lat" required placeholder="Click map">
+          </div>
+          <div>
+            <label>Longitude *</label>
+            <input type="number" step="any" id="loc-lng" required placeholder="Click map">
+          </div>
+          <div>
+            <label>Website</label>
+            <input type="url" id="loc-website" placeholder="https://...">
+          </div>
+          <div>
+            <label>Image URL</label>
+            <input type="url" id="loc-image" placeholder="https://...">
+          </div>
+        </div>
+        <label>Description</label>
+        <textarea id="loc-desc" placeholder="Brief description of the vendor..."></textarea>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:12px">
+          <input type="checkbox" id="loc-featured"> Featured vendor (highlighted on map)
+        </label>
+        <div class="toolbar">
+          <button type="submit" class="btn btn-primary" id="btn-submit">+ Add Location</button>
+          <button type="reset" class="btn btn-secondary">Clear</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- CSV Import -->
+    <div class="admin-section">
+      <h2>CSV Import</h2>
+      <p style="font-size:12px;color:#999;margin-bottom:8px">
+        Columns: <code>name, category, booth, description, lat, lng, website, image, featured</code> (name/lat/lng required)
+      </p>
+      <textarea class="csv-area" id="csv-textarea" placeholder="name,category,booth,lat,lng,description
+Bee King's Honey,honey,Arbor 1 Booth 65,32.5540,-95.8660,Texas raw honey..."></textarea>
+      <input type="file" id="csv-file" accept=".csv,.txt" style="margin-top:8px;font-size:13px">
+      <div class="toolbar">
+        <button class="btn btn-primary" id="btn-csv-import">📥 Import CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.1.0/dist/maplibre-gl.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

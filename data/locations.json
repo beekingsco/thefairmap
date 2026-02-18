@@ -1,0 +1,139 @@
+{
+  "map": {
+    "name": "First Monday Trade Days",
+    "center": [-95.8652, 32.5537],
+    "zoom": 16,
+    "maxZoom": 20,
+    "style": "https://tiles.openfreemap.org/styles/liberty"
+  },
+  "categories": [
+    {"id": "food", "name": "Food & Drink", "color": "#FF6B35", "icon": "🍽️"},
+    {"id": "honey", "name": "Honey & Bees", "color": "#F7C948", "icon": "🍯"},
+    {"id": "crafts", "name": "Crafts & Art", "color": "#7B68EE", "icon": "🎨"},
+    {"id": "antiques", "name": "Antiques", "color": "#8B4513", "icon": "🏺"},
+    {"id": "plants", "name": "Plants & Garden", "color": "#2ECC71", "icon": "🌿"},
+    {"id": "general", "name": "General Vendors", "color": "#95A5A6", "icon": "🛍️"}
+  ],
+  "locations": [
+    {
+      "id": "beekings-1",
+      "name": "Bee King's Honey",
+      "category": "honey",
+      "booth": "Arbor 1, Booths 65-68",
+      "description": "Texas raw honey, whipped honey, honey dust, body care & gifts. Family-owned since 2013. Have fun. Bee Kind. Make the World Sweet.",
+      "lat": 32.5540,
+      "lng": -95.8660,
+      "website": "https://beekings.com",
+      "image": "",
+      "featured": true
+    },
+    {
+      "id": "smokin-joes",
+      "name": "Smokin' Joe's BBQ",
+      "category": "food",
+      "booth": "Arbor 3, Booth 12",
+      "description": "Award-winning Texas BBQ. Brisket, ribs, sausage, and all the fixings.",
+      "lat": 32.5532,
+      "lng": -95.8648,
+      "website": "",
+      "image": "",
+      "featured": false
+    },
+    {
+      "id": "canton-candles",
+      "name": "Canton Candle Co.",
+      "category": "crafts",
+      "booth": "Arbor 2, Booth 44",
+      "description": "Hand-poured soy candles in Texas-inspired scents. Bluebonnet, Pecan Pie, and more.",
+      "lat": 32.5538,
+      "lng": -95.8645,
+      "website": "",
+      "image": "",
+      "featured": false
+    },
+    {
+      "id": "rustic-finds",
+      "name": "Rustic Finds",
+      "category": "antiques",
+      "booth": "Pavilion 4, Booth 88",
+      "description": "Vintage Texas farmhouse décor, reclaimed wood furniture, and antique kitchenware.",
+      "lat": 32.5535,
+      "lng": -95.8670,
+      "website": "",
+      "image": "",
+      "featured": false
+    },
+    {
+      "id": "green-thumb-nursery",
+      "name": "Green Thumb Nursery",
+      "category": "plants",
+      "booth": "Arbor 5, Booth 20",
+      "description": "Native Texas plants, succulents, herbs, and pollinator-friendly flower starts.",
+      "lat": 32.5542,
+      "lng": -95.8655,
+      "website": "",
+      "image": "",
+      "featured": false
+    },
+    {
+      "id": "texas-leather",
+      "name": "Texas Leather Works",
+      "category": "crafts",
+      "booth": "Arbor 1, Booth 30",
+      "description": "Handcrafted leather belts, wallets, bags, and custom tooling.",
+      "lat": 32.5536,
+      "lng": -95.8658,
+      "website": "",
+      "image": "",
+      "featured": false
+    },
+    {
+      "id": "mamas-kitchen",
+      "name": "Mama's Country Kitchen",
+      "category": "food",
+      "booth": "Arbor 6, Booth 5",
+      "description": "Homemade pies, jams, pickles, and preserves. Just like grandma used to make.",
+      "lat": 32.5530,
+      "lng": -95.8642,
+      "website": "",
+      "image": "",
+      "featured": false
+    },
+    {
+      "id": "vintage-vinyl",
+      "name": "Vintage Vinyl & Records",
+      "category": "antiques",
+      "booth": "Pavilion 2, Booth 71",
+      "description": "Classic vinyl records, vintage turntables, and music memorabilia.",
+      "lat": 32.5533,
+      "lng": -95.8665,
+      "website": "",
+      "image": "",
+      "featured": false
+    },
+    {
+      "id": "lone-star-jewelry",
+      "name": "Lone Star Jewelry",
+      "category": "general",
+      "booth": "Arbor 3, Booth 55",
+      "description": "Handmade Texas-themed jewelry. Sterling silver, turquoise, and custom pieces.",
+      "lat": 32.5539,
+      "lng": -95.8650,
+      "website": "",
+      "image": "",
+      "featured": false
+    },
+    {
+      "id": "pepper-palace",
+      "name": "Pepper Palace Hot Sauce",
+      "category": "food",
+      "booth": "Arbor 4, Booth 99",
+      "description": "Over 100 varieties of hot sauce. Free samples — if you dare.",
+      "lat": 32.5534,
+      "lng": -95.8640,
+      "website": "",
+      "image": "",
+      "featured": false
+    }
+  ]
+}

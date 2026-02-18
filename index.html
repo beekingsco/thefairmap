@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheFairMap — Interactive Vendor Map</title>
+  <meta name="description" content="Interactive vendor map for fairs, markets, and trade days.">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.1.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <h1>🗺️ TheFairMap</h1>
+        <div class="subtitle" id="vendor-count">Loading...</div>
+      </div>
+
+      <div class="search-wrap">
+        <input type="text" id="search" placeholder="Search vendors or booths...">
+      </div>
+
+      <div class="filters">
+        <h3>Categories</h3>
+        <div id="filters"></div>
+      </div>
+
+      <div class="location-list" id="location-list">
+        <!-- Populated by JS -->
+      </div>
+    </aside>
+
+    <!-- Map -->
+    <div id="map-container">
+      <button id="btn-toggle-sidebar" class="map-btn" aria-label="Toggle sidebar">☰</button>
+      <div id="map"></div>
+      <button id="btn-locate" class="map-btn" aria-label="Find my location">📍</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.1.0/dist/maplibre-gl.js"></script>
+  <script src="map.js"></script>
+</body>
+</html>
