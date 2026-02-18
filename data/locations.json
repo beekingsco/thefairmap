@@ -4,7 +4,7 @@
     "center": [-95.8652, 32.5537],
     "zoom": 16,
     "maxZoom": 20,
-    "style": "https://tiles.stadiamaps.com/styles/stamen_terrain.json"
+    "style": "https://demotiles.maplibre.org/style.json"
   },
   "categories": [
     {"id": "food", "name": "Food & Drink", "color": "#FF6B35", "icon": "🍽️"},
