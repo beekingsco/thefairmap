@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheFairMap — Venue Overlay Demo</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.1.0/dist/maplibre-gl.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a1a; }
+
+    #app { display: flex; height: 100vh; }
+
+    #sidebar {
+      width: 300px;
+      background: #FAF3E6;
+      border-right: 1px solid #E8DCC8;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      background: #3D2B00;
+      color: white;
+    }
+    .sidebar-header h1 { font-size: 18px; color: #F7C948; margin-bottom: 2px; }
+    .sidebar-header p { font-size: 12px; opacity: 0.7; }
+
+    .search-wrap { padding: 12px; border-bottom: 1px solid #E8DCC8; }
+    .search-wrap input {
+      width: 100%; padding: 9px 12px; border: 1px solid #E8DCC8;
+      border-radius: 8px; font-size: 14px; outline: none; background: white;
+    }
+    .search-wrap input:focus { border-color: #D4872C; }
+
+    .filters { padding: 10px 12px; border-bottom: 1px solid #E8DCC8; }
+    .filters h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #999; margin-bottom: 6px; }
+    .filter-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; cursor: pointer; }
+    .filter-item input { accent-color: #D4872C; }
+    .filter-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    .location-list { flex: 1; overflow-y: auto; }
+    .loc-card {
+      padding: 11px 14px; border-bottom: 1px solid #E8DCC8;
+      cursor: pointer; transition: background 0.12s;
+    }
+    .loc-card:hover { background: rgba(212,135,44,0.07); }
+    .loc-card.featured { border-left: 3px solid #F7C948; }
+    .loc-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .loc-card .booth { font-size: 11px; color: #888; }
+    .badge {
+      display: inline-block; font-size: 10px; padding: 1px 7px;
+      border-radius: 10px; color: white; margin-top: 3px;
+    }
+
+    #map-container { flex: 1; position: relative; }
+    #map { width: 100%; height: 100%; }
+
+    .overlay-toggle {
+      position: absolute; top: 16px; right: 60px; z-index: 2;
+      background: white; border: none; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      padding: 8px 14px; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .overlay-toggle:hover { background: #f5f5f5; }
+    .overlay-toggle.active { background: #D4872C; color: white; }
+
+    .opacity-control {
+      position: absolute; top: 56px; right: 60px; z-index: 2;
+      background: white; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      padding: 8px 14px; font-size: 12px;
+      display: none;
+    }
+    .opacity-control.visible { display: block; }
+    .opacity-control input { width: 120px; accent-color: #D4872C; }
+
+    /* Popup */
+    .maplibregl-popup-content {
+      padding: 0 !important; border-radius: 8px !important;
+      overflow: hidden; min-width: 220px; max-width: 280px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
+    }
+    .popup-body { padding: 14px; }
+    .popup-body h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+    .popup-body .pbooth { font-size: 11px; color: #888; margin-bottom: 7px; }
+    .popup-body .pdesc { font-size: 12px; line-height: 1.4; color: #444; margin-bottom: 8px; }
+    .popup-body a { font-size: 12px; color: #D4872C; text-decoration: none; font-weight: 500; }
+    .popup-body a:hover { text-decoration: underline; }
+
+    .demo-badge {
+      position: absolute; bottom: 16px; left: 16px; z-index: 2;
+      background: rgba(0,0,0,0.7); color: #F7C948;
+      padding: 8px 14px; border-radius: 8px; font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <h1>🗺️ First Monday Trade Days</h1>
+      <p id="vendor-count">Canton, TX — Loading...</p>
+    </div>
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Search vendors or booths...">
+    </div>
+    <div class="filters">
+      <h3>Categories</h3>
+      <div id="filters"></div>
+    </div>
+    <div class="location-list" id="location-list"></div>
+  </aside>
+
+  <div id="map-container">
+    <button class="overlay-toggle" id="toggle-overlay">🗺️ Venue Map</button>
+    <div class="opacity-control" id="opacity-control">
+      Overlay opacity: <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="0.85">
+    </div>
+    <div id="map"></div>
+    <div class="demo-badge">⬅ Toggle the venue map overlay</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.1.0/dist/maplibre-gl.js"></script>
+<script>
+// ---- Config ----
+// Geo corners of the venue overlay image on the real map
+// These 4 points define where the image sits on Earth (top-left, top-right, bottom-right, bottom-left)
+// Tuned for the First Monday fairgrounds area in Canton, TX
+const OVERLAY_COORDS = [
+  [-95.8690, 32.5560],  // top-left     (NW corner)
+  [-95.8615, 32.5560],  // top-right    (NE corner)
+  [-95.8615, 32.5515],  // bottom-right (SE corner)
+  [-95.8690, 32.5515]   // bottom-left  (SW corner)
+];
+
+let map, mapData, markers = [], popup;
+const activeCats = new Set();
+let overlayVisible = false;
+
+async function init() {
+  const res = await fetch('./data/locations.json');
+  mapData = await res.json();
+  mapData.categories.forEach(c => activeCats.add(c.id));
+
+  map = new maplibregl.Map({
+    container: 'map',
+    style: mapData.map.style,
+    center: mapData.map.center,
+    zoom: 15.5,
+    maxZoom: 20
+  });
+
+  map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+  map.on('load', () => {
+    addVenueOverlay();
+    buildFilters();
+    buildList();
+    renderMarkers();
+  });
+
+  document.getElementById('search').addEventListener('input', () => { renderMarkers(); buildList(); });
+  document.getElementById('toggle-overlay').addEventListener('click', toggleOverlay);
+  document.getElementById('opacity-slider').addEventListener('input', (e) => {
+    map.setPaintProperty('venue-overlay', 'raster-opacity', parseFloat(e.target.value));
+  });
+}
+
+// ---- Venue Image Overlay ----
+function addVenueOverlay() {
+  // Convert SVG to data URL for use as image source
+  // In production: use a real PNG floor plan image
+  const svgUrl = './data/venue-overlay.svg';
+
+  map.addSource('venue-image', {
+    type: 'image',
+    url: svgUrl,
+    coordinates: OVERLAY_COORDS
+  });
+
+  map.addLayer({
+    id: 'venue-overlay',
+    type: 'raster',
+    source: 'venue-image',
+    paint: { 'raster-opacity': 0 }  // hidden by default
+  });
+}
+
+function toggleOverlay() {
+  overlayVisible = !overlayVisible;
+  const btn = document.getElementById('toggle-overlay');
+  const opCtrl = document.getElementById('opacity-control');
+
+  const opacity = parseFloat(document.getElementById('opacity-slider').value);
+  map.setPaintProperty('venue-overlay', 'raster-opacity', overlayVisible ? opacity : 0);
+
+  btn.classList.toggle('active', overlayVisible);
+  btn.textContent = overlayVisible ? '🗺️ Hide Venue Map' : '🗺️ Venue Map';
+  opCtrl.classList.toggle('visible', overlayVisible);
+}
+
+// ---- Markers ----
+function renderMarkers() {
+  markers.forEach(m => m.remove());
+  markers = [];
+  const q = document.getElementById('search').value.toLowerCase();
+
+  mapData.locations.forEach(loc => {
+    if (!activeCats.has(loc.category)) return;
+    if (q && !loc.name.toLowerCase().includes(q) && !(loc.booth||'').toLowerCase().includes(q)) return;
+
+    const cat = mapData.categories.find(c => c.id === loc.category);
+    const el = document.createElement('div');
+    el.style.cssText = `
+      width:${loc.featured?38:30}px; height:${loc.featured?38:30}px;
+      background:${cat?.color||'#999'}; border-radius:50%;
+      border:3px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      font-size:${loc.featured?17:13}px; transition:transform 0.15s;
+    `;
+    el.textContent = cat?.icon || '📍';
+    el.addEventListener('mouseenter', () => el.style.transform = 'scale(1.25)');
+    el.addEventListener('mouseleave', () => el.style.transform = 'scale(1)');
+    el.addEventListener('click', () => openPopup(loc, cat));
+
+    const m = new maplibregl.Marker({ element: el })
+      .setLngLat([loc.lng, loc.lat])
+      .addTo(map);
+    markers.push(m);
+  });
+}
+
+function openPopup(loc, cat) {
+  if (popup) popup.remove();
+  let html = `<div class="popup-body">
+    ${cat ? `<span class="badge" style="background:${cat.color}">${cat.icon} ${cat.name}</span>` : ''}
+    <h3 style="margin-top:6px">${loc.featured ? '⭐ ' : ''}${loc.name}</h3>
+    ${loc.booth ? `<div class="pbooth">📍 ${loc.booth}</div>` : ''}
+    ${loc.description ? `<div class="pdesc">${loc.description}</div>` : ''}
+    ${loc.website ? `<a href="${loc.website}" target="_blank">Visit Website →</a>` : ''}
+  </div>`;
+  popup = new maplibregl.Popup({ offset: 22, maxWidth: '280px' })
+    .setLngLat([loc.lng, loc.lat])
+    .setHTML(html)
+    .addTo(map);
+  map.flyTo({ center: [loc.lng, loc.lat], zoom: Math.max(map.getZoom(), 16.5) });
+}
+
+// ---- Filters ----
+function buildFilters() {
+  const el = document.getElementById('filters');
+  el.innerHTML = '';
+  mapData.categories.forEach(cat => {
+    const count = mapData.locations.filter(l => l.category === cat.id).length;
+    const lbl = document.createElement('label');
+    lbl.className = 'filter-item';
+    lbl.innerHTML = `<input type="checkbox" checked data-cat="${cat.id}">
+      <span class="filter-dot" style="background:${cat.color}"></span>
+      ${cat.icon} ${cat.name} <span style="color:#bbb;font-size:11px">(${count})</span>`;
+    lbl.querySelector('input').addEventListener('change', e => {
+      if (e.target.checked) activeCats.add(cat.id); else activeCats.delete(cat.id);
+      renderMarkers(); buildList();
+    });
+    el.appendChild(lbl);
+  });
+}
+
+// ---- List ----
+function buildList() {
+  const el = document.getElementById('location-list');
+  const q = document.getElementById('search').value.toLowerCase();
+  el.innerHTML = '';
+  const filtered = mapData.locations
+    .filter(l => activeCats.has(l.category) && (!q || l.name.toLowerCase().includes(q) || (l.booth||'').toLowerCase().includes(q)))
+    .sort((a, b) => (b.featured||0) - (a.featured||0) || a.name.localeCompare(b.name));
+
+  document.getElementById('vendor-count').textContent = `Canton, TX — ${filtered.length} vendors`;
+
+  filtered.forEach(loc => {
+    const cat = mapData.categories.find(c => c.id === loc.category);
+    const d = document.createElement('div');
+    d.className = 'loc-card' + (loc.featured ? ' featured' : '');
+    d.innerHTML = `<h4>${loc.featured ? '⭐ ' : ''}${loc.name}</h4>
+      <div class="booth">${loc.booth||''}</div>
+      ${cat ? `<span class="badge" style="background:${cat.color}">${cat.icon} ${cat.name}</span>` : ''}`;
+    d.addEventListener('click', () => openPopup(loc, cat));
+    el.appendChild(d);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <!-- Background: fairgrounds dirt/grass -->
+  <rect width="1200" height="900" fill="#F5EDD6" rx="8"/>
+
+  <!-- Ground paths / walkways -->
+  <rect x="0" y="420" width="1200" height="60" fill="#E8D9B5" opacity="0.7"/>   <!-- Main east-west path -->
+  <rect x="560" y="0" width="80" height="900" fill="#E8D9B5" opacity="0.7"/>    <!-- Main north-south path -->
+  <rect x="0" y="180" width="1200" height="40" fill="#E8D9B5" opacity="0.5"/>   <!-- Secondary path -->
+  <rect x="0" y="680" width="1200" height="40" fill="#E8D9B5" opacity="0.5"/>   <!-- Secondary path -->
+  <rect x="260" y="0" width="40" height="900" fill="#E8D9B5" opacity="0.5"/>
+  <rect x="900" y="0" width="40" height="900" fill="#E8D9B5" opacity="0.5"/>
+
+  <!-- ARBOR 1 — top left -->
+  <rect x="30" y="30" width="220" height="140" rx="6" fill="#D4A843" opacity="0.85" stroke="#A07830" stroke-width="2"/>
+  <text x="140" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#3D2B00">ARBOR 1</text>
+  <!-- Booth rows -->
+  <rect x="45" y="95" width="85" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="88" y="128" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">65-68</text>
+  <text x="88" y="143" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#D4872C">🍯 BeeKings</text>
+  <rect x="140" y="95" width="95" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="188" y="130" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">69-80</text>
+
+  <!-- ARBOR 2 — top center-left -->
+  <rect x="310" y="30" width="220" height="140" rx="6" fill="#C8A86A" opacity="0.85" stroke="#A07830" stroke-width="2"/>
+  <text x="420" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#3D2B00">ARBOR 2</text>
+  <rect x="325" y="95" width="85" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="368" y="128" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">40-48</text>
+  <rect x="420" y="95" width="95" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="468" y="130" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">44</text>
+  <text x="468" y="143" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#7B68EE">🕯️ Candles</text>
+
+  <!-- ARBOR 3 — top right -->
+  <rect x="660" y="30" width="220" height="140" rx="6" fill="#C8A86A" opacity="0.85" stroke="#A07830" stroke-width="2"/>
+  <text x="770" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#3D2B00">ARBOR 3</text>
+  <rect x="675" y="95" width="85" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="718" y="128" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">12</text>
+  <text x="718" y="143" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#FF6B35">🍖 BBQ</text>
+  <rect x="770" y="95" width="95" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="818" y="128" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">55</text>
+  <text x="818" y="143" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#95A5A6">💍 Jewelry</text>
+
+  <!-- ARBOR 4 — top far right -->
+  <rect x="940" y="30" width="220" height="140" rx="6" fill="#C8A86A" opacity="0.85" stroke="#A07830" stroke-width="2"/>
+  <text x="1050" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#3D2B00">ARBOR 4</text>
+  <rect x="955" y="95" width="190" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="1050" y="128" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">99</text>
+  <text x="1050" y="143" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#FF6B35">🌶️ Hot Sauce</text>
+
+  <!-- ARBOR 5 — middle left -->
+  <rect x="30" y="500" width="220" height="140" rx="6" fill="#B8A060" opacity="0.85" stroke="#A07830" stroke-width="2"/>
+  <text x="140" y="550" text-anchor="middle" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#3D2B00">ARBOR 5</text>
+  <rect x="45" y="565" width="190" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="140" y="595" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">20</text>
+  <text x="140" y="610" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#2ECC71">🌿 Nursery</text>
+
+  <!-- ARBOR 6 — middle center -->
+  <rect x="310" y="500" width="220" height="140" rx="6" fill="#B8A060" opacity="0.85" stroke="#A07830" stroke-width="2"/>
+  <text x="420" y="550" text-anchor="middle" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#3D2B00">ARBOR 6</text>
+  <rect x="325" y="565" width="190" height="60" rx="3" fill="#FFF8E8" stroke="#A07830" stroke-width="1.5"/>
+  <text x="420" y="595" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">5</text>
+  <text x="420" y="610" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#FF6B35">🥧 Mama's Kitchen</text>
+
+  <!-- PAVILION 2 — bottom left -->
+  <rect x="30" y="720" width="220" height="140" rx="6" fill="#9A8050" opacity="0.85" stroke="#6B5A30" stroke-width="2"/>
+  <text x="140" y="760" text-anchor="middle" font-family="Georgia, serif" font-size="16" font-weight="bold" fill="#FFF0D0">PAVILION 2</text>
+  <rect x="45" y="775" width="190" height="60" rx="3" fill="#FFF8E8" stroke="#6B5A30" stroke-width="1.5"/>
+  <text x="140" y="805" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">71</text>
+  <text x="140" y="820" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8B4513">🎵 Vintage Vinyl</text>
+
+  <!-- PAVILION 4 — bottom right -->
+  <rect x="660" y="720" width="220" height="140" rx="6" fill="#9A8050" opacity="0.85" stroke="#6B5A30" stroke-width="2"/>
+  <text x="770" y="760" text-anchor="middle" font-family="Georgia, serif" font-size="16" font-weight="bold" fill="#FFF0D0">PAVILION 4</text>
+  <rect x="675" y="775" width="190" height="60" rx="3" fill="#FFF8E8" stroke="#6B5A30" stroke-width="1.5"/>
+  <text x="770" y="805" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#5A3E00">88</text>
+  <text x="770" y="820" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#8B4513">🏺 Rustic Finds</text>
+
+  <!-- Entrance marker -->
+  <rect x="530" y="410" width="140" height="80" rx="6" fill="#D4872C" opacity="0.9"/>
+  <text x="600" y="443" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-weight="bold" fill="white">MAIN</text>
+  <text x="600" y="462" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-weight="bold" fill="white">ENTRANCE</text>
+  <text x="600" y="481" text-anchor="middle" font-family="sans-serif" font-size="16" fill="white">⬇</text>
+
+  <!-- Title banner -->
+  <rect x="300" y="235" width="600" height="60" rx="8" fill="#3D2B00" opacity="0.85"/>
+  <text x="600" y="275" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="bold" fill="#F7C948">FIRST MONDAY TRADE DAYS</text>
+
+  <!-- Compass rose -->
+  <text x="1155" y="885" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#888">N↑</text>
+
+  <!-- Scale note -->
+  <text x="30" y="885" font-family="sans-serif" font-size="10" fill="#999">Not to scale — Illustrative layout</text>
+</svg>
