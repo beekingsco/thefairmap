@@ -3,43 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TheFairMap — Interactive Vendor Map</title>
-  <meta name="description" content="Interactive vendor map for fairs, markets, and trade days.">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.1.0/dist/maplibre-gl.css">
+  <title>TheFairMap - First Monday Finder</title>
+  <meta name="description" content="Interactive map for First Monday Trade Days vendors and amenities.">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <!-- Sidebar -->
-    <aside id="sidebar">
+  <div id="app" class="sidebar-open">
+    <aside id="sidebar" aria-label="Location filters and list">
       <div class="sidebar-header">
-        <h1>🗺️ TheFairMap</h1>
-        <div class="subtitle" id="vendor-count">Loading...</div>
+        <button id="sidebar-collapse" class="icon-btn" type="button" aria-label="Collapse sidebar">&#10094;</button>
+        <div class="sidebar-title-wrap">
+          <h1 id="map-title">First Monday Finder</h1>
+          <p id="map-subtitle">Canton, Texas</p>
+          <p id="result-count">Loading locations...</p>
+        </div>
       </div>
 
-      <div class="search-wrap">
-        <input type="text" id="search" placeholder="Search vendors or booths...">
+      <div class="sidebar-search">
+        <label for="search-input" class="sr-only">Search locations</label>
+        <input id="search-input" type="search" placeholder="Search locations" autocomplete="off">
       </div>
 
-      <div class="filters">
-        <h3>Categories</h3>
-        <div id="filters"></div>
+      <div class="sidebar-actions">
+        <button id="btn-select-all" type="button">Show all</button>
+        <button id="btn-clear-all" type="button">Hide all</button>
       </div>
 
-      <div class="location-list" id="location-list">
-        <!-- Populated by JS -->
-      </div>
+      <section class="category-panel">
+        <button id="category-panel-toggle" class="panel-toggle" type="button" aria-expanded="true">
+          Categories
+        </button>
+        <div id="category-list" class="category-list"></div>
+      </section>
+
+      <section class="location-panel">
+        <h2>Visible locations</h2>
+        <div id="location-list" class="location-list"></div>
+      </section>
     </aside>
 
-    <!-- Map -->
-    <div id="map-container">
-      <button id="btn-toggle-sidebar" class="map-btn" aria-label="Toggle sidebar">☰</button>
-      <div id="map"></div>
-      <button id="btn-locate" class="map-btn" aria-label="Find my location">📍</button>
-    </div>
+    <main id="map-shell">
+      <button id="mobile-sidebar-toggle" class="map-floating-btn" type="button" aria-label="Open filters">
+        Filters
+      </button>
+      <div id="map" role="application" aria-label="Map"></div>
+    </main>
+
+    <div id="mobile-backdrop" hidden></div>
   </div>
 
-  <script src="https://unpkg.com/maplibre-gl@4.1.0/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="map.js"></script>
 </body>
 </html>
