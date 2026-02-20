@@ -210,6 +210,21 @@ body {
   flex-shrink: 0;
 }
 
+.category-icon-preview {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.category-icon-preview img {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
 .category-locations {
   display: none;
   border-top: 1px solid #edf1f5;
@@ -423,7 +438,9 @@ body {
 }
 
 .popup-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   margin: 0 0 8px;
   border-radius: 999px;
   background: var(--badge-color);
@@ -431,6 +448,20 @@ body {
   font-size: 0.7rem;
   font-weight: 700;
   padding: 4px 9px;
+}
+
+.popup-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popup-icon img {
+  width: 14px;
+  height: 14px;
+  display: block;
 }
 
 .popup-address {

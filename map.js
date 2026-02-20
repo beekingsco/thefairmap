@@ -13,14 +13,18 @@ let selectedLocationId = null;
 let categoriesCollapsed = false;
 let clusterRefreshRaf = 0;
 let clusterRefreshToken = 0;
+const categoryIconImageIds = new Map();
 
 const SOURCE_ID = 'locations-source';
 const LAYER_CLUSTER = 'clusters';
 const LAYER_CLUSTER_COUNT = 'cluster-count';
-const LAYER_POINTS = 'location-points';
+const LAYER_POINT_CIRCLES = 'location-point-circles';
+const LAYER_POINT_ICONS = 'location-point-icons';
 const LAYER_SELECTED = 'location-selected';
 const UNCATEGORIZED_ID = '__uncategorized__';
 const DEFAULT_COLOR = '#7a7a7a';
+const DEFAULT_MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright';
+const FALLBACK_ICON_IMAGE_ID = 'category-icon-fallback';
 
 async function init() {
   const response = await fetch('./data/locations.json');
@@ -54,8 +58,8 @@ async function init() {
   });
   map.addControl(geolocateControl, 'top-right');
 
-  map.on('load', () => {
-    buildMapLayers();
+  map.on('load', async () => {
+    await buildMapLayers();
     refreshVisibleData();
     updateMobileToggleButton();
   });
@@ -65,7 +69,7 @@ async function init() {
 }
 
 function resolveMapStyleUrl(styleUrl) {
-  const url = styleUrl || 'https://tiles.openfreemap.org/styles/liberty';
+  const url = styleUrl || DEFAULT_MAP_STYLE;
   if (window.MAPTILER_KEY && url.includes('YOUR_MAPTILER_KEY')) {
     return url.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY);
   }
@@ -153,7 +157,9 @@ function initSidebarControls() {
   });
 }
 
-function buildMapLayers() {
+async function buildMapLayers() {
+  await loadCategoryMarkerImages();
+
   map.addSource(SOURCE_ID, {
     type: 'geojson',
     data: asFeatureCollection([]),
@@ -200,40 +206,29 @@ function buildMapLayers() {
   });
 
   map.addLayer({
-    id: LAYER_POINTS,
+    id: LAYER_POINT_CIRCLES,
     type: 'circle',
     source: SOURCE_ID,
     filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': ['get', 'color'],
-      'circle-radius': [
-        'interpolate',
-        ['linear'],
-        ['zoom'],
-        11,
-        3,
-        14,
-        5,
-        16,
-        7,
-        18,
-        9,
-        20,
-        11
-      ],
+      'circle-radius': 12,
       'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': [
-        'interpolate',
-        ['linear'],
-        ['zoom'],
-        11,
-        0.5,
-        16,
-        1.5,
-        20,
-        2
-      ],
+      'circle-stroke-width': 1.5,
       'circle-opacity': 0.9
+    }
+  });
+
+  map.addLayer({
+    id: LAYER_POINT_ICONS,
+    type: 'symbol',
+    source: SOURCE_ID,
+    filter: ['!', ['has', 'point_count']],
+    layout: {
+      'icon-image': ['coalesce', ['get', 'iconImageId'], FALLBACK_ICON_IMAGE_ID],
+      'icon-size': 1,
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true
     }
   });
 
@@ -266,7 +261,8 @@ function buildMapLayers() {
   });
 
   map.on('click', LAYER_CLUSTER, onClusterClick);
-  map.on('click', LAYER_POINTS, onPointClick);
+  map.on('click', LAYER_POINT_CIRCLES, onPointClick);
+  map.on('click', LAYER_POINT_ICONS, onPointClick);
 
   map.on('mouseenter', LAYER_CLUSTER, () => {
     map.getCanvas().style.cursor = 'pointer';
@@ -276,11 +272,19 @@ function buildMapLayers() {
     map.getCanvas().style.cursor = '';
   });
 
-  map.on('mouseenter', LAYER_POINTS, () => {
+  map.on('mouseenter', LAYER_POINT_CIRCLES, () => {
     map.getCanvas().style.cursor = 'pointer';
   });
 
-  map.on('mouseleave', LAYER_POINTS, () => {
+  map.on('mouseleave', LAYER_POINT_CIRCLES, () => {
+    map.getCanvas().style.cursor = '';
+  });
+
+  map.on('mouseenter', LAYER_POINT_ICONS, () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+
+  map.on('mouseleave', LAYER_POINT_ICONS, () => {
     map.getCanvas().style.cursor = '';
   });
 }
@@ -352,10 +356,110 @@ function asFeatureCollection(items) {
         categoryName: loc.categoryName,
         color: loc.color,
         description: loc.description,
-        address: loc.address
+        address: loc.address,
+        iconImageId: categoryIconImageIds.get(loc.categoryId) || FALLBACK_ICON_IMAGE_ID
       }
     }))
   };
+}
+
+async function loadCategoryMarkerImages() {
+  await addFallbackMarkerIcon();
+
+  const loaders = [...categoryById.values()].map((category) => loadCategoryMarkerImage(category));
+  await Promise.all(loaders);
+}
+
+async function loadCategoryMarkerImage(category) {
+  if (!category?.iconFile) return;
+
+  const imageId = getCategoryImageId(category.id);
+  const iconPath = `./data/icons/${category.iconFile}`;
+
+  try {
+    const svgResponse = await fetch(iconPath);
+    if (!svgResponse.ok) return;
+
+    const svg = await svgResponse.text();
+    const imageData = await rasterizeSvgToImageData(toWhiteSvg(svg), 16, 16);
+
+    if (map.hasImage(imageId)) {
+      map.removeImage(imageId);
+    }
+    map.addImage(imageId, {
+      width: imageData.width,
+      height: imageData.height,
+      data: imageData.data
+    });
+    categoryIconImageIds.set(category.id, imageId);
+  } catch (_) {
+    // icon stays on fallback image when a file is unavailable
+  }
+}
+
+async function addFallbackMarkerIcon() {
+  if (map.hasImage(FALLBACK_ICON_IMAGE_ID)) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 16;
+  const context = canvas.getContext('2d');
+  if (!context) return;
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = '#ffffff';
+  context.beginPath();
+  context.arc(8, 8, 3, 0, Math.PI * 2);
+  context.fill();
+
+  const fallbackData = context.getImageData(0, 0, canvas.width, canvas.height);
+  map.addImage(FALLBACK_ICON_IMAGE_ID, {
+    width: fallbackData.width,
+    height: fallbackData.height,
+    data: fallbackData.data
+  });
+}
+
+function getCategoryImageId(categoryId) {
+  return `category-icon-${categoryId}`;
+}
+
+function toWhiteSvg(svg) {
+  const withWhiteFills = svg.replace(/fill="(?!none)[^"]*"/gi, 'fill="#ffffff"');
+  const withWhiteStrokes = withWhiteFills.replace(/stroke="(?!none)[^"]*"/gi, 'stroke="#ffffff"');
+  return withWhiteStrokes.includes('<svg')
+    ? withWhiteStrokes.replace('<svg', '<svg fill="#ffffff"')
+    : withWhiteStrokes;
+}
+
+async function rasterizeSvgToImageData(svg, width, height) {
+  const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+  const svgUrl = URL.createObjectURL(svgBlob);
+
+  try {
+    const image = await loadImage(svgUrl);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Canvas rendering context unavailable');
+
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    return context.getImageData(0, 0, width, height);
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = url;
+  });
 }
 
 function queueClusterColorRefresh() {
@@ -443,6 +547,7 @@ function renderCategoryList(query) {
       <span class="category-main">
         <input type="checkbox" ${active ? 'checked' : ''} data-category-checkbox="${category.id}" aria-label="Toggle ${escapeHtml(category.name)}">
         <span class="category-dot" style="--dot-color:${category.color};"></span>
+        ${getCategoryIconPreviewHtml(category)}
         <span class="category-name">${escapeHtml(category.name)}</span>
       </span>
       <span class="category-count">${matchingCount}/${totalCount}</span>
@@ -562,7 +667,10 @@ function openLocation(loc, flyTo) {
     .setHTML(`
       <article class="popup-card">
         <h3 class="popup-title">${escapeHtml(loc.name)}</h3>
-        <p class="popup-badge" style="--badge-color:${badgeColor};--badge-text:${badgeText};">${escapeHtml(category?.name || loc.categoryName)}</p>
+        <p class="popup-badge" style="--badge-color:${badgeColor};--badge-text:${badgeText};">
+          ${getCategoryIconPreviewHtml(category, 'popup-icon', true)}
+          <span>${escapeHtml(category?.name || loc.categoryName)}</span>
+        </p>
         ${loc.address ? `<p class="popup-address">${escapeHtml(loc.address)}</p>` : ''}
         ${loc.description ? `<div class="popup-description">${loc.description}</div>` : ''}
       </article>
@@ -674,6 +782,12 @@ function normalizeColor(input) {
   if (typeof input !== 'string' || !input.startsWith('#')) return DEFAULT_COLOR;
   if (input.length === 9) return input.slice(0, 7);
   return input;
+}
+
+function getCategoryIconPreviewHtml(category, className = 'category-icon-preview', invert = false) {
+  if (!category?.iconFile) return '';
+  const filter = invert ? ' style="filter:brightness(0) invert(1);"' : '';
+  return `<span class="${className}"><img src="./data/icons/${encodeURIComponent(category.iconFile)}" alt="" loading="lazy" decoding="async"${filter}></span>`;
 }
 
 function escapeHtml(value) {

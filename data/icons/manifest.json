@@ -1,0 +1,344 @@
+{
+  "e829de96-9cb5-480c-803a-190ac6df8962": {
+    "name": "ATM Machine",
+    "file": "atm-machine.svg",
+    "bgColor": "#039c4b",
+    "fgColor": "#ffffff"
+  },
+  "6cf3838c-a61f-4d43-ab96-bf0606ab2d6b": {
+    "name": "Antique / Vintage",
+    "file": "antique---vintage.svg",
+    "bgColor": "#ba8d00",
+    "fgColor": "#ffffff"
+  },
+  "24474939-b562-4076-a802-b99763ef0095": {
+    "name": "Bed / Bath",
+    "file": "bed---bath.svg",
+    "bgColor": "#424242",
+    "fgColor": "#ffffff"
+  },
+  "9cceb32b-c864-4645-9a1b-c8188da2fc65": {
+    "name": "Books / Media",
+    "file": "books---media.svg",
+    "bgColor": "#ff0000",
+    "fgColor": "#ffffff"
+  },
+  "13451103-7a95-40cc-8c26-64c3291a81bc": {
+    "name": "Art / Photography",
+    "file": "art---photography.svg",
+    "bgColor": "#751445",
+    "fgColor": "#ffffff"
+  },
+  "7419ad7d-c57e-4751-a5a3-625140b9f83b": {
+    "name": "Candle / Scents",
+    "file": "candle---scents.svg",
+    "bgColor": "#cf67b7",
+    "fgColor": "#ffffff"
+  },
+  "2416e363-faf5-4397-84de-c584dd5a5f64": {
+    "name": "Jewelry / Watches",
+    "file": "jewelry---watches.svg",
+    "bgColor": "#009ce8",
+    "fgColor": "#ffffff"
+  },
+  "119c10a2-3897-4c5b-b47a-c96331edda5b": {
+    "name": "Purses / Totes",
+    "file": "purses---totes.svg",
+    "bgColor": "#ff00a6",
+    "fgColor": "#ffffff"
+  },
+  "76cb76f0-3714-4e3f-b6be-daa47429a427": {
+    "name": "Woodcraft",
+    "file": "woodcraft.svg",
+    "bgColor": "#9a5e1d",
+    "fgColor": "#ffffff"
+  },
+  "7c4783ba-0cd0-4a7c-817e-b601ebafd6c2": {
+    "name": "Outdoor Sports",
+    "file": "outdoor-sports.svg",
+    "bgColor": "#009ce8",
+    "fgColor": "#ffffff"
+  },
+  "928b69a2-e0f2-4c9a-ad40-0efa9a8d16f7": {
+    "name": "Samples",
+    "file": "samples.svg",
+    "bgColor": "#579843",
+    "fgColor": "#ffffff"
+  },
+  "0b70df6e-8b3e-4aaf-9843-96d7d900eaaf": {
+    "name": "Restroom",
+    "file": "restroom.svg",
+    "bgColor": "#0000ff",
+    "fgColor": "#ffffff"
+  },
+  "77b4ce20-37ef-4457-a9d0-e672e378b6dc": {
+    "name": "Food",
+    "file": "food.svg",
+    "bgColor": "#f16623",
+    "fgColor": "#ffffff"
+  },
+  "4a159478-fa17-4607-8025-12bde09f4730": {
+    "name": "Candy / Snacks / Popcorn",
+    "file": "candy---snacks---popcorn.svg",
+    "bgColor": "#81870b",
+    "fgColor": "#ffffff"
+  },
+  "1d1bb7b4-7792-4083-aab6-f14a8ddfd005": {
+    "name": "Auto",
+    "file": "auto.svg",
+    "bgColor": "#21409a",
+    "fgColor": "#ffffff"
+  },
+  "e12b96e6-81b4-4594-b3ed-3ec9a8b10429": {
+    "name": "Furniture",
+    "file": "furniture.svg",
+    "bgColor": "#ba8d00",
+    "fgColor": "#ffffff"
+  },
+  "d9652dff-3709-426f-84ce-bc67a04f1793": {
+    "name": "Tools",
+    "file": "tools.svg",
+    "bgColor": "#669d7b",
+    "fgColor": "#ffffff"
+  },
+  "99b2d6c4-d868-45d8-b129-d67eb9cbbd23": {
+    "name": "Handmade / Artisan",
+    "file": "handmade---artisan.svg",
+    "bgColor": "#bd7b5c",
+    "fgColor": "#ffffff"
+  },
+  "6399f794-c719-4e48-8ee5-11c1e64a6d12": {
+    "name": "Home",
+    "file": "home.svg",
+    "bgColor": "#0b5c59",
+    "fgColor": "#ffffff"
+  },
+  "24abfde1-3638-4d2a-a7a5-f22f00fb63cb": {
+    "name": "Pet",
+    "file": "pet.svg",
+    "bgColor": "#f16623",
+    "fgColor": "#ffffff"
+  },
+  "45c620e8-1806-4f60-8997-67b8f617b717": {
+    "name": "Beer / Wine / Barware",
+    "file": "beer---wine---barware.svg",
+    "bgColor": "#751445",
+    "fgColor": "#ffffff"
+  },
+  "790dacc1-9077-4eb6-bf7a-227c9443124d": {
+    "name": "Coffee / Tea",
+    "file": "coffee---tea.svg",
+    "bgColor": "#b55f01",
+    "fgColor": "#ffffff"
+  },
+  "7a051b26-4800-4990-aca5-8f6b6976a290": {
+    "name": "Clothing Women",
+    "file": "clothing-women.svg",
+    "bgColor": "#ff00ff",
+    "fgColor": "#ffffff"
+  },
+  "5004c26a-25c9-442f-94f2-a067c03cdd7d": {
+    "name": "Farm / Ranch",
+    "file": "farm---ranch.svg",
+    "bgColor": "#9a0000",
+    "fgColor": "#ffffff"
+  },
+  "9f25cb37-d970-4d09-aec4-015470da66c6": {
+    "name": "Faith / Inspire",
+    "file": "faith---inspire.svg",
+    "bgColor": "#498291",
+    "fgColor": "#ffffff"
+  },
+  "3fc04361-b7a5-455f-9d21-5dffd57983a1": {
+    "name": "Shoes / Socks / Footware",
+    "file": "shoes---socks---footware.svg",
+    "bgColor": "#9c2f93",
+    "fgColor": "#ffffff"
+  },
+  "f7180477-0b70-4e23-bce3-c4273c737d28": {
+    "name": "Bath / Body / Beauty",
+    "file": "bath---body---beauty.svg",
+    "bgColor": "#2d84bd",
+    "fgColor": "#ffffff"
+  },
+  "438e3ac5-adf0-45c7-a9a1-156bcafc90f8": {
+    "name": "Floral",
+    "file": "floral.svg",
+    "bgColor": "#ff00ff",
+    "fgColor": "#ffffff"
+  },
+  "2cb3fa5d-71b5-47b8-95d0-d66c98bc8461": {
+    "name": "Health / Wellness",
+    "file": "health---wellness.svg",
+    "bgColor": "#039c4b",
+    "fgColor": "#ffffff"
+  },
+  "471bd2ac-f978-4bea-ac1c-5bfe238b8bb1": {
+    "name": "Holiday",
+    "file": "holiday.svg",
+    "bgColor": "#9a0000",
+    "fgColor": "#ffffff"
+  },
+  "61caf139-686d-42e8-a742-d18c123d5ff5": {
+    "name": "Scooter Rental",
+    "file": "scooter-rental.svg",
+    "bgColor": "#ba8d00",
+    "fgColor": "#ffffff"
+  },
+  "55b1f120-3775-4034-ad17-e7841bd1150b": {
+    "name": "First Aid",
+    "file": "first-aid.svg",
+    "bgColor": "#ff0000",
+    "fgColor": "#ffffff"
+  },
+  "04d64820-7acf-4b6a-a206-e111c7698bc3": {
+    "name": "Carpets / Cowhides",
+    "file": "carpets---cowhides.svg",
+    "bgColor": "#ba8d00",
+    "fgColor": "#ffffff"
+  },
+  "fbec9ed8-7e35-4383-ad0b-5d6505db71ab": {
+    "name": "Craft / Hobby",
+    "file": "craft---hobby.svg",
+    "bgColor": "#43339f",
+    "fgColor": "#ffffff"
+  },
+  "ee928dc3-909d-4d19-8e47-9e348e7a1246": {
+    "name": "Guns / Ammo / Military",
+    "file": "guns---ammo---military.svg",
+    "bgColor": "#666666",
+    "fgColor": "#ffffff"
+  },
+  "39c9baa4-a047-446f-8e65-4228e5a85d41": {
+    "name": "Clothing Kids",
+    "file": "clothing-kids.svg",
+    "bgColor": "#f44546",
+    "fgColor": "#ffffff"
+  },
+  "46c82a58-7236-4d60-af2c-bb329173029b": {
+    "name": "Toys / Games / Puzzles",
+    "file": "toys---games---puzzles.svg",
+    "bgColor": "#9a00ff",
+    "fgColor": "#ffffff"
+  },
+  "e3580616-423f-4b01-93bd-1ec25b7c948c": {
+    "name": "Personalized",
+    "file": "personalized.svg",
+    "bgColor": "#0000ff",
+    "fgColor": "#ffffff"
+  },
+  "065978a1-f2b0-4272-a7da-f98a1fb70edb": {
+    "name": "Mens",
+    "file": "mens.svg",
+    "bgColor": "#8e8e8e",
+    "fgColor": "#ffffff"
+  },
+  "825cb993-6cb2-44e4-bbf3-33155338715b": {
+    "name": "Kitchen / Dining",
+    "file": "kitchen---dining.svg",
+    "bgColor": "#7f9175",
+    "fgColor": "#ffffff"
+  },
+  "0eb8c485-0667-4ab3-8a57-b76726789ac6": {
+    "name": "Leather",
+    "file": "leather.svg",
+    "bgColor": "#a37441",
+    "fgColor": "#ffffff"
+  },
+  "ad421483-d676-46d7-b3b3-756db8910c7a": {
+    "name": "Sunglasses / Fashion",
+    "file": "sunglasses---fashion.svg",
+    "bgColor": "#ff00a6",
+    "fgColor": "#ffffff"
+  },
+  "01ef703d-d1b0-414b-b7d9-3309f64795bb": {
+    "name": "Knives",
+    "file": "knives.svg",
+    "bgColor": "#8c7e6b",
+    "fgColor": "#ffffff"
+  },
+  "d56e1ed8-c7ad-4783-806c-a3117e028095": {
+    "name": "Texas Made",
+    "file": "texas-made.svg",
+    "bgColor": "#000000",
+    "fgColor": "#ffffff"
+  },
+  "755304a2-b542-45fd-9a1b-005628f1d5ad": {
+    "name": "My Favorites",
+    "file": "my-favorites.svg",
+    "bgColor": "#ffd105",
+    "fgColor": "#000000"
+  },
+  "5dd4803e-9cff-4d80-99a1-98d86ef1c1af": {
+    "name": "Garden / Patio",
+    "file": "garden---patio.svg",
+    "bgColor": "#357717",
+    "fgColor": "#ffffff"
+  },
+  "41d85bdd-35f2-4853-9800-698aa38f51cb": {
+    "name": "General Merchandise",
+    "file": "general-merchandise.svg",
+    "bgColor": "#807f85",
+    "fgColor": "#ffffff"
+  },
+  "3d13c4e3-0a73-4cc5-b7eb-ed853aec8515": {
+    "name": "Recreational Vehicles",
+    "file": "recreational-vehicles.svg",
+    "bgColor": "#549196",
+    "fgColor": "#ffffff"
+  },
+  "66e5d09b-831d-40c5-8708-fa4111f38019": {
+    "name": "Drinks Cold / Slushies / Lemonade",
+    "file": "drinks-cold---slushies---lemonade.svg",
+    "bgColor": "#009ce8",
+    "fgColor": "#ffffff"
+  },
+  "66fbb340-cdcc-4ca5-a86e-35142fb92b48": {
+    "name": "Ice Cream",
+    "file": "ice-cream.svg",
+    "bgColor": "#357717",
+    "fgColor": "#ffffff"
+  },
+  "8a33855d-b402-4d8f-a510-d51d693c8acb": {
+    "name": "Live Entertainment",
+    "file": "live-entertainment.svg",
+    "bgColor": "#0000ff",
+    "fgColor": "#ffffff"
+  },
+  "957ca260-b379-43f5-8128-7836280030cb": {
+    "name": "Cooling Stations",
+    "file": "cooling-stations.svg",
+    "bgColor": "#009ce8",
+    "fgColor": "#ffffff"
+  },
+  "748c6c68-3fa3-449f-ac38-6e3401006f25": {
+    "name": "T-shirts",
+    "file": "t-shirts.svg",
+    "bgColor": "#763f40",
+    "fgColor": "#ffffff"
+  },
+  "f82b70c3-36a4-4c6d-a9f0-1b52ed0c6268": {
+    "name": "Gourmet Food / Seasonings",
+    "file": "gourmet-food---seasonings.svg",
+    "bgColor": "#9e7881",
+    "fgColor": "#ffffff"
+  },
+  "732b5e94-f0ea-47c6-abe6-b4261fbc2d8e": {
+    "name": "Handicap Parking",
+    "file": "handicap-parking.svg",
+    "bgColor": "#008eff",
+    "fgColor": "#ffffff"
+  },
+  "e5b81123-8d94-47c5-b036-3f0a47c6a350": {
+    "name": "Western",
+    "file": "western.svg",
+    "bgColor": "#b55f01",
+    "fgColor": "#ffffff"
+  },
+  "86bae6f5-548e-4c71-bc42-88b4d866570f": {
+    "name": "Music",
+    "file": "music.svg",
+    "bgColor": "#000000",
+    "fgColor": "#ffffff"
+  }
+}

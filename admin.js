@@ -80,7 +80,7 @@ function initMap() {
 }
 
 function resolveMapStyleUrl(styleUrl) {
-  const url = styleUrl || 'https://tiles.openfreemap.org/styles/liberty';
+  const url = styleUrl || 'https://tiles.openfreemap.org/styles/bright';
   if (window.MAPTILER_KEY && url.includes('YOUR_MAPTILER_KEY')) {
     return url.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY);
   }
