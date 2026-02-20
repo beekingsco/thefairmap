@@ -44,8 +44,16 @@
     </aside>
 
     <main id="map-shell">
-      <button id="mobile-sidebar-toggle" class="map-floating-btn" type="button" aria-label="Open filters">
-        Filters
+      <header class="vfm-header" aria-label="TheFairMap heading">
+        <div class="vfm-logo-area">VFM</div>
+        <div class="vfm-header-copy">
+          <p class="vfm-kicker">Visit First Monday</p>
+          <h2>TheFairMap</h2>
+        </div>
+      </header>
+      <button id="mobile-sidebar-toggle" class="map-floating-btn" type="button" aria-label="Open filters" aria-expanded="false" hidden>
+        <span class="hamburger-icon">&#9776;</span>
+        <span>Filters</span>
       </button>
       <div id="map" role="application" aria-label="Map"></div>
     </main>

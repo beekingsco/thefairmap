@@ -59,7 +59,7 @@ function normalizeData() {
 function initMap() {
   adminMap = new maplibregl.Map({
     container: 'admin-map',
-    style: mapData.map.style,
+    style: resolveMapStyleUrl(mapData.map?.style),
     center: mapData.map.center,
     zoom: Math.max((mapData.map.zoom || 17) - 1, 12),
     pitch: 0,
@@ -77,6 +77,14 @@ function initMap() {
       .setLngLat([event.lngLat.lng, event.lngLat.lat])
       .addTo(adminMap);
   });
+}
+
+function resolveMapStyleUrl(styleUrl) {
+  const url = styleUrl || 'https://tiles.openfreemap.org/styles/liberty';
+  if (window.MAPTILER_KEY && url.includes('YOUR_MAPTILER_KEY')) {
+    return url.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY);
+  }
+  return url;
 }
 
 function bindUI() {

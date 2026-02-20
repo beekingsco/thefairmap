@@ -11,12 +11,16 @@ let locations = [];
 let visibleLocations = [];
 let selectedLocationId = null;
 let categoriesCollapsed = false;
+let clusterRefreshRaf = 0;
+let clusterRefreshToken = 0;
 
 const SOURCE_ID = 'locations-source';
 const LAYER_CLUSTER = 'clusters';
 const LAYER_CLUSTER_COUNT = 'cluster-count';
 const LAYER_POINTS = 'location-points';
 const LAYER_SELECTED = 'location-selected';
+const UNCATEGORIZED_ID = '__uncategorized__';
+const DEFAULT_COLOR = '#7a7a7a';
 
 async function init() {
   const response = await fetch('./data/locations.json');
@@ -29,20 +33,14 @@ async function init() {
   setupCategoryState();
   initSidebarControls();
 
-  // Resolve MapTiler style URL - key can be in style URL or injected via config.js
-  let styleUrl = mapData.map.style;
-  if (window.MAPTILER_KEY && styleUrl.includes('YOUR_MAPTILER_KEY')) {
-    styleUrl = styleUrl.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY);
-  }
-
   map = new maplibregl.Map({
     container: 'map',
-    style: styleUrl,
-    center: mapData.map.center,
-    zoom: mapData.map.zoom,
-    pitch: mapData.map.pitch ?? 60,
-    bearing: mapData.map.bearing ?? 0,
-    maxZoom: mapData.map.maxZoom || 20,
+    style: resolveMapStyleUrl(mapData.map?.style),
+    center: mapData.map?.center || [-95.8624, 32.5585],
+    zoom: mapData.map?.zoom ?? 17,
+    pitch: mapData.map?.pitch ?? 60,
+    bearing: mapData.map?.bearing ?? 0,
+    maxZoom: mapData.map?.maxZoom || 20,
     antialias: true
   });
 
@@ -59,30 +57,41 @@ async function init() {
   map.on('load', () => {
     buildMapLayers();
     refreshVisibleData();
+    updateMobileToggleButton();
   });
 
-  // Safety: re-set data after style is fully loaded (fixes race condition)
-  map.on('idle', function onFirstIdle() {
-    refreshVisibleData();
-    map.off('idle', onFirstIdle);
-  });
+  map.on('moveend', queueClusterColorRefresh);
+  map.on('zoomend', queueClusterColorRefresh);
+}
+
+function resolveMapStyleUrl(styleUrl) {
+  const url = styleUrl || 'https://tiles.openfreemap.org/styles/liberty';
+  if (window.MAPTILER_KEY && url.includes('YOUR_MAPTILER_KEY')) {
+    return url.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY);
+  }
+  return url;
 }
 
 function hydrateLocations() {
+  const categoriesById = new Map((mapData.categories || []).map((cat) => [cat.id, cat]));
+
   locations = (mapData.locations || []).map((loc, index) => {
-    const category = mapData.categories.find((cat) => cat.id === loc.categoryId);
+    const normalizedCategoryId = loc.categoryId || UNCATEGORIZED_ID;
+    const category = categoriesById.get(normalizedCategoryId);
+    const categoryName = loc.categoryName || category?.name || 'Uncategorized';
+
     return {
       id: String(loc.id || `loc-${index}`),
-      name: loc.name || 'Untitled',
+      name: String(loc.name || 'Untitled'),
       description: loc.description || '',
       address: loc.address || '',
       lat: Number(loc.lat),
       lng: Number(loc.lng),
       featured: Boolean(loc.featured),
-      categoryId: loc.categoryId || '',
-      categoryName: loc.categoryName || category?.name || 'Uncategorized',
-      color: normalizeColor(category?.color) || '#787878',
-      searchText: `${loc.name || ''} ${loc.address || ''} ${loc.categoryName || ''}`.toLowerCase()
+      categoryId: normalizedCategoryId,
+      categoryName,
+      color: normalizeColor(category?.color || DEFAULT_COLOR),
+      searchText: `${loc.name || ''} ${loc.address || ''} ${categoryName}`.toLowerCase()
     };
   }).filter((loc) => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
 }
@@ -93,13 +102,20 @@ function setupCategoryState() {
       ...category,
       color: normalizeColor(category.color)
     });
+  });
 
-    totalCountsByCategory.set(
-      category.id,
-      locations.reduce((count, loc) => count + (loc.categoryId === category.id ? 1 : 0), 0)
-    );
+  if (locations.some((loc) => loc.categoryId === UNCATEGORIZED_ID)) {
+    categoryById.set(UNCATEGORIZED_ID, {
+      id: UNCATEGORIZED_ID,
+      name: 'Uncategorized',
+      color: '#6d6d6d'
+    });
+  }
 
-    activeCategories.add(category.id);
+  categoryById.forEach((_, categoryId) => {
+    const totalCount = locations.reduce((count, loc) => count + (loc.categoryId === categoryId ? 1 : 0), 0);
+    totalCountsByCategory.set(categoryId, totalCount);
+    activeCategories.add(categoryId);
   });
 }
 
@@ -133,6 +149,7 @@ function initSidebarControls() {
     if (window.innerWidth > 960) {
       closeSidebarMobile();
     }
+    updateMobileToggleButton();
   });
 }
 
@@ -142,7 +159,8 @@ function buildMapLayers() {
     data: asFeatureCollection([]),
     cluster: true,
     clusterMaxZoom: 14,
-    clusterRadius: 52
+    clusterRadius: 52,
+    generateId: true
   });
 
   map.addLayer({
@@ -151,15 +169,7 @@ function buildMapLayers() {
     source: SOURCE_ID,
     filter: ['has', 'point_count'],
     paint: {
-      'circle-color': [
-        'step',
-        ['get', 'point_count'],
-        '#d9b690',
-        15,
-        '#cb9463',
-        50,
-        '#9f693f'
-      ],
+      'circle-color': ['coalesce', ['feature-state', 'dominantColor'], '#b8895f'],
       'circle-radius': [
         'step',
         ['get', 'point_count'],
@@ -195,7 +205,7 @@ function buildMapLayers() {
     source: SOURCE_ID,
     filter: ['!', ['has', 'point_count']],
     paint: {
-      'circle-color': ['coalesce', ['get', 'color'], '#7d7d7d'],
+      'circle-color': ['get', 'color'],
       'circle-radius': [
         'interpolate',
         ['linear'],
@@ -305,7 +315,14 @@ function refreshVisibleData() {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   if (map?.isStyleLoaded() && map.getSource(SOURCE_ID)) {
+    try {
+      map.removeFeatureState({ source: SOURCE_ID });
+    } catch (_) {
+      // no-op; source may not have existing state yet
+    }
+
     map.getSource(SOURCE_ID).setData(asFeatureCollection(visibleLocations));
+    queueClusterColorRefresh();
   }
 
   if (!visibleLocations.some((loc) => loc.id === selectedLocationId)) {
@@ -339,6 +356,63 @@ function asFeatureCollection(items) {
       }
     }))
   };
+}
+
+function queueClusterColorRefresh() {
+  if (!map?.isStyleLoaded()) return;
+  if (clusterRefreshRaf) cancelAnimationFrame(clusterRefreshRaf);
+  clusterRefreshRaf = requestAnimationFrame(() => {
+    clusterRefreshRaf = 0;
+    refreshClusterColors();
+  });
+}
+
+function refreshClusterColors() {
+  if (!map?.isStyleLoaded() || !map.getSource(SOURCE_ID) || !map.getLayer(LAYER_CLUSTER)) return;
+
+  const source = map.getSource(SOURCE_ID);
+  const features = map.querySourceFeatures(SOURCE_ID, { filter: ['has', 'point_count'] });
+  const seen = new Set();
+  const clusters = [];
+
+  features.forEach((feature) => {
+    const clusterId = Number(feature.properties?.cluster_id);
+    const pointCount = Number(feature.properties?.point_count);
+    const featureId = feature.id;
+
+    if (!Number.isFinite(clusterId) || !Number.isFinite(pointCount) || featureId == null) return;
+    if (seen.has(clusterId)) return;
+
+    seen.add(clusterId);
+    clusters.push({ clusterId, pointCount, featureId });
+  });
+
+  if (!clusters.length) return;
+
+  const token = ++clusterRefreshToken;
+
+  clusters.forEach(({ clusterId, pointCount, featureId }) => {
+    source.getClusterLeaves(clusterId, pointCount, 0, (error, leaves) => {
+      if (error || token !== clusterRefreshToken) return;
+
+      const colorCounts = new Map();
+      (leaves || []).forEach((leaf) => {
+        const color = normalizeColor(leaf?.properties?.color || DEFAULT_COLOR);
+        colorCounts.set(color, (colorCounts.get(color) || 0) + 1);
+      });
+
+      let dominantColor = '#b8895f';
+      let bestCount = -1;
+      colorCounts.forEach((count, color) => {
+        if (count > bestCount) {
+          dominantColor = color;
+          bestCount = count;
+        }
+      });
+
+      map.setFeatureState({ source: SOURCE_ID, id: featureId }, { dominantColor });
+    });
+  });
 }
 
 function renderCategoryList(query) {
@@ -474,15 +548,21 @@ function openLocation(loc, flyTo) {
   syncSelectedLayer();
 
   const category = categoryById.get(loc.categoryId);
+  const badgeColor = normalizeColor(loc.color || category?.color);
+  const badgeText = getReadableTextColor(badgeColor);
 
   if (popup) popup.remove();
 
-  popup = new maplibregl.Popup({ offset: 20, maxWidth: '360px' })
+  popup = new maplibregl.Popup({
+    offset: 18,
+    maxWidth: '360px',
+    className: 'fairmap-popup'
+  })
     .setLngLat([loc.lng, loc.lat])
     .setHTML(`
-      <article class="popup-content">
-        <h3>${escapeHtml(loc.name)}</h3>
-        <p class="popup-badge" style="--badge-color:${loc.color};">${escapeHtml(category?.name || loc.categoryName)}</p>
+      <article class="popup-card">
+        <h3 class="popup-title">${escapeHtml(loc.name)}</h3>
+        <p class="popup-badge" style="--badge-color:${badgeColor};--badge-text:${badgeText};">${escapeHtml(category?.name || loc.categoryName)}</p>
         ${loc.address ? `<p class="popup-address">${escapeHtml(loc.address)}</p>` : ''}
         ${loc.description ? `<div class="popup-description">${loc.description}</div>` : ''}
       </article>
@@ -493,7 +573,7 @@ function openLocation(loc, flyTo) {
     map.easeTo({
       center: [loc.lng, loc.lat],
       zoom: Math.max(map.getZoom(), 16.8),
-      pitch: mapData.map.pitch ?? 60,
+      pitch: mapData.map?.pitch ?? 60,
       duration: 450
     });
   }
@@ -501,6 +581,15 @@ function openLocation(loc, flyTo) {
   if (window.innerWidth <= 960) {
     closeSidebarMobile();
   }
+}
+
+function getReadableTextColor(hex) {
+  if (!hex || !hex.startsWith('#') || hex.length !== 7) return '#ffffff';
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.62 ? '#1f2937' : '#ffffff';
 }
 
 function syncSelectedLayer() {
@@ -514,7 +603,7 @@ function syncSelectedLayer() {
 
 function toggleSidebarDesktop() {
   if (window.innerWidth <= 960) {
-    closeSidebarMobile();
+    toggleSidebarFromMapButton();
     return;
   }
 
@@ -530,12 +619,16 @@ function toggleSidebarDesktop() {
 }
 
 function toggleSidebarFromMapButton() {
+  const app = document.getElementById('app');
+
   if (window.innerWidth <= 960) {
-    openSidebarMobile();
+    app.classList.toggle('mobile-sidebar-open');
+    const isOpen = app.classList.contains('mobile-sidebar-open');
+    document.getElementById('mobile-backdrop').hidden = !isOpen;
+    updateMobileToggleButton();
     return;
   }
 
-  const app = document.getElementById('app');
   if (app.classList.contains('sidebar-collapsed')) {
     app.classList.remove('sidebar-collapsed');
     const button = document.getElementById('sidebar-collapse');
@@ -551,6 +644,7 @@ function openSidebarMobile() {
 
   const backdrop = document.getElementById('mobile-backdrop');
   backdrop.hidden = false;
+  updateMobileToggleButton();
 }
 
 function closeSidebarMobile() {
@@ -559,10 +653,25 @@ function closeSidebarMobile() {
 
   const backdrop = document.getElementById('mobile-backdrop');
   backdrop.hidden = true;
+  updateMobileToggleButton();
+}
+
+function updateMobileToggleButton() {
+  const button = document.getElementById('mobile-sidebar-toggle');
+  const isMobile = window.innerWidth <= 960;
+  const isOpen = document.getElementById('app').classList.contains('mobile-sidebar-open');
+
+  button.hidden = !isMobile;
+  button.setAttribute('aria-expanded', String(isOpen));
+  button.setAttribute('aria-label', isOpen ? 'Close filters' : 'Open filters');
+
+  button.innerHTML = isOpen
+    ? '<span class="hamburger-icon">&#10005;</span><span>Close</span>'
+    : '<span class="hamburger-icon">&#9776;</span><span>Filters</span>';
 }
 
 function normalizeColor(input) {
-  if (typeof input !== 'string' || !input.startsWith('#')) return '#7a7a7a';
+  if (typeof input !== 'string' || !input.startsWith('#')) return DEFAULT_COLOR;
   if (input.length === 9) return input.slice(0, 7);
   return input;
 }
