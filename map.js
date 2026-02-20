@@ -29,9 +29,15 @@ async function init() {
   setupCategoryState();
   initSidebarControls();
 
+  // Resolve MapTiler style URL - key can be in style URL or injected via config.js
+  let styleUrl = mapData.map.style;
+  if (window.MAPTILER_KEY && styleUrl.includes('YOUR_MAPTILER_KEY')) {
+    styleUrl = styleUrl.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY);
+  }
+
   map = new maplibregl.Map({
     container: 'map',
-    style: mapData.map.style,
+    style: styleUrl,
     center: mapData.map.center,
     zoom: mapData.map.zoom,
     pitch: mapData.map.pitch ?? 60,
