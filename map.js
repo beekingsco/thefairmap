@@ -60,6 +60,12 @@ async function init() {
     buildMapLayers();
     refreshVisibleData();
   });
+
+  // Safety: re-set data after style is fully loaded (fixes race condition)
+  map.on('idle', function onFirstIdle() {
+    refreshVisibleData();
+    map.off('idle', onFirstIdle);
+  });
 }
 
 function hydrateLocations() {
