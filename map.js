@@ -163,14 +163,14 @@ function buildMapLayers() {
       'circle-radius': [
         'step',
         ['get', 'point_count'],
-        18,
+        14,
         15,
-        22,
+        17,
         50,
-        28
+        21
       ],
       'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 2
+      'circle-stroke-width': 1.5
     }
   });
 
@@ -201,17 +201,29 @@ function buildMapLayers() {
         ['linear'],
         ['zoom'],
         11,
-        8,
-        15,
-        12,
-        18,
+        3,
+        14,
+        5,
         16,
+        7,
+        18,
+        9,
         20,
-        18
+        11
       ],
       'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 2,
-      'circle-opacity': 0.95
+      'circle-stroke-width': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        11,
+        0.5,
+        16,
+        1.5,
+        20,
+        2
+      ],
+      'circle-opacity': 0.9
     }
   });
 
@@ -226,16 +238,20 @@ function buildMapLayers() {
         ['linear'],
         ['zoom'],
         11,
-        11,
-        15,
+        6,
+        14,
+        8,
         16,
+        10,
         18,
-        21
+        13,
+        20,
+        15
       ],
       'circle-color': '#ffffff',
       'circle-stroke-color': '#111111',
       'circle-stroke-width': 2,
-      'circle-opacity': 0.45
+      'circle-opacity': 0.35
     }
   });
 
