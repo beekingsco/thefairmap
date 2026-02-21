@@ -275,10 +275,16 @@ body {
   min-width: 0;
 }
 
+#map {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
 #map-controls {
   position: absolute;
   inset: 0;
-  z-index: 3000;
+  z-index: 5000;
   pointer-events: none;
   overflow: visible;
 }
