@@ -1090,9 +1090,6 @@ function resolveVenueStyleUrl(rawStyle) {
 }
 
 function resolveSatelliteStyleUrl() {
-  if (window.MAPTILER_KEY) {
-    return `https://api.maptiler.com/maps/satellite/style.json?key=${window.MAPTILER_KEY}`;
-  }
   return SATELLITE_STYLE_FALLBACK;
 }
 
