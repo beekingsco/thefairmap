@@ -371,18 +371,18 @@ body {
   right: 60px;
   left: auto !important;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 8px;
-  align-items: flex-start;
+  align-items: flex-end;
   z-index: 9999;
   pointer-events: auto;
 }
 
 .map-style-btn {
-  min-width: 142px;
+  min-width: 136px;
   height: 36px;
   border-radius: 999px;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 0 14px;
   border: 1px solid #d6dae2;
   background: #ffffff;
@@ -712,7 +712,7 @@ body {
   }
 
   .map-style-btn {
-    min-width: 122px;
+    min-width: 120px;
     height: 34px;
     font-size: 12px;
     padding: 0 10px;
@@ -749,7 +749,7 @@ body {
   }
 
   .map-style-btn {
-    min-width: 116px;
+    min-width: 114px;
     height: 32px;
     font-size: 12px;
     gap: 6px;
