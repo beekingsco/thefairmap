@@ -933,6 +933,168 @@ body.admin-page {
 @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   MOBILE TOP SEARCH BAR (MapMe-style)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.mobile-search-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  background: #2d4a3e;
+  padding: 10px 12px 10px;
+  gap: 8px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+}
+
+.mobile-search-bar input {
+  flex: 1;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  padding: 0 12px;
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  caret-color: #fff;
+}
+.mobile-search-bar input::placeholder { color: rgba(255,255,255,0.65); }
+.mobile-search-bar input:focus { background: rgba(255,255,255,0.22); }
+
+.mobile-search-bar button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.18);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Show only on mobile */
+@media (min-width: 961px) {
+  .mobile-search-bar { display: none !important; }
+}
+@media (max-width: 960px) {
+  /* Use flex column so map fills remaining height below search bar */
+  #map-shell {
+    display: flex;
+    flex-direction: column;
+  }
+  #map {
+    flex: 1;
+    height: auto !important;
+  }
+  /* push map controls down below search bar */
+  .maplibregl-ctrl-top-right { top: 68px !important; }
+  #map-control-btns { top: 68px !important; right: 8px !important; }
+  /* Hide desktop floating button on mobile */
+  #mobile-sidebar-toggle { display: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE BOTTOM CATEGORY SHEET (MapMe-style)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.mobile-cat-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 8;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.14);
+  transform: translateY(calc(100% - 160px)); /* partially peeking up */
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.mobile-cat-sheet.expanded {
+  transform: translateY(0);
+  max-height: 80vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.mobile-cat-sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 6px;
+}
+.mobile-cat-sheet-handle span {
+  width: 36px;
+  height: 4px;
+  border-radius: 4px;
+  background: #d1d5db;
+}
+.mobile-cat-expand {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-cat-list {
+  padding: 0 0 16px;
+}
+.mobile-cat-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.1s;
+}
+.mobile-cat-item:active { background: #f9fafb; }
+.mobile-cat-item:last-child { border-bottom: none; }
+.mobile-cat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.mobile-cat-icon img {
+  width: 24px;
+  height: 24px;
+  filter: invert(1);
+}
+.mobile-cat-name {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e2328;
+}
+.mobile-cat-count {
+  font-size: 0.85rem;
+  color: #9aa5b1;
+  font-weight: 500;
+}
+
+/* Only show cat sheet on mobile */
+@media (min-width: 961px) {
+  .mobile-cat-sheet { display: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    DETAIL SHEET — bottom sheet on mobile, side panel on desktop
    ══════════════════════════════════════════════════════════════════════════ */
 
@@ -1219,9 +1381,9 @@ body.admin-page {
   #map-style-btn {
     bottom: 70px !important;
   }
-  /* Detail sheet above bottom nav */
+  /* Detail sheet above category sheet */
   .detail-sheet {
-    bottom: 56px;
+    bottom: 0;
   }
 }
 

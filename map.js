@@ -66,6 +66,7 @@ async function init() {
   map.on('load', async () => {
     await buildMapLayers();
     refreshVisibleData();
+    renderMobileCatSheet();
     updateMobileToggleButton();
 
     // Hide loading overlay
@@ -209,6 +210,12 @@ function initSidebarControls() {
 
   // Detail sheet close
   document.getElementById('detail-close')?.addEventListener('click', closeDetailSheet);
+
+  // Mobile search bar
+  initMobileSearchBar();
+
+  // Mobile category bottom sheet
+  initMobileCatSheet();
 
   // Map style switcher — default is Streets Essential (matches MapMe), toggle to Satellite/Terrain
   const mapStyles = window.MAPTILER_KEY ? [
@@ -361,10 +368,21 @@ async function buildMapLayers() {
     filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': ['get', 'color'],
-      'circle-radius': ['case', ['==', ['get', 'featured'], true], 14, 12],
-      'circle-stroke-color': ['case', ['==', ['get', 'featured'], true], '#fbbf24', '#ffffff'],
-      'circle-stroke-width': ['case', ['==', ['get', 'featured'], true], 2.5, 1.5],
-      'circle-opacity': 0.9
+      'circle-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        13, ['case', ['==', ['get', 'featured'], true], 12, 10],
+        15, ['case', ['==', ['get', 'featured'], true], 18, 16],
+        17, ['case', ['==', ['get', 'featured'], true], 22, 20],
+        20, ['case', ['==', ['get', 'featured'], true], 26, 24]
+      ],
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': [
+        'interpolate', ['linear'], ['zoom'],
+        13, 1.5,
+        17, 2.5,
+        20, 3
+      ],
+      'circle-opacity': 1
     }
   });
 
@@ -375,7 +393,13 @@ async function buildMapLayers() {
     filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['coalesce', ['get', 'iconImageId'], FALLBACK_ICON_IMAGE_ID],
-      'icon-size': 1,
+      'icon-size': [
+        'interpolate', ['linear'], ['zoom'],
+        13, 0.7,
+        15, 1.0,
+        17, 1.3,
+        20, 1.6
+      ],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true
     }
@@ -531,7 +555,7 @@ async function loadCategoryMarkerImage(category) {
     if (!svgResponse.ok) return;
 
     const svg = await svgResponse.text();
-    const imageData = await rasterizeSvgToImageData(toWhiteSvg(svg), 16, 16);
+    const imageData = await rasterizeSvgToImageData(toWhiteSvg(svg), 22, 22);
 
     if (map.hasImage(imageId)) {
       map.removeImage(imageId);
@@ -1091,6 +1115,123 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ── Mobile Search Bar ─────────────────────────────────────────────────────
+function initMobileSearchBar() {
+  const bar = document.getElementById('mobile-search-bar');
+  const input = document.getElementById('mobile-search-input');
+  const btn = document.getElementById('mobile-search-btn');
+  if (!bar || !input) return;
+
+  function updateVisibility() {
+    bar.hidden = window.innerWidth > 960;
+  }
+  updateVisibility();
+  window.addEventListener('resize', updateVisibility);
+
+  // Sync with main search input
+  let searchTimeout;
+  input.addEventListener('input', () => {
+    const mainInput = document.getElementById('search-input');
+    if (mainInput) mainInput.value = input.value;
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(refreshVisibleData, 180);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(searchTimeout);
+      refreshVisibleData();
+      if (visibleLocations.length > 0) openLocation(visibleLocations[0], true);
+      input.blur();
+    }
+  });
+
+  btn?.addEventListener('click', () => {
+    refreshVisibleData();
+    if (visibleLocations.length > 0) openLocation(visibleLocations[0], true);
+    input.blur();
+  });
+}
+
+// ── Mobile Category Bottom Sheet ──────────────────────────────────────────
+function initMobileCatSheet() {
+  const sheet = document.getElementById('mobile-cat-sheet');
+  const handle = document.getElementById('mobile-cat-handle');
+  const expandBtn = document.getElementById('mobile-cat-expand');
+  if (!sheet) return;
+
+  function updateVisibility() {
+    sheet.hidden = window.innerWidth > 960;
+  }
+  updateVisibility();
+  window.addEventListener('resize', updateVisibility);
+
+  // Expand/collapse on handle touch or expand button
+  let startY = 0;
+  handle.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
+  handle.addEventListener('touchend', e => {
+    const delta = e.changedTouches[0].clientY - startY;
+    if (delta < -40) sheet.classList.add('expanded');
+    if (delta > 40)  sheet.classList.remove('expanded');
+  }, { passive: true });
+
+  expandBtn?.addEventListener('click', () => {
+    sheet.classList.toggle('expanded');
+  });
+
+  // Render categories into the sheet (called after data loads)
+  renderMobileCatSheet();
+}
+
+function renderMobileCatSheet() {
+  const list = document.getElementById('mobile-cat-list');
+  if (!list || !mapData?.categories) return;
+
+  const countMap = new Map();
+  locations.forEach(l => countMap.set(l.categoryId, (countMap.get(l.categoryId) || 0) + 1));
+
+  const cats = [...mapData.categories]
+    .filter(c => countMap.get(c.id) > 0)
+    .sort((a, b) => (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0));
+
+  list.innerHTML = cats.map(cat => {
+    const count = countMap.get(cat.id) || 0;
+    const iconPath = `/data/icons/${cat.id}.svg`;
+    const active = activeCategories.has(cat.id);
+    return `
+      <div class="mobile-cat-item ${active ? '' : 'cat-hidden'}" data-mob-cat="${escapeHtml(cat.id)}" style="opacity:${active ? 1 : 0.45}">
+        <div class="mobile-cat-icon" style="background:${escapeHtml(cat.color || '#7a7a7a')};">
+          <img src="${escapeHtml(iconPath)}" alt="" onerror="this.style.display='none'">
+        </div>
+        <span class="mobile-cat-name">${escapeHtml(cat.name)}</span>
+        <span class="mobile-cat-count">${count}</span>
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('[data-mob-cat]').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.dataset.mobCat;
+      if (activeCategories.has(id)) {
+        activeCategories.delete(id);
+        item.style.opacity = '0.45';
+      } else {
+        activeCategories.add(id);
+        item.style.opacity = '1';
+      }
+      // Sync with main category list
+      const mainCb = document.querySelector(`input[data-category-id="${id}"]`);
+      if (mainCb) {
+        mainCb.checked = activeCategories.has(id);
+        mainCb.dispatchEvent(new Event('change'));
+      } else {
+        refreshVisibleData();
+      }
+    });
+  });
 }
 
 // ── Mobile Bottom Nav ─────────────────────────────────────────────────────
