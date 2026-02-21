@@ -22,6 +22,7 @@ const SOURCE_ID = 'locations';
 const LAYER_MARKERS = 'location-markers';
 const LAYER_ICONS = 'location-icons';
 const LAYER_SELECTED = 'location-selected';
+const LAYER_HOVER = 'location-hover';
 
 const appState = {
   mapData: null,
@@ -41,7 +42,9 @@ const appState = {
   satelliteStyleUrl: SATELLITE_STYLE_FALLBACK,
   filtersInitialized: false,
   totalLocationCount: 0,
-  detailClosing: false
+  detailClosing: false,
+  detailCloseTimer: null,
+  hoveredFeatureId: null
 };
 
 const ICON_SVGS = {
@@ -314,19 +317,46 @@ function buildLayers() {
     paint: {
       'circle-color': ['get', 'color'],
       'circle-radius': [
-        'interpolate', ['linear'], ['zoom'],
-        14, 10.1,
-        16, 12.8,
-        17, 14.6,
-        20, 17.1
+        'case',
+        ['boolean', ['feature-state', 'hover'], false],
+        [
+          'interpolate', ['linear'], ['zoom'],
+          14, 12.2,
+          16, 15.1,
+          17, 17.1,
+          20, 20.1
+        ],
+        [
+          'interpolate', ['linear'], ['zoom'],
+          14, 10.8,
+          16, 13.5,
+          17, 15.4,
+          20, 18.2
+        ]
       ],
       'circle-stroke-width': [
-        'interpolate', ['linear'], ['zoom'],
-        14, 1.5,
-        17, 2.2,
-        20, 2.7
+        'case',
+        ['boolean', ['feature-state', 'hover'], false],
+        [
+          'interpolate', ['linear'], ['zoom'],
+          14, 2.6,
+          17, 3.1,
+          20, 3.5
+        ],
+        [
+          'interpolate', ['linear'], ['zoom'],
+          14, 1.8,
+          17, 2.4,
+          20, 2.9
+        ]
       ],
-      'circle-stroke-color': '#ffffff'
+      'circle-stroke-color': '#ffffff',
+      'circle-opacity': [
+        'case',
+        ['boolean', ['feature-state', 'hover'], false],
+        1,
+        0.97
+      ]
     }
   });
 
@@ -338,14 +368,32 @@ function buildLayers() {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
       'icon-allow-overlap': false,
       'icon-ignore-placement': false,
-      'icon-padding': 5,
+      'icon-padding': 8,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.41,
-        16, 0.49,
-        17, 0.58,
-        20, 0.7
+        14, 0.38,
+        16, 0.45,
+        17, 0.53,
+        20, 0.64
       ]
+    }
+  });
+
+  map.addLayer({
+    id: LAYER_HOVER,
+    type: 'circle',
+    source: SOURCE_ID,
+    filter: ['==', ['id'], -1],
+    paint: {
+      'circle-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        14, 13.2,
+        17, 17.9,
+        20, 21.2
+      ],
+      'circle-color': '#ffffff',
+      'circle-opacity': 0.23,
+      'circle-stroke-width': 0
     }
   });
 
@@ -423,19 +471,10 @@ function bindMapEvents() {
   map.on('click', LAYER_MARKERS, onMarkerClick);
   map.on('click', LAYER_ICONS, onMarkerClick);
 
-  map.on('mouseenter', LAYER_MARKERS, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', LAYER_MARKERS, () => {
-    map.getCanvas().style.cursor = '';
-  });
-
-  map.on('mouseenter', LAYER_ICONS, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', LAYER_ICONS, () => {
-    map.getCanvas().style.cursor = '';
-  });
+  map.on('mouseenter', LAYER_MARKERS, onMarkerMouseEnter);
+  map.on('mouseleave', LAYER_MARKERS, onMarkerMouseLeave);
+  map.on('mouseenter', LAYER_ICONS, onMarkerMouseEnter);
+  map.on('mouseleave', LAYER_ICONS, onMarkerMouseLeave);
 }
 
 function onMarkerClick(event) {
@@ -444,6 +483,32 @@ function onMarkerClick(event) {
   const location = appState.filteredLocations.find((loc) => loc.id === feature.properties.id);
   if (!location) return;
   openLocation(location, true);
+}
+
+function onMarkerMouseEnter(event) {
+  const feature = event.features?.[0];
+  const id = feature?.id;
+  if (typeof id !== 'number') return;
+  map.getCanvas().style.cursor = 'pointer';
+  if (appState.hoveredFeatureId !== null && appState.hoveredFeatureId !== id) {
+    map.setFeatureState({ source: SOURCE_ID, id: appState.hoveredFeatureId }, { hover: false });
+  }
+  appState.hoveredFeatureId = id;
+  map.setFeatureState({ source: SOURCE_ID, id }, { hover: true });
+  if (map.getLayer(LAYER_HOVER)) {
+    map.setFilter(LAYER_HOVER, ['==', ['id'], id]);
+  }
+}
+
+function onMarkerMouseLeave() {
+  map.getCanvas().style.cursor = '';
+  if (appState.hoveredFeatureId !== null) {
+    map.setFeatureState({ source: SOURCE_ID, id: appState.hoveredFeatureId }, { hover: false });
+    appState.hoveredFeatureId = null;
+  }
+  if (map.getLayer(LAYER_HOVER)) {
+    map.setFilter(LAYER_HOVER, ['==', ['id'], -1]);
+  }
 }
 
 function applyFilters() {
@@ -603,9 +668,14 @@ function renderDetail(location) {
     </div>
   `;
 
+  if (appState.detailCloseTimer) {
+    clearTimeout(appState.detailCloseTimer);
+    appState.detailCloseTimer = null;
+  }
   panel.hidden = false;
+  panel.classList.remove('is-open');
   panel.classList.remove('is-closing');
-  panel.classList.add('is-open');
+  requestAnimationFrame(() => panel.classList.add('is-open'));
   appState.detailClosing = false;
 }
 
@@ -616,12 +686,18 @@ function closeDetailPanel() {
   panel.classList.add('is-closing');
   panel.classList.remove('is-open');
   const finalizeClose = () => {
+    if (!appState.detailClosing) return;
     panel.hidden = true;
     panel.classList.remove('is-closing');
     appState.detailClosing = false;
+    if (appState.detailCloseTimer) {
+      clearTimeout(appState.detailCloseTimer);
+      appState.detailCloseTimer = null;
+    }
     panel.removeEventListener('transitionend', finalizeClose);
   };
   panel.addEventListener('transitionend', finalizeClose);
+  appState.detailCloseTimer = setTimeout(finalizeClose, 320);
 }
 
 function toggleSidebar() {
@@ -708,6 +784,7 @@ async function setMapStyle(styleId) {
 async function hydrateStyleContent() {
   await loadMarkerIcons();
   buildLayers();
+  appState.hoveredFeatureId = null;
   applyFilters();
   syncSelectedLayer();
 }

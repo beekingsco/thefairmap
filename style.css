@@ -320,13 +320,14 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(390px, 32vw);
+  width: min(420px, 33vw);
   background: #fff;
   border-left: 1px solid var(--line);
   box-shadow: -6px 0 28px rgba(16, 24, 40, 0.16);
   z-index: 8;
   transform: translateX(100%);
-  transition: transform 0.22s ease;
+  transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
 }
 
 #detail-panel.is-open {
@@ -350,7 +351,7 @@ body {
 .detail-content {
   height: 100%;
   overflow: auto;
-  padding: 18px 16px 20px;
+  padding: 20px 16px 22px;
 }
 
 .detail-title {
@@ -517,11 +518,24 @@ body {
     transform: translateY(104%);
   }
 
+  #detail-panel::before {
+    content: "";
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: #c5c8ce;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
   #detail-panel.is-open {
     transform: translateY(0);
   }
 
   .detail-content {
+    padding-top: 22px;
     padding-bottom: 30px;
   }
 
