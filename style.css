@@ -355,7 +355,7 @@ body {
 }
 
 .mobile-categories-btn {
-  display: inline-flex;
+  display: none;
   position: absolute;
   left: 12px;
   bottom: 14px;
