@@ -886,7 +886,7 @@ function toggleSidebar() {
   app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
   updateSidebarToggle(appState.sidebarOpen);
 
-  setTimeout(() => map?.resize(), 220);
+  setTimeout(() => map?.resize(), 300);
 }
 
 function closeMobileSidebar() {
