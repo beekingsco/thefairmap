@@ -1,61 +1,129 @@
-# TheFairMap Build Task — UPDATED 2026-02-21 4:15 PM
-
-## STATUS: Map is live and working. Now fix these 4 things.
+# TheFairMap — Session 2 Task (Feb 21 Evening)
 
 Live: https://thefairmap.vercel.app
 Target: https://viewer.mapme.com/first-monday-finder
-Data: data/mapme-full-export.json (719 locations, 67 categories)
+Repo: /Users/scoutbot/.openclaw/workspace/thefairmap
 
 ---
 
-## PRIORITY 1: Drag-to-dismiss bottom sheet (MOST IMPORTANT)
+## PRIORITY 1: TILE PROXY — Add the real venue tiles (MOST IMPORTANT)
 
-The mobile/detail slide-up panel must feel EXACTLY like MapMe:
-- User can grab the handle bar and DRAG it up (to expand) or drag DOWN to dismiss
-- It should follow the user's finger/mouse in real time — not just animate on tap
-- Snaps closed when dragged past ~40% of its height
-- Snaps open when dragged up past ~30% of viewport
-- Use pointer events (pointerdown/pointermove/pointerup) — NOT touch only
-- Add a visible drag handle bar at the top (4px wide, 36px tall rounded pill, gray, centered)
-- This applies to BOTH the detail panel (#detail-panel) AND the mobile sidebar sheet
+MapMe uses a custom MapTiler raster tileset that shows the colored venue layout (colored pavilion rows, booth numbers, "Arbor 1", "Boardwalk" labels). We need to add this as an overlay.
 
-Reference MapMe behavior: the bottom sheet feels like a native iOS sheet — smooth, responsive, real drag tracking.
+### Step 1: Create Vercel tile proxy function
+
+Create `api/venue-tile/[...slug].js`:
+
+```js
+export const config = { runtime: 'edge' };
+
+export default async function handler(req) {
+  const url = new URL(req.url);
+  // slug is like ["18","61267","105971"]
+  const parts = url.pathname.replace('/api/venue-tile/', '').split('/');
+  if (parts.length < 3) return new Response('bad path', { status: 400 });
+  const [z, x, yPng] = parts;
+  const y = yPng.replace('.png', '');
+  
+  const upstream = `https://api.maptiler.com/tiles/0196a1e2-92d2-7ed9-9540-2191fb00a1af/${z}/${x}/${y}.png?key=fQ4ZMToXe3rVrmKMAN7K`;
+  
+  const res = await fetch(upstream, {
+    headers: {
+      Referer: 'https://viewer.mapme.com/',
+      Origin: 'https://viewer.mapme.com'
+    }
+  });
+  
+  if (!res.ok) return new Response('tile not found', { status: res.status });
+  
+  const body = await res.arrayBuffer();
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=86400',
+      'Access-Control-Allow-Origin': '*'
+    }
+  });
+}
+```
+
+### Step 2: Add route in vercel.json
+
+In `vercel.json`, add to the `rewrites` array:
+```json
+{ "source": "/api/venue-tile/:path*", "destination": "/api/venue-tile/:path*" }
+```
+
+Actually, no rewrite needed — Vercel auto-routes `api/` functions.
+
+### Step 3: Add the overlay layer in map.js
+
+In map.js, find the function `resolveVenueStyleUrl` (or wherever the map style is set). After the map's `style.load` event fires, add the venue raster overlay source and layer.
+
+Find the `style.load` event listener (or create one). After the base style loads, inject:
+
+```js
+// Add venue overlay tiles
+if (!map.getSource('venue-overlay')) {
+  map.addSource('venue-overlay', {
+    type: 'raster',
+    tiles: [`${window.location.origin}/api/venue-tile/{z}/{x}/{y}.png`],
+    tileSize: 256,
+    minzoom: 13,
+    maxzoom: 22,
+    bounds: [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321],
+    attribution: 'Map © MapTiler'
+  });
+}
+if (!map.getLayer('venue-overlay-layer')) {
+  // Insert BELOW the marker layers so markers stay on top
+  const firstMarkerLayer = map.getStyle().layers.find(l => l.id === 'location-markers' || l.id === 'location-icons' || l.id === 'location-clusters');
+  map.addLayer({
+    id: 'venue-overlay-layer',
+    type: 'raster',
+    source: 'venue-overlay',
+    paint: {
+      'raster-opacity': 1.0
+    }
+  }, firstMarkerLayer?.id);
+}
+```
+
+This must also survive style changes (satellite toggle). When switching back to venue style, re-add the layer. Look for the existing style switch logic and add the overlay there too.
 
 ---
 
-## PRIORITY 2: First Monday Finder logo in sidebar
+## PRIORITY 2: DOUBLE LOGO — Hide map-brand-overlay on mobile
 
-Below the search bar and above the category list, add a centered logo image.
-- Source: data/icons/fairmap-icon-192.png (or check if there's a better logo file in data/)
-- Display as centered image, max-width 160px, with padding
-- This matches MapMe which shows the map logo/branding in the sidebar header area
+In `style.css`, inside the `@media (max-width: 960px)` block, find `.map-brand-overlay` and add `display: none !important;`.
 
----
-
-## PRIORITY 3: Marker icon contrast (white OR black)
-
-Currently all icons inside markers are white. MapMe auto-picks white or black based on the marker's background color for maximum contrast.
-- For LIGHT colored markers (yellow, orange, light green, etc.) → use BLACK icons
-- For DARK colored markers (dark blue, dark green, dark red, purple, etc.) → use WHITE icons
-- Use luminance calculation: if (0.299*R + 0.587*G + 0.114*B) > 128 → use black icon; else white
-- Apply this to the MapLibre icon color paint property OR render icons accordingly
+The mobile topbar (`#mobile-topbar`) already shows the brand. The overlay creates a duplicate. On mobile, only the topbar brand should show.
 
 ---
 
-## PRIORITY 4: Keep comparing and fixing
+## PRIORITY 3: Keep comparing and fixing
 
-After all 3 above, keep loading https://viewer.mapme.com/first-monday-finder and fixing every visual difference you find. Never stop.
+After tiles + logo fix, compare https://viewer.mapme.com/first-monday-finder vs https://thefairmap.vercel.app and fix every difference you find. Use Playwright for screenshots.
 
 ---
 
 ## DEPLOYMENT
+
 After EACH fix:
 ```bash
-git add -A && git commit -m "vX.X: description"
+cd /Users/scoutbot/.openclaw/workspace/thefairmap
+git add -A && git commit -m "fix: description"
 vercel --prod --yes --token=$VERCEL_TOKEN
 ```
 
+---
+
 ## RULES
 - Vanilla HTML/CSS/JS only — NO frameworks
-- Never stop working
-- Use Playwright (installed) for headless testing to verify fixes work before committing
+- Check that the tile proxy actually works before committing (fetch one tile to verify)
+- NEVER stop working — keep finding and fixing differences
+- Use Playwright for visual verification
+
+When completely finished, run:
+openclaw system event --text "TheFairMap tile proxy + double logo fix deployed" --mode now

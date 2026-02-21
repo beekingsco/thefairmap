@@ -499,8 +499,32 @@ function loadImageByUrl(url) {
   });
 }
 
+function addVenueOverlay() {
+  // Only add venue overlay when in venue map mode (not satellite)
+  if (appState.activeMapStyle === 'satellite') return;
+  // Raster overlay from MapMe's custom MapTiler tileset, proxied via /api/venue-tile/
+  if (map.getSource('venue-overlay')) return;
+  map.addSource('venue-overlay', {
+    type: 'raster',
+    tiles: [`${window.location.origin}/api/venue-tile/{z}/{x}/{y}.png`],
+    tileSize: 256,
+    minzoom: 13,
+    maxzoom: 22,
+    bounds: [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321],
+    attribution: 'Map data © First Monday Trade Days'
+  });
+  map.addLayer({
+    id: 'venue-overlay-layer',
+    type: 'raster',
+    source: 'venue-overlay',
+    paint: { 'raster-opacity': 1.0 }
+  });
+}
+
 function buildLayers() {
   if (map.getSource(SOURCE_ID)) return;
+
+  addVenueOverlay();
 
   map.addSource(SOURCE_ID, {
     type: 'geojson',
