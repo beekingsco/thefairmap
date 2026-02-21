@@ -649,23 +649,19 @@ function updateSidebarToggle(isOpen) {
 
 function updateFilterCount() {
   const countEl = document.getElementById('filters-count');
-  if (!countEl) return;
-  const loadedCount = Array.isArray(appState.locations) ? appState.locations.length : 0;
-  if ((!Number.isFinite(appState.totalLocationCount) || appState.totalLocationCount <= 0) && loadedCount > 0) {
-    appState.totalLocationCount = loadedCount;
-  }
-  const total = Number.isFinite(appState.totalLocationCount) && appState.totalLocationCount > 0
-    ? appState.totalLocationCount
-    : loadedCount;
-  countEl.textContent = `(${total || 0})`;
+  const total = appState.filteredLocations?.length || appState.locations?.length || 0;
+  appState.totalLocationCount = appState.locations?.length || 0;
+  if (countEl) countEl.textContent = `(${total})`;
+  updateMobileCategoriesButton(total || 0);
 }
 
-function updateMobileCategoriesButton() {
+function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0) {
   const button = document.getElementById('mobile-categories-btn');
   if (!button) return;
   const open = document.getElementById('app').classList.contains('mobile-sidebar-open');
   button.setAttribute('aria-expanded', String(open));
-  button.textContent = open ? 'Close Categories' : 'Categories';
+  button.setAttribute('aria-label', open ? 'Close filters' : 'Open filters');
+  button.textContent = open ? 'Close Filters' : `Filters (${totalCount})`;
 }
 
 function updateMapStyleButtons() {

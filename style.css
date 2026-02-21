@@ -522,17 +522,13 @@ body {
   .mobile-categories-btn {
     display: inline-flex;
     position: fixed;
-    left: 50%;
-    bottom: max(14px, env(safe-area-inset-bottom));
-    transform: translateX(-50%);
+    left: 12px;
+    top: max(12px, env(safe-area-inset-top));
+    transform: none;
     border-radius: 999px;
-    min-width: 160px;
+    min-width: 124px;
     justify-content: center;
     z-index: 45;
-  }
-
-  #app.mobile-sidebar-open .mobile-categories-btn {
-    display: none;
   }
 
   .chevron-btn {
