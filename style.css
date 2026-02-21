@@ -379,17 +379,39 @@ body {
 }
 
 .map-style-btn {
-  min-width: 138px;
-  height: 35px;
+  min-width: 142px;
+  height: 36px;
   border-radius: 999px;
   justify-content: center;
-  font-weight: 700;
+  padding: 0 14px;
+  border: 1px solid #d6dae2;
+  background: #ffffff;
+  color: #344054;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.12);
+  font-weight: 600;
+}
+
+.map-style-btn:hover {
+  border-color: #c5ccd8;
+  box-shadow: 0 4px 10px rgba(16, 24, 40, 0.15);
+}
+
+.map-style-btn.is-active {
+  background: #ffffff;
+  color: #101828;
+  border-color: #bcc5d3;
+  box-shadow: 0 3px 10px rgba(16, 24, 40, 0.18);
 }
 
 .btn-icon {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   fill: currentColor;
+  color: #667085;
+}
+
+.map-style-btn.is-active .btn-icon {
+  color: #344054;
 }
 
 #detail-panel {
