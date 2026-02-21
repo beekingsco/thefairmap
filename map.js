@@ -181,7 +181,7 @@ function normalizeData(data) {
         categoryName,
         color: normalizeColor(category?.color || loc.color),
         iconType: iconTypeForCategory(categoryId, categoryName),
-        search: `${loc.name || ''} ${categoryName} ${loc.address || ''}`.toLowerCase()
+        search: `${loc.name || ''} ${categoryName} ${loc.address || ''} ${loc.description || ''}`.toLowerCase()
       };
     })
     .filter(
@@ -227,10 +227,8 @@ function normalizeData(data) {
 
 function bindUi() {
   const searchInput = document.getElementById('search-input');
-  let timer;
   searchInput.addEventListener('input', () => {
-    clearTimeout(timer);
-    timer = setTimeout(applyFilters, 120);
+    applyFilters();
   });
 
   document.getElementById('overview-toggle').addEventListener('click', () => {
