@@ -210,21 +210,21 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 42px;
+  height: 38px;
   border: 1px solid #d0d5dd;
-  border-radius: 10px;
+  border-radius: 4px;
   background: #ffffff;
-  color: #1f2937;
-  padding: 0 14px;
-  font-size: 14px;
+  color: #363636;
+  padding: 0 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
 }
 
 .map-control-btn.is-active {
-  background: #1f2937;
-  border-color: #1f2937;
+  background: #363636;
+  border-color: #363636;
   color: #ffffff;
 }
 
@@ -265,8 +265,13 @@ body {
   right: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   align-items: flex-end;
+}
+
+.map-style-btn {
+  min-width: 114px;
+  justify-content: center;
 }
 
 #detail-panel {

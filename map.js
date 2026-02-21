@@ -57,7 +57,7 @@ async function init() {
   const data = await fetchMapData();
   await loadIconManifest();
   appState.mapData = data;
-  appState.venueStyleUrl = resolveStyleUrl(data.map?.style);
+  appState.venueStyleUrl = resolveVenueStyleUrl(data.map?.style);
   appState.satelliteStyleUrl = resolveSatelliteStyleUrl();
   normalizeData(data);
   initializeSidebarState();
@@ -710,9 +710,16 @@ function resolveStyleUrl(rawStyle) {
   return STYLE_FALLBACK;
 }
 
+function resolveVenueStyleUrl(rawStyle) {
+  if (window.MAPTILER_KEY) {
+    return `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}`;
+  }
+  return resolveStyleUrl(rawStyle);
+}
+
 function resolveSatelliteStyleUrl() {
   if (window.MAPTILER_KEY) {
-    return `https://api.maptiler.com/maps/hybrid/style.json?key=${window.MAPTILER_KEY}`;
+    return `https://api.maptiler.com/maps/satellite/style.json?key=${window.MAPTILER_KEY}`;
   }
   return SATELLITE_STYLE_FALLBACK;
 }
