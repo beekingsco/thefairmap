@@ -629,6 +629,7 @@ function renderOverview(query) {
         const item = document.createElement('button');
         item.type = 'button';
         item.className = 'location-row';
+        if (loc.id === appState.selectedLocationId) item.classList.add('is-selected');
         item.textContent = loc.name;
         item.addEventListener('click', () => openLocation(loc, true));
         locList.appendChild(item);
@@ -668,6 +669,9 @@ function openLocation(location, fly) {
   if (window.innerWidth <= 960) {
     closeMobileSidebar();
   }
+
+  const currentQuery = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
+  renderOverview(currentQuery);
 }
 
 function getDetailAwareFlyOffset() {
