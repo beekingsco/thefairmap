@@ -303,10 +303,10 @@ function buildLayers() {
       'circle-color': ['get', 'color'],
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 8.8,
-        16, 11.2,
-        17, 12.8,
-        20, 15.2
+        14, 9.6,
+        16, 12.1,
+        17, 13.8,
+        20, 16.2
       ],
       'circle-stroke-width': [
         'interpolate', ['linear'], ['zoom'],
@@ -324,14 +324,15 @@ function buildLayers() {
     source: SOURCE_ID,
     layout: {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true,
+      'icon-allow-overlap': false,
+      'icon-ignore-placement': false,
+      'icon-padding': 5,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.36,
-        16, 0.43,
-        17, 0.5,
-        20, 0.62
+        14, 0.38,
+        16, 0.45,
+        17, 0.53,
+        20, 0.64
       ]
     }
   });
