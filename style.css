@@ -356,6 +356,32 @@ body {
   font-weight: 700;
 }
 
+.detail-gallery {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.detail-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e4e7ec;
+  background: #f2f4f7;
+}
+
+.detail-gallery-empty {
+  margin-top: 14px;
+  border: 1px dashed #d0d5dd;
+  border-radius: 10px;
+  padding: 14px 12px;
+  font-size: 12px;
+  color: #667085;
+  background: #f9fafb;
+}
+
 .detail-description {
   margin-top: 14px;
   font-size: 13px;

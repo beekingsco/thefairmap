@@ -159,6 +159,7 @@ function normalizeData(data) {
         name,
         description: typeof loc.description === 'string' ? loc.description : '',
         address: typeof loc.address === 'string' ? loc.address : '',
+        photos: extractLocationPhotos(loc),
         lat: Number(loc.lat),
         lng: Number(loc.lng),
         categoryId,
@@ -570,11 +571,26 @@ function renderDetail(location) {
   const categoryName = category?.name || location.categoryName;
   const color = normalizeColor(category?.color || location.color);
   const description = formatDescription(location.description);
+  const galleryHtml = location.photos.length
+    ? `
+      <div class="detail-gallery" aria-label="Location photos">
+        ${location.photos.slice(0, 6).map((url) => `<img class="detail-photo" src="${escapeAttr(url)}" alt="${escapeAttr(location.name)} photo" loading="lazy">`).join('')}
+      </div>
+    `
+    : `
+      <div class="detail-gallery-empty">No photos available.</div>
+    `;
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
 
   content.innerHTML = `
     <h2 class="detail-title">${escapeHtml(location.name)}</h2>
     <div class="detail-badge" style="background:${color};color:${pickTextColor(color)};">${escapeHtml(categoryName)}</div>
+    ${galleryHtml}
     <div class="detail-description">${description}</div>
+    ${location.address ? `<p class="detail-address">${escapeHtml(location.address)}</p>` : ''}
+    <div class="detail-actions">
+      <a class="detail-btn primary" href="${directionsUrl}" target="_blank" rel="noreferrer noopener">Directions</a>
+    </div>
   `;
 
   panel.hidden = false;
@@ -770,9 +786,33 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
 function formatDescription(description) {
   if (!description) return 'No description available.';
   return escapeHtml(description).replace(/\n/g, '<br>');
+}
+
+function extractLocationPhotos(location) {
+  const candidates = [];
+  if (Array.isArray(location.photos)) candidates.push(...location.photos);
+  if (Array.isArray(location.images)) candidates.push(...location.images);
+  if (typeof location.photo === 'string') candidates.push(location.photo);
+  if (typeof location.image === 'string') candidates.push(location.image);
+  if (Array.isArray(location.media)) candidates.push(...location.media);
+
+  const urls = [];
+  for (const item of candidates) {
+    if (!item) continue;
+    const url = typeof item === 'string' ? item : item.url || item.src;
+    if (typeof url !== 'string') continue;
+    const cleaned = url.trim();
+    if (!cleaned) continue;
+    if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith('/uploads/')) urls.push(cleaned);
+  }
+  return Array.from(new Set(urls));
 }
 
 if ('serviceWorker' in navigator) {
