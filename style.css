@@ -332,6 +332,9 @@ body {
 .category-location-list {
   display: grid;
   gap: 8px;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px);
+  padding-right: 2px;
 }
 
 .category-location-row {
@@ -631,6 +634,10 @@ body {
 }
 
 #mobile-peek-bar {
+  display: none;
+}
+
+#mobile-sheet-collapse {
   display: none;
 }
 
@@ -1043,6 +1050,28 @@ body {
     box-shadow: 0 -6px 18px rgba(16, 24, 40, 0.2);
     z-index: 4200;
     will-change: transform;
+  }
+
+  #mobile-sheet-collapse {
+    display: none;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 24px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #475467;
+    font-size: 16px;
+    font-weight: 700;
+    z-index: 9;
+    cursor: pointer;
+  }
+
+  #app.mobile-sidebar-open #mobile-sheet-collapse {
+    display: block;
   }
 
   #mobile-peek-bar {
