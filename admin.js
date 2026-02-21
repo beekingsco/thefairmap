@@ -197,6 +197,10 @@ function updateStats() {
   document.getElementById('stat-total').textContent = String(mapData.locations.length);
   const used = new Set(mapData.locations.map((l) => l.categoryId).filter(Boolean));
   document.getElementById('stat-cats').textContent = String(used.size);
+  const featured = mapData.locations.filter(l => l.featured).length;
+  document.getElementById('stat-featured').textContent = String(featured);
+  const withImages = mapData.locations.filter(l => l.image).length;
+  document.getElementById('stat-images').textContent = String(withImages);
   renderCategoryGrid();
 }
 

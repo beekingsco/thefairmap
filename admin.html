@@ -80,18 +80,32 @@
   </div>
 
   <div class="admin-wrap" id="admin-content" style="display:none;">
-    <h1>Admin Panel</h1>
+    <h1 style="display:flex;align-items:center;gap:0.5rem;">Admin Panel <a href="/" target="_blank" style="font-size:0.78rem;color:#8f5a2f;text-decoration:none;font-weight:600;">↗ View Map</a></h1>
     <p class="subtitle">Manage vendor locations and categories for First Monday Trade Days.</p>
 
-    <section class="admin-section">
-      <div class="stats-row">
-        <div class="stat-pill"><strong id="stat-total">0</strong> locations</div>
-        <div class="stat-pill"><strong id="stat-cats">0</strong> categories in use</div>
-        <div class="toolbar" style="margin-left:auto; margin-top:0;">
-          <button id="btn-export" class="btn btn-secondary" type="button">⬇ Export JSON</button>
-          <input id="json-file" type="file" accept="application/json,.json" hidden>
-          <button id="btn-import-json" class="btn btn-secondary" type="button">⬆ Import JSON</button>
+    <section class="admin-section" style="background:linear-gradient(135deg,#faf8f5,#f5f0eb);border:none;">
+      <div class="stats-row" style="gap:12px;">
+        <div class="stat-card">
+          <div class="stat-number" id="stat-total">0</div>
+          <div class="stat-label">Locations</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-cats">0</div>
+          <div class="stat-label">Categories</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-featured">0</div>
+          <div class="stat-label">Featured</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-images">0</div>
+          <div class="stat-label">With Images</div>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:12px;">
+        <button id="btn-export" class="btn btn-secondary" type="button">⬇ Export JSON</button>
+        <input id="json-file" type="file" accept="application/json,.json" hidden>
+        <button id="btn-import-json" class="btn btn-secondary" type="button">⬆ Import JSON</button>
       </div>
     </section>
 

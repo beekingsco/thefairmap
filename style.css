@@ -848,3 +848,48 @@ body.admin-page {
 }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* Admin stat cards */
+.stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  min-width: 110px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  text-align: center;
+}
+.stat-number {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1e2328;
+  line-height: 1;
+}
+.stat-label {
+  font-size: 0.72rem;
+  color: #6a7784;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.25rem;
+  font-weight: 600;
+}
+
+/* Admin button tweaks */
+.btn-sm {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid #d5dbe2;
+  background: #fff;
+  color: #1e2328;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: background 0.12s;
+}
+.btn-sm:hover { background: #f5f7f9; }
+.btn-danger { color: #c53030; border-color: #fed7d7; }
+.btn-danger:hover { background: #fff5f5; }
