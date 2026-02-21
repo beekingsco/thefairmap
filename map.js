@@ -350,7 +350,7 @@ function buildLayers() {
     generateId: true,
     cluster: true,
     clusterRadius: 48,
-    clusterMaxZoom: 18
+    clusterMaxZoom: 16
   });
 
   map.addLayer({
@@ -1085,8 +1085,11 @@ function iconIdFromFile(fileName) {
 
 function normalizeColor(input) {
   if (typeof input !== 'string' || !input.startsWith('#')) return '#7a7a7a';
-  if (input.length === 9) return input.toLowerCase();
-  if (input.length === 7) return input;
+  if (input.length === 9) {
+    // MapMe exports #RRGGBBAA; MapLibre color parsing is more reliable with #RRGGBB.
+    return `#${input.slice(1, 7)}`.toLowerCase();
+  }
+  if (input.length === 7) return input.toLowerCase();
   return '#7a7a7a';
 }
 
