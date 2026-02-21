@@ -43,6 +43,8 @@ const appState = {
   satelliteStyleUrl: SATELLITE_STYLE_FALLBACK,
   filtersInitialized: false,
   totalLocationCount: 0,
+  filterCountRetryTimer: null,
+  filterCountRetryAttempts: 0,
   detailClosing: false,
   detailCloseTimer: null,
   hoveredFeatureId: null
@@ -80,6 +82,7 @@ async function init() {
     filtered: appState.filteredLocations.length
   });
   updateFilterCount();
+  setTimeout(updateFilterCount, 250);
   initializeSidebarState();
   bindUi();
   applyFilters();
@@ -797,15 +800,30 @@ function updateFilterCount() {
     requestAnimationFrame(updateFilterCount);
     return;
   }
-  if (!appState.locations.length) return;
+  const hasLocations = appState.locations.length > 0;
   const filteredCount = appState.filteredLocations?.length ?? appState.locations?.length ?? 0;
-  appState.totalLocationCount = appState.locations?.length ?? 0;
+  appState.totalLocationCount = hasLocations ? appState.locations.length : (appState.totalLocationCount || 0);
   console.log('[filters] updateFilterCount', {
     locations: appState.locations.length,
     filtered: filteredCount
   });
   countEl.textContent = `(${appState.totalLocationCount})`;
   updateMobileCategoriesButton(appState.totalLocationCount);
+
+  // Retry a few times if data has not populated yet to survive async load races.
+  if (!hasLocations && appState.filterCountRetryAttempts < 20) {
+    appState.filterCountRetryAttempts += 1;
+    if (appState.filterCountRetryTimer) clearTimeout(appState.filterCountRetryTimer);
+    appState.filterCountRetryTimer = setTimeout(updateFilterCount, 150);
+    return;
+  }
+  if (hasLocations) {
+    appState.filterCountRetryAttempts = 0;
+    if (appState.filterCountRetryTimer) {
+      clearTimeout(appState.filterCountRetryTimer);
+      appState.filterCountRetryTimer = null;
+    }
+  }
 }
 
 function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0) {
