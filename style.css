@@ -280,6 +280,7 @@ body {
   inset: 0;
   z-index: 3000;
   pointer-events: none;
+  overflow: visible;
 }
 
 .map-control-btn {
@@ -359,7 +360,7 @@ body {
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
-  z-index: 3600;
+  z-index: 3800;
   pointer-events: auto;
   visibility: visible;
   opacity: 1;
