@@ -293,6 +293,9 @@ function normalizeData(data) {
         photos: extractLocationPhotos(loc),
         lat: Number(loc.lat),
         lng: Number(loc.lng),
+        zoom: Number(loc.zoom),
+        pitch: Number(loc.pitch),
+        bearing: Number(loc.bearing),
         categoryId,
         categoryName,
         color: normalizeColor(category?.color || loc.color),
@@ -927,17 +930,18 @@ function openLocation(location, fly) {
   renderDetail(location);
 
   if (fly) {
+    const flyZoom = Number.isFinite(location.zoom) ? location.zoom : 20;
+    const flyPitch = Number.isFinite(location.pitch) ? location.pitch : 60;
+    const flyBearing = Number.isFinite(location.bearing) ? location.bearing : 0;
     map.flyTo({
       center: [location.lng, location.lat],
-      zoom: Math.max(17.2, map.getZoom()),
-      pitch: DEFAULT_PITCH,
-      bearing: DEFAULT_BEARING,
-      curve: 1.35,
-      speed: 0.92,
-      essential: true,
-      offset: getDetailAwareFlyOffset()
+      zoom: flyZoom,
+      pitch: flyPitch,
+      bearing: flyBearing,
+      duration: 800
     });
   }
+  showAnchorPopup(location, [location.lng, location.lat], true);
 
   if (window.innerWidth <= 960) {
     closeMobileSidebar();
