@@ -382,6 +382,7 @@ function bindUi() {
 
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
   document.getElementById('mobile-categories-btn').addEventListener('click', toggleSidebar);
+  document.getElementById('mobile-peek-bar')?.addEventListener('click', () => setMobileSidebarOpen(true));
   document.getElementById('style-venue-btn').addEventListener('click', () => setMapStyle('venue'));
   document.getElementById('style-satellite-btn').addEventListener('click', () => setMapStyle('satellite'));
   document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebar);
