@@ -40,7 +40,8 @@ const appState = {
   venueStyleUrl: STYLE_FALLBACK,
   satelliteStyleUrl: SATELLITE_STYLE_FALLBACK,
   filtersInitialized: false,
-  totalLocationCount: 0
+  totalLocationCount: 0,
+  detailClosing: false
 };
 
 const ICON_SVGS = {
@@ -191,7 +192,7 @@ function normalizeData(data) {
 
   appState.filteredLocations = [...appState.locations];
   appState.totalLocationCount = appState.locations.length;
-  appState.filtersInitialized = true;
+  appState.filtersInitialized = false;
 
   // Ensure category counts match the rendered data.
   const computedCounts = new Map();
@@ -603,13 +604,24 @@ function renderDetail(location) {
   `;
 
   panel.hidden = false;
+  panel.classList.remove('is-closing');
   panel.classList.add('is-open');
+  appState.detailClosing = false;
 }
 
 function closeDetailPanel() {
   const panel = document.getElementById('detail-panel');
+  if (!panel || panel.hidden || appState.detailClosing) return;
+  appState.detailClosing = true;
+  panel.classList.add('is-closing');
   panel.classList.remove('is-open');
-  panel.hidden = true;
+  const finalizeClose = () => {
+    panel.hidden = true;
+    panel.classList.remove('is-closing');
+    appState.detailClosing = false;
+    panel.removeEventListener('transitionend', finalizeClose);
+  };
+  panel.addEventListener('transitionend', finalizeClose);
 }
 
 function toggleSidebar() {
@@ -654,7 +666,9 @@ function updateFilterCount() {
     requestAnimationFrame(updateFilterCount);
     return;
   }
-  const total = appState.filteredLocations?.length ?? appState.locations?.length ?? 0;
+  const total = appState.filtersInitialized
+    ? (appState.filteredLocations?.length ?? appState.locations?.length ?? 0)
+    : (appState.locations?.length ?? 0);
   appState.totalLocationCount = appState.locations?.length ?? 0;
   countEl.textContent = `(${total})`;
   updateMobileCategoriesButton(total);
