@@ -24,7 +24,7 @@ const LAYER_POINT_ICONS = 'location-point-icons';
 const LAYER_SELECTED = 'location-selected';
 const UNCATEGORIZED_ID = '__uncategorized__';
 const DEFAULT_COLOR = '#7a7a7a';
-const DEFAULT_MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright';
+const DEFAULT_MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright'; // fallback if no MAPTILER_KEY
 const FALLBACK_ICON_IMAGE_ID = 'category-icon-fallback';
 
 async function init() {
@@ -88,10 +88,20 @@ async function init() {
 }
 
 function resolveMapStyleUrl(styleUrl) {
-  const url = styleUrl || DEFAULT_MAP_STYLE;
-  if (window.MAPTILER_KEY && url.includes('YOUR_MAPTILER_KEY')) {
-    return url.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY);
+  const key = window.MAPTILER_KEY;
+  let url = styleUrl || DEFAULT_MAP_STYLE;
+
+  // Inject API key placeholder
+  if (key && url.includes('YOUR_MAPTILER_KEY')) {
+    url = url.replace(/YOUR_MAPTILER_KEY/g, key);
   }
+
+  // If we have a key but the style is still OpenFreeMap (default/fallback),
+  // upgrade to MapTiler Streets Essential to match MapMe's look exactly
+  if (key && url.includes('openfreemap.org')) {
+    url = `https://api.maptiler.com/maps/streets-v2/style.json?key=${key}`;
+  }
+
   return url;
 }
 
@@ -200,25 +210,27 @@ function initSidebarControls() {
   // Detail sheet close
   document.getElementById('detail-close')?.addEventListener('click', closeDetailSheet);
 
-  // Map style switcher (only include MapTiler styles if key is set)
-  const mapStyles = [{ name: 'Bright', url: 'https://tiles.openfreemap.org/styles/bright' }];
-  if (window.MAPTILER_KEY) {
-    mapStyles.push(
-      { name: 'Streets', url: `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}` },
-      { name: 'Satellite', url: `https://api.maptiler.com/maps/hybrid/style.json?key=${window.MAPTILER_KEY}` },
-      { name: 'Terrain', url: `https://api.maptiler.com/maps/topo-v2/style.json?key=${window.MAPTILER_KEY}` }
-    );
-  }
-  let currentStyleIdx = 0;
+  // Map style switcher — default is Streets Essential (matches MapMe), toggle to Satellite/Terrain
+  const mapStyles = window.MAPTILER_KEY ? [
+    { name: 'Streets',   label: '🛰️ Satellite', url: `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}` },
+    { name: 'Satellite', label: '🏔️ Terrain',   url: `https://api.maptiler.com/maps/hybrid/style.json?key=${window.MAPTILER_KEY}` },
+    { name: 'Terrain',   label: '🗺️ Streets',   url: `https://api.maptiler.com/maps/topo-v2/style.json?key=${window.MAPTILER_KEY}` }
+  ] : [
+    { name: 'Bright', label: '🗺️ Map', url: 'https://tiles.openfreemap.org/styles/bright' }
+  ];
+  let currentStyleIdx = 0; // start at Streets Essential
   const styleBtn = document.getElementById('map-style-btn');
-  if (mapStyles.length <= 1 && styleBtn) styleBtn.style.display = 'none';
-  styleBtn?.addEventListener('click', () => {
-    currentStyleIdx = (currentStyleIdx + 1) % mapStyles.length;
-    const style = mapStyles[currentStyleIdx];
-    map.setStyle(style.url);
-    styleBtn.textContent = `🗺️ ${style.name}`;
-    map.once('style.load', () => buildMapLayers());
-  });
+  if (styleBtn) {
+    styleBtn.textContent = mapStyles[0].label; // show what clicking will switch TO
+    if (mapStyles.length <= 1) styleBtn.style.display = 'none';
+    styleBtn.addEventListener('click', () => {
+      currentStyleIdx = (currentStyleIdx + 1) % mapStyles.length;
+      const style = mapStyles[currentStyleIdx];
+      map.setStyle(style.url);
+      styleBtn.textContent = style.label; // label of next destination
+      map.once('style.load', () => buildMapLayers());
+    });
+  }
 
   // Mobile bottom nav
   initMobileNav();

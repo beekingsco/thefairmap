@@ -17,10 +17,10 @@
   <meta name="description" content="Interactive vendor map for First Monday Trade Days in Canton, Texas. Find vendors, get directions, explore categories.">
 </head>
 <body>
-  <div id="app" class="sidebar-open">
+  <div id="app" class="sidebar-collapsed">
     <aside id="sidebar" aria-label="Location filters and list">
       <div class="sidebar-header">
-        <button id="sidebar-collapse" class="icon-btn" type="button" aria-label="Collapse sidebar">&#10094;</button>
+        <button id="sidebar-collapse" class="icon-btn" type="button" aria-label="Expand sidebar">&#10095;</button>
         <div class="sidebar-title-wrap">
           <h1 id="map-title">First Monday Finder</h1>
           <p id="map-subtitle">Canton, Texas</p>
@@ -52,13 +52,6 @@
     </aside>
 
     <main id="map-shell">
-      <header class="vfm-header" aria-label="TheFairMap heading">
-        <div class="vfm-logo-area">VFM</div>
-        <div class="vfm-header-copy">
-          <p class="vfm-kicker">Visit First Monday</p>
-          <h2>TheFairMap</h2>
-        </div>
-      </header>
       <button id="mobile-sidebar-toggle" class="map-floating-btn" type="button" aria-label="Open filters" aria-expanded="false" hidden>
         <span class="hamburger-icon">&#9776;</span>
         <span>Filters</span>

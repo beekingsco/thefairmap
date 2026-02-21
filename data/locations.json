@@ -10,7 +10,7 @@
     "maxZoom": 20,
     "pitch": 60,
     "bearing": 0,
-    "style": "https://tiles.openfreemap.org/styles/bright"
+    "style": "https://api.maptiler.com/maps/streets-v2/style.json?key=YOUR_MAPTILER_KEY"
   },
   "categories": [
     {
@@ -1193,7 +1193,7 @@
     {
       "id": "f7683457-575b-422b-8fde-d14d13b64f62",
       "name": "Mule Barn",
-      "description": "<strong>Pavillion 2: Booth 35-37<br></strong>\n<p class=\"p1\">Mule Barn carries umm gee women’s regular and plus size. Baby and kids clothes Embroidered towels and sweatshirts . Leather and cowhide backpacks, purses and diaper bags. Warmies!</p>\n\n\n<br><br>",
+      "description": "<strong>Pavillion 2: Booth 35-37<br></strong>\n<p class=\"p1\">Mule Barn carries umm gee women\u2019s regular and plus size. Baby and kids clothes Embroidered towels and sweatshirts . Leather and cowhide backpacks, purses and diaper bags. Warmies!</p>\n\n\n<br><br>",
       "address": "-95.85983,32.56291",
       "lat": 32.56291,
       "lng": -95.859825,
@@ -1502,7 +1502,7 @@
     {
       "id": "b2e3cc73-0b36-49e7-96fd-bb9c3d4cfe19",
       "name": "Candyman",
-      "description": "<p><strong>Arbor1: 74-76 (Credit Card Accepted)</strong><br>We offer the highest quality freeze dried candy and snacks on the market! Come by and see what new items weve added to our collection!\n<br><br>Candyman creates unique candy experiences that surprise and delight. Our freeze-drying process transforms familiar favorites into extraordinary treats, offering new textures and intensified flavors that make every bite an adventure. Skittles, gummies, candy bars, and more it's the highest-quality freeze-dried candy on the market.</p><div><div><div><div><div><div><div>We offer the highest quality freeze dried candy and snacks on the market! Come by and see what new items we’ve added to our collection!</div></div></div></div></div></div></div><div><div><div><div><br></div><div><div><div><div><div><div><br></div></div></div></div></div></div></div></div></div>",
+      "description": "<p><strong>Arbor1: 74-76 (Credit Card Accepted)</strong><br>We offer the highest quality freeze dried candy and snacks on the market! Come by and see what new items weve added to our collection!\n<br><br>Candyman creates unique candy experiences that surprise and delight. Our freeze-drying process transforms familiar favorites into extraordinary treats, offering new textures and intensified flavors that make every bite an adventure. Skittles, gummies, candy bars, and more it's the highest-quality freeze-dried candy on the market.</p><div><div><div><div><div><div><div>We offer the highest quality freeze dried candy and snacks on the market! Come by and see what new items we\u2019ve added to our collection!</div></div></div></div></div></div></div><div><div><div><div><br></div><div><div><div><div><div><div><br></div></div></div></div></div></div></div></div></div>",
       "address": "-95.86155,32.56084",
       "lat": 32.56084217,
       "lng": -95.86154633,
@@ -1997,7 +1997,7 @@
     {
       "id": "526e9484-c616-41d4-bb5d-97329441df1a",
       "name": "Fat Dick's",
-      "description": "<strong>Pavilion 4000: Booth 4303-4305</strong><br>At Fat Dick’s Spice Company we offer Flavor that Penetrates!\n\nBBQ, Smoking, Seasoning, Grilling, Free Samples, Brisket!<br>",
+      "description": "<strong>Pavilion 4000: Booth 4303-4305</strong><br>At Fat Dick\u2019s Spice Company we offer Flavor that Penetrates!\n\nBBQ, Smoking, Seasoning, Grilling, Free Samples, Brisket!<br>",
       "address": "-95.86034,32.56583",
       "lat": 32.56585,
       "lng": -95.860335,
@@ -2723,7 +2723,7 @@
     {
       "id": "0ce7d620-b9e1-4b73-bf4e-70729bdc7ccf",
       "name": "Fairytale Footprints",
-      "description": "<strong>Pavilion 4500: Booth 4420-4423</strong><br>A children’s boutique that sells affordable and trendy clothes for boys and girls from newborn to size 12.<br>",
+      "description": "<strong>Pavilion 4500: Booth 4420-4423</strong><br>A children\u2019s boutique that sells affordable and trendy clothes for boys and girls from newborn to size 12.<br>",
       "address": "-95.86104,32.56554",
       "lat": 32.565517,
       "lng": -95.861056,
@@ -2899,7 +2899,7 @@
     {
       "id": "5fdea6a2-9469-4c4d-883e-a9ef1f565acf",
       "name": "Silver City USA",
-      "description": "<strong>Pavillion 4500: Booth&nbsp;<span>4478-4479</span></strong><br>\n\n<span>You really should shop “SILVER CITY USA” for all your “STERLING SILVER” jewelry. It’s the largest selection available for:</span>\n\n<br>* Rings<br>* Earings<br>* Chains<br>* Bracelets<br>* Pendants<br>* Charms<br>* Navajo Pearls<br>* Turquoise Stone (Rough &amp; Finished)<br>* Cabochon Stones<br>* Baby Jewelry<br><br>The Navajo, Zuni and Hoppi Indian turquoise selections must be seen.<br><br>We accept repairs and cleaning tasks well. Some jobs can be done same day on-site and some must be done later.<br><br>Come shop Silver City USA. You're gonna love it.",
+      "description": "<strong>Pavillion 4500: Booth&nbsp;<span>4478-4479</span></strong><br>\n\n<span>You really should shop \u201cSILVER CITY USA\u201d for all your \u201cSTERLING SILVER\u201d jewelry. It\u2019s the largest selection available for:</span>\n\n<br>* Rings<br>* Earings<br>* Chains<br>* Bracelets<br>* Pendants<br>* Charms<br>* Navajo Pearls<br>* Turquoise Stone (Rough &amp; Finished)<br>* Cabochon Stones<br>* Baby Jewelry<br><br>The Navajo, Zuni and Hoppi Indian turquoise selections must be seen.<br><br>We accept repairs and cleaning tasks well. Some jobs can be done same day on-site and some must be done later.<br><br>Come shop Silver City USA. You're gonna love it.",
       "address": "-95.86219,32.56386",
       "lat": 32.56385557,
       "lng": -95.86218944,
@@ -3439,7 +3439,7 @@
     {
       "id": "ed3d2d24-a6db-4b71-87aa-928cdbeba838",
       "name": "George Boutwell: Texas Artist",
-      "description": "<strong>Pavilion 1: Booth 7-8</strong><br><span>Texas’ Most Versatile Artist — 2006 Official Texas State Artist! George Boutwell’s art is available as Original Watercolors, Limited Edition Prints, Giclée (Framed Canvas), Unlimited Prints, Cards and Calendars and depicts Texas subjects including Western, Wildlife, Old Cars &amp; Trucks, Fishing, Seascapes, Old Houses, Churches, Courthouses, Old Barns, Windmills, Cowboys, Landscapes, Wildflowers, Thunderstorms, Old Country Stores, Movie Theaters &amp; Fifties Nostalgia. Come visit his booth and watch as George paints another masterpiece. Soak in his extensive gallery (including original framed paintings for sale!) and fall in love with your next favorite painting. Order online with your choice of size, matt and frame.<br><br><em>See more on his Facebook pages:</em> Facebook.com/GeorgeBoutwellTexasArtist&nbsp; &amp;. Facebook.com/GeorgeBoutwell</span><br>",
+      "description": "<strong>Pavilion 1: Booth 7-8</strong><br><span>Texas\u2019 Most Versatile Artist \u2014 2006 Official Texas State Artist! George Boutwell\u2019s art is available as Original Watercolors, Limited Edition Prints, Gicl\u00e9e (Framed Canvas), Unlimited Prints, Cards and Calendars and depicts Texas subjects including Western, Wildlife, Old Cars &amp; Trucks, Fishing, Seascapes, Old Houses, Churches, Courthouses, Old Barns, Windmills, Cowboys, Landscapes, Wildflowers, Thunderstorms, Old Country Stores, Movie Theaters &amp; Fifties Nostalgia. Come visit his booth and watch as George paints another masterpiece. Soak in his extensive gallery (including original framed paintings for sale!) and fall in love with your next favorite painting. Order online with your choice of size, matt and frame.<br><br><em>See more on his Facebook pages:</em> Facebook.com/GeorgeBoutwellTexasArtist&nbsp; &amp;. Facebook.com/GeorgeBoutwell</span><br>",
       "address": "-95.86117,32.56273",
       "lat": 32.56273028,
       "lng": -95.86116587,
@@ -3923,7 +3923,7 @@
     {
       "id": "af7593ef-cfdb-4003-869e-079b22a81453",
       "name": "Spinning My Wheels",
-      "description": "<strong>Pavilion 2: Booth 17-18</strong><br>Vinyl record booth specializing in used vinyl, CDs, and cassettes of your favorite music from the past. Find collectible pop culture like Harry Potter, Pokémon, Star Wars, in toys, posters, and stickers, along with DVDs and Blu-ray. Also, offering Hi-Fi receivers, turn tables, speakers. Come spin your wheels with us!<br>",
+      "description": "<strong>Pavilion 2: Booth 17-18</strong><br>Vinyl record booth specializing in used vinyl, CDs, and cassettes of your favorite music from the past. Find collectible pop culture like Harry Potter, Pok\u00e9mon, Star Wars, in toys, posters, and stickers, along with DVDs and Blu-ray. Also, offering Hi-Fi receivers, turn tables, speakers. Come spin your wheels with us!<br>",
       "address": "-95.86037,32.56312",
       "lat": 32.56311789,
       "lng": -95.8603719,
@@ -4353,7 +4353,7 @@
     {
       "id": "871ff244-6d72-4c62-a618-c12d41b6e7ae",
       "name": "Ficklefink Pottery",
-      "description": "<strong>Arbors 2: 132-133</strong><br><span>Discover the charm of handcrafted at Ficklefink Pottery! Joel’s wheel-thrown pieces are full of heart, texture, and personality. From sunflower bowls to everyday favorites, each piece tells a story. Stop in and find the one that speaks to you!</span><br>",
+      "description": "<strong>Arbors 2: 132-133</strong><br><span>Discover the charm of handcrafted at Ficklefink Pottery! Joel\u2019s wheel-thrown pieces are full of heart, texture, and personality. From sunflower bowls to everyday favorites, each piece tells a story. Stop in and find the one that speaks to you!</span><br>",
       "address": "-95.86122,32.56096",
       "lat": 32.56096202,
       "lng": -95.86122014,
@@ -5622,7 +5622,7 @@
     {
       "id": "21a66857-6c61-4e7b-bee3-bdabeade45d4",
       "name": "Baffo Candy Co.",
-      "description": "<span><strong>Trade Center 3: Booth 115 <br></strong>Baffo Candy Co. is best known for nostalgic, handmade candy that sparks joy. We craft glass candy, marshmallows, candied nuts, toffee, and chocolate treats—all from scratch, with bold flavors and a retro twist.</span>",
+      "description": "<span><strong>Trade Center 3: Booth 115 <br></strong>Baffo Candy Co. is best known for nostalgic, handmade candy that sparks joy. We craft glass candy, marshmallows, candied nuts, toffee, and chocolate treats\u2014all from scratch, with bold flavors and a retro twist.</span>",
       "address": "-95.86238,32.56099",
       "lat": 32.56099366,
       "lng": -95.8623784,
@@ -5743,7 +5743,7 @@
     {
       "id": "9e8dfbd2-b7c2-4d10-b798-0659bc0edaaa",
       "name": "Gibbs Knives and Wholesale Sports",
-      "description": "<span><strong>Row 46: The Porch<br></strong>We sale Gibbs Custom Hand made knives .  Swords, knives, hunting equipment, Bigfoot novelty, wildlife Art, ect…..</span>",
+      "description": "<span><strong>Row 46: The Porch<br></strong>We sale Gibbs Custom Hand made knives .  Swords, knives, hunting equipment, Bigfoot novelty, wildlife Art, ect\u2026..</span>",
       "address": "-95.86273,32.56139",
       "lat": 32.561394,
       "lng": -95.86273328,
@@ -6072,7 +6072,7 @@
     },
     {
       "id": "fdc487a9-2887-4581-9908-04bb4467cff7",
-      "name": "Gumbeaux’s Cajun Cafe",
+      "name": "Gumbeaux\u2019s Cajun Cafe",
       "description": "<span>The Best Cajun Food Around!\n\nBreakfast: Biscuits &amp; Gravy, hash brown casserole, breakfast tacos, etc\n\nLunch: Gumbo, Gator Toes. Cajun Egg roll, Boudin, Red Beans and Rice, Loaded Cajun Tator Tots, and MORE!!! \n\nDrinks, Bread Pudding, Frozen Custard!</span>",
       "address": "-95.86259,32.56059",
       "lat": 32.56058911,
@@ -6083,7 +6083,7 @@
     },
     {
       "id": "8574ecc7-bd31-4570-a9a0-64412cc7c0ec",
-      "name": "Taspens’s Organics",
+      "name": "Taspens\u2019s Organics",
       "description": "<strong>Trade Center 3: Booth 118<br></strong>We handcraft over 200 organic healing and wellness products. We offer magnesium creams, facial care, topicals for pain relief, skin calming creams and more!",
       "address": "-95.86243,32.56092",
       "lat": 32.56092373,
@@ -6094,8 +6094,8 @@
     },
     {
       "id": "a3087d6f-7620-452d-8ad2-ee0d443e518f",
-      "name": "Boudro’s Wild Engraving",
-      "description": "<span><strong>Trade Center 3: 109<br></strong>Boudro’s Wild Engraving specializes in custom laser engraving at Canton Trade Days. We personalize knives, tumblers, dog tags, keychains, cutting boards, crosses, gifts, leather, metal, and wood using laser engraving—unique, fast, and detailed!</span>",
+      "name": "Boudro\u2019s Wild Engraving",
+      "description": "<span><strong>Trade Center 3: 109<br></strong>Boudro\u2019s Wild Engraving specializes in custom laser engraving at Canton Trade Days. We personalize knives, tumblers, dog tags, keychains, cutting boards, crosses, gifts, leather, metal, and wood using laser engraving\u2014unique, fast, and detailed!</span>",
       "address": "-95.86228,32.56114",
       "lat": 32.56113586,
       "lng": -95.86228406,
@@ -6237,7 +6237,7 @@
     },
     {
       "id": "c3a6455b-903d-4559-bebe-95fa0d72137a",
-      "name": "Angela’s Antiques",
+      "name": "Angela\u2019s Antiques",
       "description": "<span>Antiques, Collectibles, Furniture, Home Decor, Vintage, Jewelry and Glassware</span>",
       "address": "-95.86075,32.55965",
       "lat": 32.55965082,
@@ -7184,7 +7184,7 @@
     {
       "id": "eb550720-38b2-4b8f-8c09-14e9a03e8839",
       "name": "Pink Daisies Boutique",
-      "description": "<strong>Walkway By Creek: 10a,10</strong><br>Women’s Apparel and Beverages (coffee, lattes, Lotus and Smoothies<br>",
+      "description": "<strong>Walkway By Creek: 10a,10</strong><br>Women\u2019s Apparel and Beverages (coffee, lattes, Lotus and Smoothies<br>",
       "address": "-95.86044,32.56372",
       "lat": 32.56372499,
       "lng": -95.86044237,
@@ -7228,7 +7228,7 @@
     {
       "id": "d5d5995b-377d-4988-9bbb-dd3291523e46",
       "name": "A Lucy Thing",
-      "description": "<strong>Walkway By Creek: 55,56,57<br></strong>License Plate Art, Creative Wall Decor<br>At A LUCY thing! we do it all! We build pretty much anything you could look for out of wood. Be it a bar for the man-cave or back patio or a box to store extra TP in, we’ve got it all! We recycle/ upcycle all sorts of things into tables, lamps, benches, you name it. Our spring specialty is planters. We have several different kinds to choose from. In the fall/winter, we are the snowman people. We build wooden snowmen from Ash trees cut on our own family farm! We also do wooden Christmas trees and a wide variety of gifts with a random antique beauty thrown in here and there. At A LUCY thing we like to say, authentically old, but new just for you!<br><br>",
+      "description": "<strong>Walkway By Creek: 55,56,57<br></strong>License Plate Art, Creative Wall Decor<br>At A LUCY thing! we do it all! We build pretty much anything you could look for out of wood. Be it a bar for the man-cave or back patio or a box to store extra TP in, we\u2019ve got it all! We recycle/ upcycle all sorts of things into tables, lamps, benches, you name it. Our spring specialty is planters. We have several different kinds to choose from. In the fall/winter, we are the snowman people. We build wooden snowmen from Ash trees cut on our own family farm! We also do wooden Christmas trees and a wide variety of gifts with a random antique beauty thrown in here and there. At A LUCY thing we like to say, authentically old, but new just for you!<br><br>",
       "address": "-95.86052,32.56354",
       "lat": 32.56353707,
       "lng": -95.86051819,
@@ -7404,7 +7404,7 @@
     {
       "id": "c85ce117-1b6d-49b3-845a-592b5162013f",
       "name": "Avon, Origami Owl & Vintage Variety",
-      "description": "<strong>Walkway By Creek: 62,63,6<br></strong><span>Unique Finds &amp; Timeless Treasures Explore a curated mix of handcrafted beauty and vintage charm. I offer an eclectic collection that includes Avon beauty products, Origami Owl customizable jewelry, vintage and artisan jewelry, collectible model cars, original photography, handmade art, and custom metal signs and décor. Whether you're looking for meaningful gifts, nostalgic keepsakes, or bold statement pieces for your home, you'll find something truly unique here. Every item is thoughtfully selected or crafted—celebrating creativity, history, and personal expression.</span><br>",
+      "description": "<strong>Walkway By Creek: 62,63,6<br></strong><span>Unique Finds &amp; Timeless Treasures Explore a curated mix of handcrafted beauty and vintage charm. I offer an eclectic collection that includes Avon beauty products, Origami Owl customizable jewelry, vintage and artisan jewelry, collectible model cars, original photography, handmade art, and custom metal signs and d\u00e9cor. Whether you're looking for meaningful gifts, nostalgic keepsakes, or bold statement pieces for your home, you'll find something truly unique here. Every item is thoughtfully selected or crafted\u2014celebrating creativity, history, and personal expression.</span><br>",
       "address": "-95.8608,32.56346",
       "lat": 32.56346007,
       "lng": -95.86080343,
@@ -7635,7 +7635,7 @@
     {
       "id": "c55132ea-c0ed-40b6-9d03-ee265800fa51",
       "name": "JST Ranch & Timber, LLC - Tractor & Skid-Steer Attachments",
-      "description": "<span><strong>CityFields: <span>492427, 492428, 502392, 502393</span><br></strong>JST Ranch &amp; Timber, LLC, located in Poetry, TX, proudly offers a rugged lineup of tractor, skid-steer, and mini skid-steer attachments built for hard work on the ranch, jobsite, or homestead. Whether you’re moving hay, clearing brush, grading land, or tackling dirt work, we supply heavy-duty attachments that are made to last — including: • Grapples • Pallet forks • Land planes • Brush cutter blades &amp; hubs • Bucket teeth &amp; cutting edges • Hydraulic couplers, hoses, and cylinder kits All attachments are Made in the USA and compatible with standard quick-attach systems, including those for John Deere, Bobcat, Kubota, Toro Dingo, and more. We also stock a wide range of repair parts and wear items to keep your equipment operating smoothly all year long. As a family-run business in rural Texas, we understand the demands of ag, land clearing, and ranch work — and we back every product with real-world experience and dependable customer support. Stop by our booth to see, touch, and feel the quality of our attachments in person. We welcome questions and are happy to help you find the right solution for your property or operation. Made in the USA attachments, tractor attachments, skid steer attachments, mini skid steer, grapples, pallet forks, land plane, brush cutter parts, quick attach, loader implements, hay spear, construction attachments, equipment dealer, JST Ranch &amp; Timber, Poetry TX, Canton Texas vendor</span>",
+      "description": "<span><strong>CityFields: <span>492427, 492428, 502392, 502393</span><br></strong>JST Ranch &amp; Timber, LLC, located in Poetry, TX, proudly offers a rugged lineup of tractor, skid-steer, and mini skid-steer attachments built for hard work on the ranch, jobsite, or homestead. Whether you\u2019re moving hay, clearing brush, grading land, or tackling dirt work, we supply heavy-duty attachments that are made to last \u2014 including: \u2022 Grapples \u2022 Pallet forks \u2022 Land planes \u2022 Brush cutter blades &amp; hubs \u2022 Bucket teeth &amp; cutting edges \u2022 Hydraulic couplers, hoses, and cylinder kits All attachments are Made in the USA and compatible with standard quick-attach systems, including those for John Deere, Bobcat, Kubota, Toro Dingo, and more. We also stock a wide range of repair parts and wear items to keep your equipment operating smoothly all year long. As a family-run business in rural Texas, we understand the demands of ag, land clearing, and ranch work \u2014 and we back every product with real-world experience and dependable customer support. Stop by our booth to see, touch, and feel the quality of our attachments in person. We welcome questions and are happy to help you find the right solution for your property or operation. Made in the USA attachments, tractor attachments, skid steer attachments, mini skid steer, grapples, pallet forks, land plane, brush cutter parts, quick attach, loader implements, hay spear, construction attachments, equipment dealer, JST Ranch &amp; Timber, Poetry TX, Canton Texas vendor</span>",
       "address": "-95.86471,32.5627",
       "lat": 32.56175607,
       "lng": -95.86352898,
@@ -7668,7 +7668,7 @@
     {
       "id": "82a486bc-c91a-4cd6-b22b-0702ed3c294e",
       "name": "Yesterland Farm",
-      "description": "<span>Enter for <em>your chance to win big</em> with our Yesterland Farm giveaway. <strong>One lucky winner will take home a brand-new PIT BOSS® Grill</strong>—perfect for backyard barbecues and family gatherings. <strong>Two additional winners will receive a Family 4-Pack of VIP tickets to their choice</strong> of either the Fall Festival or the Christmas Carnival at Yesterland Farm, a $230 value. Whether you prefer pumpkins or holiday lights, this is your chance to enjoy the season in style. Enter now and make unforgettable memories with your family.</span>",
+      "description": "<span>Enter for <em>your chance to win big</em> with our Yesterland Farm giveaway. <strong>One lucky winner will take home a brand-new PIT BOSS\u00ae Grill</strong>\u2014perfect for backyard barbecues and family gatherings. <strong>Two additional winners will receive a Family 4-Pack of VIP tickets to their choice</strong> of either the Fall Festival or the Christmas Carnival at Yesterland Farm, a $230 value. Whether you prefer pumpkins or holiday lights, this is your chance to enjoy the season in style. Enter now and make unforgettable memories with your family.</span>",
       "address": "-95.86094,32.56466",
       "lat": 32.564545988414224,
       "lng": -95.86174184915012,
@@ -7877,7 +7877,7 @@
     },
     {
       "id": "d1ef669e-7fae-4ae7-b5ba-b38c316f3112",
-      "name": "Robin’s Monogram Room",
+      "name": "Robin\u2019s Monogram Room",
       "description": "<strong>Pavilion 2: Booth 26-27</strong><br>Dog breed gifts, embroidered gifts",
       "address": "-95.86174,32.5611",
       "lat": 32.563025034210824,
@@ -8123,7 +8123,7 @@
     {
       "id": "d036c501-b546-4ba0-855b-4fbc0d0fd16d",
       "name": "Cool Southern Vintage Charm",
-      "description": "<strong>Row 46</strong><br>Pillow Covers / antiques<br>Everyday &amp; seasonal pillow covers, designer wreaths, ribbon garlands, vintage antiques &amp;\nhandmade gift and décor items.<br><br>Where Vintage &amp; Ribbon Collide ✨<br>Discover a one-of-a-kind handmade shop filled with <strong>everyday and seasonal pillow covers</strong>\n(indoor/outdoor, machine washable), <strong>designer wreaths</strong> for your <strong>front door or double doors</strong>,\nand <strong>ribbon garlands</strong> for every occasion. Each wreath is crafted with <strong>faux greenery, florals,\ndesigner ribbons, and unique embellishments</strong>, creating timeless pieces for your home.<br><br>\nLooking for something extra special? Browse my <strong>vintage antiques</strong>—from dishes, tea pots, and\nserving ware to crochet treasures, collectibles, and records. Shoppers also love my<strong> handmade\nkeepsake gift card holders</strong> for all occasions and my <strong>tier tray and vignette décor</strong> that\ncompletes any cozy home display.\n<br><br>Whether you’re decorating your home, searching for a thoughtful gift, or hunting for a vintage\nfind, you’ll love my <strong>handmade, one-of-a-kind creations</strong>. Come explore my shop—where every\npiece tells a story.<br>",
+      "description": "<strong>Row 46</strong><br>Pillow Covers / antiques<br>Everyday &amp; seasonal pillow covers, designer wreaths, ribbon garlands, vintage antiques &amp;\nhandmade gift and d\u00e9cor items.<br><br>Where Vintage &amp; Ribbon Collide \u2728<br>Discover a one-of-a-kind handmade shop filled with <strong>everyday and seasonal pillow covers</strong>\n(indoor/outdoor, machine washable), <strong>designer wreaths</strong> for your <strong>front door or double doors</strong>,\nand <strong>ribbon garlands</strong> for every occasion. Each wreath is crafted with <strong>faux greenery, florals,\ndesigner ribbons, and unique embellishments</strong>, creating timeless pieces for your home.<br><br>\nLooking for something extra special? Browse my <strong>vintage antiques</strong>\u2014from dishes, tea pots, and\nserving ware to crochet treasures, collectibles, and records. Shoppers also love my<strong> handmade\nkeepsake gift card holders</strong> for all occasions and my <strong>tier tray and vignette d\u00e9cor</strong> that\ncompletes any cozy home display.\n<br><br>Whether you\u2019re decorating your home, searching for a thoughtful gift, or hunting for a vintage\nfind, you\u2019ll love my <strong>handmade, one-of-a-kind creations</strong>. Come explore my shop\u2014where every\npiece tells a story.<br>",
       "address": "32.562002,-95.862536",
       "lat": 32.562002,
       "lng": -95.862536,
@@ -8409,7 +8409,7 @@
     {
       "id": "00a0f05b-8489-46d9-b87e-bb381470c782",
       "name": "Jeff Allen Concert",
-      "description": "The Arbors Entrance<br>2-3pm, November 29th<br>They say Old Dominion once opened for him—and if you’ve ever seen <strong data-start=\"590\" data-end=\"604\">Jeff Allen</strong> live, you know why. A hometown favorite with true country roots, Jeff delivers classic Texas vibes wrapped in holiday cheer. This season’s Merry Tex-mas concert is on us, so <strong data-start=\"779\" data-end=\"807\">come celebrate for free!</strong><br>",
+      "description": "The Arbors Entrance<br>2-3pm, November 29th<br>They say Old Dominion once opened for him\u2014and if you\u2019ve ever seen <strong data-start=\"590\" data-end=\"604\">Jeff Allen</strong> live, you know why. A hometown favorite with true country roots, Jeff delivers classic Texas vibes wrapped in holiday cheer. This season\u2019s Merry Tex-mas concert is on us, so <strong data-start=\"779\" data-end=\"807\">come celebrate for free!</strong><br>",
       "address": "32.561696,-95.860091",
       "lat": 32.561696,
       "lng": -95.860091,
@@ -8420,7 +8420,7 @@
     {
       "id": "b402a80d-3894-4464-bc31-f2752453c0e8",
       "name": "Jolly's Sweet Retreat",
-      "description": "Craving something sweet or refreshing? Stop by Jolly’s Sweet Retreat, your one-stop dessert trailer for everyone’s favorite treats! 🍧🍦\n\nWe’re serving up creamy soft serve ice cream (vanilla, chocolate, or swirl), indulgent sundaes, classic floats, cookie sandwiches, refreshing shaved ice in a rainbow of flavors &amp; more! 🍨\n<br><br>\nNeed something to sip? Try our Italian soda, homemade sweet or un-sweet tea, fresh-squeezed lemonade or a frozen version for that perfect cool-down. 🍋☀️\n\nAnd for all the coffee lovers — we’ve got you covered too! From hot coffees and cappuccinos to iced lattes and specialty brews, you’ll find your favorite pick-me-up right here. ☕❄️ <br><br>Whether you’re cooling off, waking up, or treating yourself, Jolly’s Sweet Retreat has the perfect drink or dessert to make your day a little sweeter. 💛\n\n👉 Come find us at First Monday and treat yourself to a little happiness — the Jolly way!",
+      "description": "Craving something sweet or refreshing? Stop by Jolly\u2019s Sweet Retreat, your one-stop dessert trailer for everyone\u2019s favorite treats! \ud83c\udf67\ud83c\udf66\n\nWe\u2019re serving up creamy soft serve ice cream (vanilla, chocolate, or swirl), indulgent sundaes, classic floats, cookie sandwiches, refreshing shaved ice in a rainbow of flavors &amp; more! \ud83c\udf68\n<br><br>\nNeed something to sip? Try our Italian soda, homemade sweet or un-sweet tea, fresh-squeezed lemonade or a frozen version for that perfect cool-down. \ud83c\udf4b\u2600\ufe0f\n\nAnd for all the coffee lovers \u2014 we\u2019ve got you covered too! From hot coffees and cappuccinos to iced lattes and specialty brews, you\u2019ll find your favorite pick-me-up right here. \u2615\u2744\ufe0f <br><br>Whether you\u2019re cooling off, waking up, or treating yourself, Jolly\u2019s Sweet Retreat has the perfect drink or dessert to make your day a little sweeter. \ud83d\udc9b\n\n\ud83d\udc49 Come find us at First Monday and treat yourself to a little happiness \u2014 the Jolly way!",
       "address": "32.565944,-95.860164",
       "lat": 32.565944,
       "lng": -95.860164,
@@ -8430,7 +8430,7 @@
     },
     {
       "id": "152e7568-7efc-4588-a8de-7a1f14544dad",
-      "name": "JoJo’s Pet Boutique",
+      "name": "JoJo\u2019s Pet Boutique",
       "description": "<strong>Pavillion 4500: 4418-4419<br></strong>Everything for your fur babies. Pet collars, harnesses, leashes, clothes, jackets, food and water bowls, toys, beds, and more. We even have pet themed Human things. Adults and Kids clothes also gifts.",
       "address": "32.5656,-95.860996",
       "lat": 32.5656,

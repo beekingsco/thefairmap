@@ -1,6 +1,6 @@
 :root {
   --sidebar-width: 360px;
-  --sidebar-width-collapsed: 0px;
+  --sidebar-width-collapsed: 40px;
   --surface: #ffffff;
   --surface-muted: #f5f6f7;
   --text-primary: #1e2328;
@@ -48,6 +48,48 @@ body {
 
 #app.sidebar-collapsed {
   grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+}
+
+/* When collapsed: only the toggle button shows in the 40px strip */
+#app.sidebar-collapsed #sidebar {
+  background: transparent;
+  border-right: none;
+}
+#app.sidebar-collapsed .sidebar-header {
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+#app.sidebar-collapsed .sidebar-title-wrap,
+#app.sidebar-collapsed .sidebar-search,
+#app.sidebar-collapsed .sidebar-actions,
+#app.sidebar-collapsed .category-panel,
+#app.sidebar-collapsed .location-panel {
+  display: none;
+}
+#app.sidebar-collapsed #sidebar-collapse {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 48px;
+  border-radius: 0 8px 8px 0;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.14);
+  box-shadow: 2px 0 8px rgba(0,0,0,0.12);
+  backdrop-filter: blur(4px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #334155;
 }
 
 #sidebar {
