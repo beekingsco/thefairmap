@@ -335,17 +335,17 @@ function buildLayers() {
         ['boolean', ['feature-state', 'hover'], false],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 12.4,
-          16, 15.3,
-          17.5, 17.3,
-          20, 20.2
+          14, 12.6,
+          16, 15.5,
+          17.5, 17.4,
+          20, 20.4
         ],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 11.0,
-          16, 13.7,
-          17.5, 15.7,
-          20, 18.1
+          14, 11.2,
+          16, 13.9,
+          17.5, 15.9,
+          20, 18.3
         ]
       ],
       'circle-stroke-width': [
@@ -382,13 +382,13 @@ function buildLayers() {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
       'icon-allow-overlap': false,
       'icon-ignore-placement': false,
-      'icon-padding': 14,
+      'icon-padding': 18,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.42,
-        16, 0.5,
-        17.5, 0.58,
-        20, 0.68
+        14, 0.4,
+        16, 0.49,
+        17.5, 0.56,
+        20, 0.66
       ]
     }
   });
@@ -708,8 +708,11 @@ function renderDetail(location) {
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
 
   content.innerHTML = `
-    <h2 class="detail-title">${escapeHtml(location.name)}</h2>
-    <div class="detail-badge" style="background:${color};color:${pickTextColor(color)};">${escapeHtml(categoryName)}</div>
+    <header class="detail-header">
+      <p class="detail-label">Vendor</p>
+      <h2 class="detail-title">${escapeHtml(location.name)}</h2>
+      <div class="detail-badge" style="background:${color};color:${pickTextColor(color)};">${escapeHtml(categoryName)}</div>
+    </header>
     ${galleryHtml}
     <div class="detail-description">${description}</div>
     ${location.address ? `<p class="detail-address">${escapeHtml(location.address)}</p>` : ''}
@@ -801,8 +804,8 @@ function updateFilterCount() {
     locations: appState.locations.length,
     filtered: filteredCount
   });
-  countEl.textContent = `(${filteredCount})`;
-  updateMobileCategoriesButton(filteredCount);
+  countEl.textContent = `(${appState.totalLocationCount})`;
+  updateMobileCategoriesButton(appState.totalLocationCount);
 }
 
 function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0) {
@@ -901,7 +904,7 @@ function iconIdFromFile(fileName) {
 
 function normalizeColor(input) {
   if (typeof input !== 'string' || !input.startsWith('#')) return '#7a7a7a';
-  if (input.length === 9) return input.slice(0, 7);
+  if (input.length === 9) return input.toLowerCase();
   if (input.length === 7) return input;
   return '#7a7a7a';
 }

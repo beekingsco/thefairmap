@@ -286,6 +286,16 @@ body {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.map-control-btn:hover {
+  border-color: #b8bec9;
+  box-shadow: 0 4px 10px rgba(16, 24, 40, 0.16);
+}
+
+.map-control-btn:active {
+  transform: translateY(1px);
 }
 
 .map-control-btn.is-active {
@@ -332,8 +342,8 @@ body {
 
 .style-controls {
   position: absolute;
-  top: max(12px, env(safe-area-inset-top));
-  right: 14px;
+  top: max(10px, env(safe-area-inset-top));
+  right: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -345,8 +355,8 @@ body {
 }
 
 .map-style-btn {
-  min-width: 144px;
-  height: 36px;
+  min-width: 138px;
+  height: 35px;
   border-radius: 999px;
   justify-content: center;
   font-weight: 700;
@@ -363,13 +373,13 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(420px, 33vw);
+  width: min(404px, 32vw);
   background: #fff;
   border-left: 1px solid var(--line);
   box-shadow: -6px 0 28px rgba(16, 24, 40, 0.16);
-  z-index: 8;
+  z-index: 4200;
   transform: translateX(100%);
-  transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.24s cubic-bezier(0.22, 0.86, 0.36, 1);
   will-change: transform;
 }
 
@@ -394,13 +404,25 @@ body {
 .detail-content {
   height: 100%;
   overflow: auto;
-  padding: 20px 16px 22px;
+  padding: 18px 16px 28px;
+}
+
+.detail-header {
+  padding-right: 34px;
+}
+
+.detail-label {
+  margin: 2px 0 8px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .detail-title {
   margin: 0;
-  padding-right: 34px;
-  font-size: 22px;
+  font-size: 23px;
   line-height: 1.2;
 }
 
@@ -408,16 +430,21 @@ body {
   display: inline-flex;
   margin-top: 10px;
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 5px 11px;
   font-size: 12px;
   font-weight: 700;
 }
 
 .detail-gallery {
-  margin-top: 14px;
+  margin-top: 16px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.detail-photo:first-child {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
 }
 
 .detail-photo {
@@ -464,15 +491,15 @@ body {
 }
 
 .detail-description {
-  margin-top: 14px;
-  font-size: 13px;
-  line-height: 1.45;
-  color: #4a4a4a;
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.54;
+  color: #344054;
 }
 
 .detail-address {
-  margin: 12px 0 0;
-  font-size: 12px;
+  margin: 10px 0 0;
+  font-size: 13px;
   color: #667085;
 }
 
@@ -498,6 +525,7 @@ body {
   cursor: pointer;
   text-decoration: none;
   flex: 1 1 140px;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .detail-btn.primary {
@@ -506,11 +534,20 @@ body {
   color: #fff;
 }
 
+.detail-btn.primary:hover {
+  background: #1f1f1f;
+  border-color: #1f1f1f;
+}
+
+.detail-btn:hover {
+  border-color: #98a2b3;
+}
+
 #mobile-scrim {
   position: fixed;
   inset: 0;
   background: rgba(16, 24, 40, 0.45);
-  z-index: 4;
+  z-index: 4100;
 }
 
 .map-anchor-popup .maplibregl-popup-content {
@@ -553,7 +590,7 @@ body {
     transform: translateY(104%);
     transition: transform 0.24s ease;
     box-shadow: 0 -8px 26px rgba(16, 24, 40, 0.2);
-    z-index: 6;
+    z-index: 4200;
   }
 
   #sidebar::before {
@@ -578,7 +615,7 @@ body {
     top: auto;
     bottom: 0;
     width: 100%;
-    max-height: 74dvh;
+    max-height: 82dvh;
     border-left: 0;
     border-top: 1px solid var(--line);
     border-radius: 16px 16px 0 0;
@@ -602,19 +639,33 @@ body {
   }
 
   .detail-content {
-    padding-top: 22px;
-    padding-bottom: 30px;
+    padding-top: 24px;
+    padding-bottom: 34px;
   }
 
   .maplibregl-ctrl-top-right {
-    top: 104px;
+    top: 136px;
+    right: 8px;
+  }
+
+  .style-controls {
+    top: max(56px, calc(env(safe-area-inset-top) + 6px));
+    right: 8px;
+    gap: 6px;
+  }
+
+  .map-style-btn {
+    min-width: 122px;
+    height: 34px;
+    font-size: 12px;
+    padding: 0 10px;
   }
 
   .mobile-categories-btn {
     display: inline-flex;
     position: fixed;
     left: 12px;
-    top: max(12px, env(safe-area-inset-top));
+    top: max(10px, env(safe-area-inset-top));
     transform: none;
     border-radius: 999px;
     min-width: 124px;
