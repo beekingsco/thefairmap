@@ -28,7 +28,8 @@ const appState = {
   activeMapStyle: 'venue',
   venueStyleUrl: STYLE_FALLBACK,
   satelliteStyleUrl: SATELLITE_STYLE_FALLBACK,
-  filtersInitialized: false
+  filtersInitialized: false,
+  totalLocationCount: 0
 };
 
 const ICON_SVGS = {
@@ -176,6 +177,7 @@ function normalizeData(data) {
   }
 
   appState.filteredLocations = [...appState.locations];
+  appState.totalLocationCount = appState.locations.length;
   appState.filtersInitialized = true;
 
   // Ensure category counts match the rendered data.
@@ -608,7 +610,8 @@ function updateSidebarToggle(isOpen) {
 function updateFilterCount() {
   const countEl = document.getElementById('filters-count');
   if (!countEl) return;
-  countEl.textContent = `(${appState.locations.length})`;
+  const total = Number.isFinite(appState.totalLocationCount) ? appState.totalLocationCount : appState.locations.length;
+  countEl.textContent = `(${total || 0})`;
 }
 
 function updateMapStyleButtons() {
