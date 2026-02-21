@@ -209,17 +209,17 @@ body {
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  height: 38px;
+  gap: 7px;
+  height: 40px;
   border: 1px solid #d0d5dd;
-  border-radius: 4px;
+  border-radius: 999px;
   background: #ffffff;
-  color: #363636;
-  padding: 0 12px;
+  color: #101828;
+  padding: 0 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+  box-shadow: var(--shadow);
 }
 
 .map-control-btn.is-active {
@@ -264,14 +264,20 @@ body {
   top: 0;
   right: 0;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
 }
 
 .map-style-btn {
-  min-width: 114px;
+  min-width: 120px;
   justify-content: center;
+}
+
+.btn-icon {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
 }
 
 #detail-panel {

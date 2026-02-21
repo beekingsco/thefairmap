@@ -217,8 +217,7 @@ function bindUi() {
 }
 
 function initializeSidebarState() {
-  const mobile = window.innerWidth <= 960;
-  appState.sidebarOpen = mobile ? true : false;
+  appState.sidebarOpen = false;
   const app = document.getElementById('app');
   app.classList.toggle('sidebar-open', appState.sidebarOpen);
   app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
@@ -284,16 +283,16 @@ function buildLayers() {
       'circle-color': ['get', 'color'],
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 13,
-        16, 16,
-        17, 18,
-        20, 20
+        14, 9,
+        16, 11.5,
+        17, 13,
+        20, 15
       ],
       'circle-stroke-width': [
         'interpolate', ['linear'], ['zoom'],
-        14, 1.5,
-        17, 2.2,
-        20, 2.6
+        14, 1.2,
+        17, 1.8,
+        20, 2.2
       ],
       'circle-stroke-color': '#ffffff'
     }
@@ -309,10 +308,10 @@ function buildLayers() {
       'icon-ignore-placement': true,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.72,
-        16, 0.84,
-        17, 0.95,
-        20, 1.1
+        14, 0.58,
+        16, 0.68,
+        17, 0.76,
+        20, 0.9
       ]
     }
   });
@@ -325,13 +324,13 @@ function buildLayers() {
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 14,
-        17, 19,
-        20, 22
+        14, 12,
+        17, 15,
+        20, 18
       ],
       'circle-color': '#ffffff',
-      'circle-opacity': 0.38,
-      'circle-stroke-width': 2,
+      'circle-opacity': 0.28,
+      'circle-stroke-width': 1.6,
       'circle-stroke-color': '#111111'
     }
   });
