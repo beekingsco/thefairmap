@@ -74,10 +74,10 @@ async function init() {
   appState.venueStyleUrl = resolveVenueStyleUrl(data.map?.style);
   appState.satelliteStyleUrl = resolveSatelliteStyleUrl();
   normalizeData(data);
-  updateFilterCount();
   initializeSidebarState();
   bindUi();
   applyFilters();
+  requestAnimationFrame(updateFilterCount);
 
   map = new maplibregl.Map({
     container: 'map',
@@ -138,6 +138,9 @@ async function fetchMapData() {
 }
 
 function normalizeData(data) {
+  appState.categoriesById = new Map();
+  appState.activeCategories = new Set();
+  appState.categoryExpanded = new Map();
   appState.categories = (data.categories || []).map((category) => ({
     id: String(category.id),
     name: String(category.name || 'Uncategorized'),
@@ -173,7 +176,12 @@ function normalizeData(data) {
         search: `${loc.name || ''} ${categoryName} ${loc.address || ''}`.toLowerCase()
       };
     })
-    .filter((loc) => loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
+    .filter(
+      (loc) =>
+        loc &&
+        Number.isFinite(loc.lat) &&
+        Number.isFinite(loc.lng)
+    );
 
   // Keep orphaned category ids visible instead of dropping those locations from filters.
   const missingCategoryIds = new Set(
@@ -206,6 +214,7 @@ function normalizeData(data) {
     .map((category) => ({ ...category, count: computedCounts.get(category.id) || category.count || 0 }))
     .filter((category) => category.count > 0)
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  requestAnimationFrame(updateFilterCount);
 }
 
 function bindUi() {
