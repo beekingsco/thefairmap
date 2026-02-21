@@ -219,7 +219,7 @@ body {
 #map-controls {
   position: absolute;
   inset: 10px 10px auto 10px;
-  z-index: 30;
+  z-index: 1200;
   pointer-events: none;
 }
 
@@ -279,14 +279,14 @@ body {
 }
 
 .style-controls {
-  position: fixed;
+  position: absolute;
   top: 12px;
   right: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
-  z-index: 60;
+  z-index: 1260;
   pointer-events: auto;
   visibility: visible;
   opacity: 1;
@@ -448,8 +448,9 @@ body {
 }
 
 .maplibregl-ctrl-top-right {
-  top: 98px;
+  top: 106px;
   right: 10px;
+  z-index: 1250;
 }
 
 .maplibregl-ctrl-group {
@@ -516,7 +517,7 @@ body {
   }
 
   .maplibregl-ctrl-top-right {
-    top: 108px;
+    top: 116px;
   }
 
   .mobile-categories-btn {
