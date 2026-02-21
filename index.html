@@ -18,6 +18,10 @@
         <label for="search-input" class="sr-only">Search</label>
         <input id="search-input" type="search" placeholder="Search" autocomplete="off">
       </div>
+      <button id="sidebar-filters-btn" class="sidebar-filters-btn" type="button">
+        <span>Filters</span>
+        <span id="filters-count">(0)</span>
+      </button>
 
       <button id="overview-toggle" type="button" class="overview-toggle" aria-expanded="true">Collapse Overview</button>
 
@@ -27,10 +31,8 @@
     <main id="map-shell">
       <div id="map" role="application" aria-label="Map"></div>
       <div id="map-controls">
-        <button id="sidebar-toggle" class="map-control-btn filters-btn" type="button" aria-label="Open filters" aria-expanded="false">
-          <span class="map-btn-glyph">&#9776;</span>
-          <span id="filters-label">Filters</span>
-          <span id="filters-count">(0)</span>
+        <button id="sidebar-toggle" class="map-control-btn chevron-btn" type="button" aria-label="Open filters" aria-expanded="false">
+          <span class="map-btn-glyph">&gt;</span>
         </button>
         <div class="style-controls" role="group" aria-label="Map style controls">
           <button id="style-venue-btn" class="map-control-btn map-style-btn is-active" type="button" aria-pressed="true">

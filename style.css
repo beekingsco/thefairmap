@@ -65,6 +65,22 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
+.sidebar-filters-btn {
+  margin: 12px 14px 0;
+  border: 1px solid #d0d5dd;
+  background: #f9fafb;
+  border-radius: 999px;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #344054;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  width: fit-content;
+}
+
 #search-input {
   width: 100%;
   height: 40px;
@@ -230,19 +246,23 @@ body {
   color: #ffffff;
 }
 
-.filters-btn {
+.chevron-btn {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  width: 30px;
+  min-width: 30px;
+  height: 56px;
   border-radius: 999px;
-  padding: 0 14px;
-  transition: top 0.2s ease, left 0.2s ease, transform 0.2s ease;
+  justify-content: center;
+  padding: 0;
+  z-index: 35;
+  transition: left 0.2s ease, transform 0.2s ease;
 }
 
-#app.sidebar-collapsed .filters-btn {
-  top: 0;
-  left: 0;
-  transform: none;
+#app.sidebar-open .chevron-btn {
+  left: calc(var(--sidebar-width) - 16px);
 }
 
 .map-btn-glyph {
@@ -469,19 +489,8 @@ body {
     top: 108px;
   }
 
-  #app.sidebar-collapsed .filters-btn {
-    top: 0;
-    left: 0;
-    transform: none;
-    min-width: initial;
-    border-radius: 10px;
-    justify-content: flex-start;
-    padding: 0 14px;
-  }
-
-  #app.sidebar-collapsed #filters-label,
-  #app.sidebar-collapsed #filters-count {
-    display: inline;
+  .chevron-btn {
+    display: none;
   }
 }
 
