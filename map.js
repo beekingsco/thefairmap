@@ -606,10 +606,7 @@ function updateSidebarToggle(isOpen) {
 function updateFilterCount() {
   const countEl = document.getElementById('filters-count');
   if (!countEl) return;
-  const visibleCount = appState.filtersInitialized
-    ? appState.filteredLocations.length
-    : appState.locations.length;
-  countEl.textContent = `(${visibleCount})`;
+  countEl.textContent = `(${appState.locations.length})`;
 }
 
 function updateMapStyleButtons() {
