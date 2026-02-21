@@ -1,74 +1,51 @@
-// TheFairMap Service Worker v2.5
-const CACHE_NAME = 'fairmap-v2.5';
-const CORE_ASSETS = [
+// TheFairMap Service Worker v2.9 - minimal, only caches app shell
+const CACHE_NAME = 'fairmap-v2.9';
+const APP_SHELL = [
   '/',
   '/index.html',
   '/style.css',
   '/map.js',
-  '/config.js',
-  '/manifest.json',
-  '/data/icons/fairmap-icon-192.png',
-  'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css',
-  'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js'
+  '/manifest.json'
 ];
 
-// Install: cache core assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(CORE_ASSETS))
+      .then(cache => cache.addAll(APP_SHELL))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate: clean old caches
 self.addEventListener('activate', (event) => {
+  // Delete ALL old caches including ones that may have cached tile data
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch: network-first for API, stale-while-revalidate for static
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Skip non-GET, chrome-extension, and other schemes
-  if (event.request.method !== 'GET') return;
-  if (!url.protocol.startsWith('http')) return;
+  // NEVER cache or intercept map tile requests — always go to network
+  const tileHosts = ['openfreemap.org', 'maptiler.com', 'maplibre', 'openstreetmap', 'tile'];
+  if (tileHosts.some(h => url.hostname.includes(h))) return;
 
-  // API calls: network-first, fall back to cache
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
+  // NEVER cache API calls
+  if (url.pathname.startsWith('/api/')) return;
 
-  // Map tiles: network-only (no caching, too large)
-  if (url.hostname.includes('tile') || url.hostname.includes('openfreemap') || url.hostname.includes('maptiler')) {
-    return;
-  }
-
-  // Static assets: stale-while-revalidate
+  // For everything else: serve from cache, fall back to network
   event.respondWith(
     caches.match(event.request).then(cached => {
-      const fetchPromise = fetch(event.request).then(response => {
-        if (response.ok) {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        if (response.ok && response.type !== 'opaque') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => cached);
-
-      return cached || fetchPromise;
+      });
     })
   );
 });
