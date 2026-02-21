@@ -38,24 +38,7 @@ async function init() {
   setupCategoryState();
   initSidebarControls();
 
-  const preferredStyle = resolveMapStyleUrl(mapData.map?.style);
-  const fallbackStyle  = 'https://tiles.openfreemap.org/styles/bright';
-
-  // Pre-flight: test if MapTiler style is accessible before initialising the map
-  async function pickMapStyle() {
-    if (!preferredStyle.includes('maptiler.com')) return preferredStyle;
-    try {
-      const r = await fetch(preferredStyle, { method: 'HEAD' });
-      if (r.ok) return preferredStyle;
-      console.warn(`MapTiler style returned ${r.status} — falling back to OpenFreeMap`);
-      return fallbackStyle;
-    } catch {
-      console.warn('MapTiler style unreachable — falling back to OpenFreeMap');
-      return fallbackStyle;
-    }
-  }
-
-  const mapStyle = await pickMapStyle();
+  const mapStyle = resolveMapStyleUrl(mapData.map?.style);
 
   map = new maplibregl.Map({
     container: 'map',
@@ -110,18 +93,10 @@ async function init() {
 function resolveMapStyleUrl(styleUrl) {
   const key = window.MAPTILER_KEY;
   let url = styleUrl || DEFAULT_MAP_STYLE;
-
-  // Inject API key placeholder
+  // Inject API key if placeholder present
   if (key && url.includes('YOUR_MAPTILER_KEY')) {
     url = url.replace(/YOUR_MAPTILER_KEY/g, key);
   }
-
-  // If we have a key but the style is still OpenFreeMap (default/fallback),
-  // upgrade to MapTiler Streets Essential to match MapMe's look exactly
-  if (key && url.includes('openfreemap.org')) {
-    url = `https://api.maptiler.com/maps/streets-v2/style.json?key=${key}`;
-  }
-
   return url;
 }
 
@@ -154,7 +129,8 @@ function setupCategoryState() {
   (mapData.categories || []).forEach((category) => {
     categoryById.set(category.id, {
       ...category,
-      color: normalizeColor(category.color)
+      color: normalizeColor(category.color),
+      iconFile: category.iconSlug ? `${category.iconSlug}.svg` : null
     });
   });
 
@@ -1218,12 +1194,12 @@ function renderMobileCatSheet() {
 
   list.innerHTML = cats.map(cat => {
     const count = countMap.get(cat.id) || 0;
-    const iconPath = `/data/icons/${cat.id}.svg`;
+    const iconPath = cat.iconSlug ? `/data/icons/${cat.iconSlug}.svg` : null;
     const active = activeCategories.has(cat.id);
     return `
       <div class="mobile-cat-item ${active ? '' : 'cat-hidden'}" data-mob-cat="${escapeHtml(cat.id)}" style="opacity:${active ? 1 : 0.45}">
         <div class="mobile-cat-icon" style="background:${escapeHtml(cat.color || '#7a7a7a')};">
-          <img src="${escapeHtml(iconPath)}" alt="" onerror="this.style.display='none'">
+          ${iconPath ? `<img src="${escapeHtml(iconPath)}" alt="" onerror="this.style.display='none'">` : ''}
         </div>
         <span class="mobile-cat-name">${escapeHtml(cat.name)}</span>
         <span class="mobile-cat-count">${count}</span>
