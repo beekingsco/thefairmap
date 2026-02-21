@@ -755,10 +755,10 @@ function updateFilterCount() {
     requestAnimationFrame(updateFilterCount);
     return;
   }
-  const total = appState.locations?.length ?? 0;
-  appState.totalLocationCount = total;
-  countEl.textContent = `(${total})`;
-  updateMobileCategoriesButton(total);
+  const filteredCount = appState.filteredLocations?.length ?? appState.locations?.length ?? 0;
+  appState.totalLocationCount = appState.locations?.length ?? 0;
+  countEl.textContent = `(${filteredCount})`;
+  updateMobileCategoriesButton(filteredCount);
 }
 
 function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0) {
