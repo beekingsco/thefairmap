@@ -26,13 +26,31 @@ const LAYER_CLUSTERS = 'location-clusters';
 const LAYER_CLUSTER_COUNT = 'location-cluster-count';
 const LAYER_SELECTED = 'location-selected';
 const LAYER_HOVER = 'location-hover';
+const MAP_BRAND_OVERLAY_ID = 'map-brand-overlay';
+
+const CATEGORY_GROUP_DEFINITIONS = [
+  { id: 'favorites', label: 'My Favorites', icon: '\u2605' },
+  { id: 'amenities', label: 'Market Amenities', icon: 'A' },
+  { id: 'food-drink', label: 'Food & Drink', icon: 'F' },
+  { id: 'shop-by-type', label: 'Shop by Product Type', icon: 'S' },
+  { id: 'entertainment-rentals', label: 'Entertainment & Rentals', icon: 'E' }
+];
+
+const HIDDEN_CATEGORY_NAMES = new Set([
+  'market amenities',
+  'shop by product type',
+  'food & drink',
+  'entertainment & rentals'
+]);
 
 const appState = {
   mapData: null,
   categories: [],
   categoriesById: new Map(),
+  categoryGroups: [],
   locations: [],
   categoryExpanded: new Map(),
+  groupExpanded: new Map(),
   categoryIconFiles: new Map(),
   activeCategories: new Set(),
   filteredLocations: [],
@@ -52,6 +70,7 @@ const appState = {
   mapStyleLoading: false,
   detailClosing: false,
   detailCloseTimer: null,
+  mobileScrimTimer: null,
   hoveredFeatureId: null,
   hoverPopup: null,
   popupPinned: false
@@ -165,11 +184,85 @@ async function fetchMapData() {
   throw new Error('Unable to load map data');
 }
 
+function normalizeCategoryLabel(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function isAmenityCategory(name) {
+  const value = normalizeCategoryLabel(name);
+  return [
+    'restroom',
+    'handicap parking',
+    'information',
+    'first aid',
+    'atm',
+    'entrance',
+    'gate',
+    'cooling station',
+    'points of interest',
+    'point of interest',
+    'visual marker',
+    'market amenit',
+    'sample'
+  ].some((token) => value.includes(token));
+}
+
+function isFoodDrinkCategory(name) {
+  const value = normalizeCategoryLabel(name);
+  return [
+    'food',
+    'drink',
+    'beverage',
+    'coffee',
+    'tea',
+    'ice cream',
+    'candy',
+    'snack',
+    'lemonade',
+    'slush',
+    'beer',
+    'wine',
+    'gourmet'
+  ].some((token) => value.includes(token));
+}
+
+function isEntertainmentRentalCategory(name) {
+  const value = normalizeCategoryLabel(name);
+  return ['entertainment', 'live entertainment', 'rental', 'music', 'hidden boots game'].some((token) =>
+    value.includes(token)
+  );
+}
+
+function categoryGroupIdForName(name) {
+  const value = normalizeCategoryLabel(name);
+  if (value === 'my favorites') return 'favorites';
+  if (isEntertainmentRentalCategory(value)) return 'entertainment-rentals';
+  if (isFoodDrinkCategory(value)) return 'food-drink';
+  if (isAmenityCategory(value)) return 'amenities';
+  return 'shop-by-type';
+}
+
+function buildCategoryGroups(categories) {
+  const groups = CATEGORY_GROUP_DEFINITIONS.map((group) => ({ ...group, categories: [] }));
+  const byId = new Map(groups.map((group) => [group.id, group]));
+  for (const category of categories) {
+    if (!category || HIDDEN_CATEGORY_NAMES.has(normalizeCategoryLabel(category.name))) continue;
+    const groupId = categoryGroupIdForName(category.name);
+    const group = byId.get(groupId) || byId.get('shop-by-type');
+    group.categories.push(category);
+  }
+  return groups;
+}
+
 function normalizeData(data) {
   appState.sourceLocationCount = Array.isArray(data.locations) ? data.locations.length : 0;
   appState.categoriesById = new Map();
   appState.activeCategories = new Set();
   appState.categoryExpanded = new Map();
+  appState.groupExpanded = new Map();
   appState.categories = (data.categories || []).map((category) => ({
     id: String(category.id),
     name: String(category.name || 'Uncategorized'),
@@ -247,7 +340,12 @@ function normalizeData(data) {
   appState.categories = appState.categories
     .map((category) => ({ ...category, count: computedCounts.get(category.id) || category.count || 0 }))
     .filter((category) => category.count > 0)
+    .filter((category) => !HIDDEN_CATEGORY_NAMES.has(normalizeCategoryLabel(category.name)))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  appState.categoryGroups = buildCategoryGroups(appState.categories);
+  for (const group of appState.categoryGroups) {
+    appState.groupExpanded.set(group.id, false);
+  }
   requestAnimationFrame(() => updateFilterCount('normalizeData:raf'));
   scheduleFilterCountRefresh(120, 'normalizeData:deferred-120ms');
   scheduleFilterCountRefresh(600, 'normalizeData:deferred-600ms');
@@ -296,7 +394,9 @@ function bindUi() {
   window.addEventListener('resize', () => {
     const mobile = window.innerWidth <= 960;
     if (!mobile) {
-      document.getElementById('mobile-scrim').hidden = true;
+      const mobileScrim = document.getElementById('mobile-scrim');
+      mobileScrim.hidden = true;
+      mobileScrim.classList.remove('is-open');
       const app = document.getElementById('app');
       app.classList.toggle('sidebar-open', appState.sidebarOpen);
       app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
@@ -311,8 +411,15 @@ function bindUi() {
       updateSidebarToggle(true);
       updateMobileCategoriesButton();
     }
+    updateMapBrandOverlayPosition();
     map?.resize();
   });
+
+  const app = document.getElementById('app');
+  if (app && typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(() => updateMapBrandOverlayPosition());
+    observer.observe(app, { attributes: true, attributeFilter: ['class'] });
+  }
 }
 
 function initializeSidebarState() {
@@ -322,10 +429,21 @@ function initializeSidebarState() {
   app.classList.toggle('sidebar-open', mobile ? true : appState.sidebarOpen);
   app.classList.toggle('sidebar-collapsed', mobile ? false : !appState.sidebarOpen);
   app.classList.toggle('mobile-sidebar-open', mobile);
-  document.getElementById('mobile-scrim').hidden = true;
+  const mobileScrim = document.getElementById('mobile-scrim');
+  mobileScrim.hidden = true;
+  mobileScrim.classList.remove('is-open');
   updateSidebarToggle(appState.sidebarOpen);
   updateMobileCategoriesButton();
   updateMapStyleButtons();
+  updateMapBrandOverlayPosition();
+}
+
+function updateMapBrandOverlayPosition() {
+  const overlay = document.getElementById(MAP_BRAND_OVERLAY_ID);
+  const mapShell = document.getElementById('map-shell');
+  if (!overlay || !mapShell) return;
+  const rect = mapShell.getBoundingClientRect();
+  overlay.style.left = `${Math.round(rect.left + rect.width / 2)}px`;
 }
 
 async function loadMarkerIcons() {
@@ -646,101 +764,144 @@ function applyFilters() {
   updateFilterCount('applyFilters');
 }
 
+function renderCategoryCard({ category, query, visibleCounts }) {
+  const active = appState.activeCategories.has(category.id);
+  const visibleInCategory = appState.filteredLocations.filter((loc) => loc.categoryId === category.id);
+  const autoExpand = Boolean(query) && visibleInCategory.length > 0;
+  const expanded = autoExpand || appState.categoryExpanded.get(category.id) === true;
+
+  const cat = document.createElement('article');
+  cat.className = `category-item ${expanded ? 'is-expanded' : ''} ${active ? '' : 'is-muted'}`;
+
+  const row = document.createElement('div');
+  row.className = 'category-row';
+  const toggleCategoryVisibility = () => {
+    if (appState.activeCategories.has(category.id)) appState.activeCategories.delete(category.id);
+    else appState.activeCategories.add(category.id);
+    applyFilters();
+  };
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'category-visibility';
+  toggle.title = active ? 'Hide category markers' : 'Show category markers';
+  toggle.setAttribute('aria-label', `${active ? 'Hide' : 'Show'} ${category.name}`);
+  toggle.style.setProperty('--cat-color', category.color);
+  toggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleCategoryVisibility();
+  });
+
+  const head = document.createElement('button');
+  head.type = 'button';
+  head.className = 'category-head';
+  head.setAttribute('aria-pressed', String(active));
+  head.title = active ? 'Hide category markers' : 'Show category markers';
+  head.innerHTML = `
+    <span class="category-name">${escapeHtml(category.name)}</span>
+    <span class="category-count">${visibleCounts.get(category.id) || 0}/${category.count}</span>
+  `;
+  head.addEventListener('click', toggleCategoryVisibility);
+
+  const expandBtn = document.createElement('button');
+  expandBtn.type = 'button';
+  expandBtn.className = 'category-expand';
+  expandBtn.setAttribute('aria-label', expanded ? `Collapse ${category.name}` : `Expand ${category.name}`);
+  expandBtn.setAttribute('aria-expanded', String(expanded));
+  expandBtn.innerHTML = expanded ? '&#9660;' : '&#9654;';
+  expandBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    appState.categoryExpanded.set(category.id, !expanded);
+    renderOverview(query);
+  });
+
+  row.appendChild(toggle);
+  row.appendChild(head);
+  row.appendChild(expandBtn);
+  cat.appendChild(row);
+
+  const locList = document.createElement('div');
+  locList.className = 'category-locations';
+  if (!expanded) locList.hidden = true;
+
+  if (visibleInCategory.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'category-empty';
+    empty.textContent = query ? 'No search matches.' : 'No visible locations.';
+    locList.appendChild(empty);
+  } else {
+    const limit = visibleInCategory.slice(0, 80);
+    for (const loc of limit) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'location-row';
+      if (loc.id === appState.selectedLocationId) item.classList.add('is-selected');
+      item.textContent = loc.name;
+      item.addEventListener('click', () => openLocation(loc, true));
+      locList.appendChild(item);
+    }
+    if (visibleInCategory.length > limit.length) {
+      const more = document.createElement('p');
+      more.className = 'category-empty';
+      more.textContent = `${visibleInCategory.length - limit.length} more...`;
+      locList.appendChild(more);
+    }
+  }
+
+  cat.appendChild(locList);
+  return cat;
+}
+
 function renderOverview(query) {
   const wrap = document.getElementById('overview-list');
   wrap.innerHTML = '';
+  const groups = appState.categoryGroups.length > 0 ? appState.categoryGroups : buildCategoryGroups(appState.categories);
 
   const visibleCounts = new Map();
   for (const loc of appState.filteredLocations) {
     visibleCounts.set(loc.categoryId, (visibleCounts.get(loc.categoryId) || 0) + 1);
   }
 
-  for (const category of appState.categories) {
-    const active = appState.activeCategories.has(category.id);
-    const visibleInCategory = appState.filteredLocations.filter((loc) => loc.categoryId === category.id);
-    const autoExpand = Boolean(query) && visibleInCategory.length > 0;
-    const expanded = autoExpand || appState.categoryExpanded.get(category.id) === true;
+  for (const group of groups) {
+    const groupVisible = group.categories.reduce((sum, category) => sum + (visibleCounts.get(category.id) || 0), 0);
+    const groupTotal = group.categories.reduce((sum, category) => sum + (category.count || 0), 0);
+    const autoExpand = Boolean(query) && groupVisible > 0;
+    const expanded = autoExpand || appState.groupExpanded.get(group.id) === true;
 
-    const cat = document.createElement('article');
-    cat.className = `category-item ${expanded ? 'is-expanded' : ''} ${active ? '' : 'is-muted'}`;
+    const section = document.createElement('section');
+    section.className = 'category-group';
 
-    const row = document.createElement('div');
-    row.className = 'category-row';
-    const toggleCategoryVisibility = () => {
-      if (appState.activeCategories.has(category.id)) appState.activeCategories.delete(category.id);
-      else appState.activeCategories.add(category.id);
-      applyFilters();
-    };
-
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'category-visibility';
-    toggle.title = active ? 'Hide category markers' : 'Show category markers';
-    toggle.setAttribute('aria-label', `${active ? 'Hide' : 'Show'} ${category.name}`);
-    toggle.style.setProperty('--cat-color', category.color);
-    toggle.addEventListener('click', (event) => {
-      event.stopPropagation();
-      toggleCategoryVisibility();
-    });
-
-    const head = document.createElement('button');
-    head.type = 'button';
-    head.className = 'category-head';
-    head.setAttribute('aria-pressed', String(active));
-    head.title = active ? 'Hide category markers' : 'Show category markers';
-    head.innerHTML = `
-      <span class="category-name">${escapeHtml(category.name)}</span>
-      <span class="category-count">${visibleCounts.get(category.id) || 0}/${category.count}</span>
+    const groupHeader = document.createElement('button');
+    groupHeader.type = 'button';
+    groupHeader.className = 'category-group-header';
+    groupHeader.setAttribute('aria-expanded', String(expanded));
+    groupHeader.innerHTML = `
+      <span class="category-group-arrow">${expanded ? '&#9660;' : '&#9654;'}</span>
+      <span class="category-group-icon">${escapeHtml(group.icon)}</span>
+      <span class="category-group-name">${escapeHtml(group.label)}</span>
+      <span class="category-group-count">${groupVisible}/${groupTotal}</span>
     `;
-    head.addEventListener('click', toggleCategoryVisibility);
-
-    const expandBtn = document.createElement('button');
-    expandBtn.type = 'button';
-    expandBtn.className = 'category-expand';
-    expandBtn.setAttribute('aria-label', expanded ? `Collapse ${category.name}` : `Expand ${category.name}`);
-    expandBtn.setAttribute('aria-expanded', String(expanded));
-    expandBtn.innerHTML = expanded ? '&#9660;' : '&#9654;';
-    expandBtn.addEventListener('click', (event) => {
-      event.stopPropagation();
-      appState.categoryExpanded.set(category.id, !expanded);
+    groupHeader.addEventListener('click', () => {
+      appState.groupExpanded.set(group.id, !expanded);
       renderOverview(query);
     });
+    section.appendChild(groupHeader);
 
-    row.appendChild(toggle);
-    row.appendChild(head);
-    row.appendChild(expandBtn);
-    cat.appendChild(row);
-
-    const locList = document.createElement('div');
-    locList.className = 'category-locations';
-    if (!expanded) locList.hidden = true;
-
-    if (visibleInCategory.length === 0) {
+    const groupBody = document.createElement('div');
+    groupBody.className = 'category-group-body';
+    groupBody.hidden = !expanded;
+    if (group.categories.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'category-empty';
-      empty.textContent = query ? 'No search matches.' : 'No visible locations.';
-      locList.appendChild(empty);
+      empty.textContent = 'No categories available.';
+      groupBody.appendChild(empty);
     } else {
-      const limit = visibleInCategory.slice(0, 80);
-      for (const loc of limit) {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'location-row';
-        if (loc.id === appState.selectedLocationId) item.classList.add('is-selected');
-        item.textContent = loc.name;
-        item.addEventListener('click', () => openLocation(loc, true));
-        locList.appendChild(item);
-      }
-      if (visibleInCategory.length > limit.length) {
-        const more = document.createElement('p');
-        more.className = 'category-empty';
-        more.textContent = `${visibleInCategory.length - limit.length} more...`;
-        locList.appendChild(more);
+      for (const category of group.categories) {
+        groupBody.appendChild(renderCategoryCard({ category, query, visibleCounts }));
       }
     }
-
-    cat.appendChild(locList);
-    wrap.appendChild(cat);
+    section.appendChild(groupBody);
+    wrap.appendChild(section);
   }
 }
 
@@ -885,6 +1046,7 @@ function toggleSidebar() {
   app.classList.toggle('sidebar-open', appState.sidebarOpen);
   app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
   updateSidebarToggle(appState.sidebarOpen);
+  updateMapBrandOverlayPosition();
 
   setTimeout(() => map?.resize(), 300);
 }
@@ -899,8 +1061,24 @@ function setMobileSidebarOpen(open) {
   if (!app) return;
   app.classList.toggle('mobile-sidebar-open', open);
   const scrim = document.getElementById('mobile-scrim');
-  if (scrim) scrim.hidden = !open;
+  if (scrim) {
+    if (appState.mobileScrimTimer) {
+      clearTimeout(appState.mobileScrimTimer);
+      appState.mobileScrimTimer = null;
+    }
+    if (open) {
+      scrim.hidden = false;
+      requestAnimationFrame(() => scrim.classList.add('is-open'));
+    } else {
+      scrim.classList.remove('is-open');
+      appState.mobileScrimTimer = setTimeout(() => {
+        scrim.hidden = true;
+        appState.mobileScrimTimer = null;
+      }, 180);
+    }
+  }
   updateMobileCategoriesButton();
+  updateMapBrandOverlayPosition();
 }
 
 function updateSidebarToggle(isOpen) {
