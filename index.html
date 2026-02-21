@@ -24,12 +24,19 @@
       <div id="overview-list" class="overview-list" aria-live="polite"></div>
     </aside>
 
-    <button id="sidebar-toggle" type="button" aria-label="Expand sidebar" aria-expanded="false">
-      <span id="sidebar-toggle-icon">&#10095;</span>
-    </button>
-
     <main id="map-shell">
       <div id="map" role="application" aria-label="Map"></div>
+      <div id="map-controls">
+        <button id="sidebar-toggle" class="map-control-btn filters-btn" type="button" aria-label="Open filters" aria-expanded="false">
+          <span class="map-btn-glyph">&#9776;</span>
+          <span>Filters</span>
+          <span id="filters-count">(0)</span>
+        </button>
+        <div class="style-controls" role="group" aria-label="Map style controls">
+          <button id="style-venue-btn" class="map-control-btn is-active" type="button" aria-pressed="true">🗺 Venue Map</button>
+          <button id="style-satellite-btn" class="map-control-btn" type="button" aria-pressed="false">🛰 Satellite</button>
+        </div>
+      </div>
     </main>
 
     <section id="detail-panel" aria-label="Location details" hidden>

@@ -3,6 +3,7 @@ let popup;
 let geolocateControl;
 
 const STYLE_FALLBACK = 'https://tiles.openfreemap.org/styles/liberty';
+const SATELLITE_STYLE_FALLBACK = 'https://tiles.openfreemap.org/styles/liberty';
 const DEFAULT_CENTER = [-95.8624, 32.5585];
 const DEFAULT_ZOOM = 17;
 const DEFAULT_PITCH = 60;
@@ -23,7 +24,11 @@ const appState = {
   filteredLocations: [],
   selectedLocationId: null,
   sidebarOpen: false,
-  overviewOpen: true
+  overviewOpen: true,
+  mapEventsBound: false,
+  activeMapStyle: 'venue',
+  venueStyleUrl: STYLE_FALLBACK,
+  satelliteStyleUrl: SATELLITE_STYLE_FALLBACK
 };
 
 const ICON_SVGS = {
@@ -51,13 +56,15 @@ async function init() {
   const data = await fetchMapData();
   await loadIconManifest();
   appState.mapData = data;
+  appState.venueStyleUrl = resolveStyleUrl(data.map?.style);
+  appState.satelliteStyleUrl = resolveSatelliteStyleUrl();
   normalizeData(data);
   initializeSidebarState();
   bindUi();
 
   map = new maplibregl.Map({
     container: 'map',
-    style: resolveStyleUrl(data.map?.style),
+    style: appState.venueStyleUrl,
     center: data.map?.center || DEFAULT_CENTER,
     zoom: Number.isFinite(data.map?.zoom) ? data.map.zoom : DEFAULT_ZOOM,
     pitch: DEFAULT_PITCH,
@@ -67,19 +74,17 @@ async function init() {
     antialias: true
   });
 
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
 
   geolocateControl = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: false,
     showUserHeading: true
   });
-  map.addControl(geolocateControl, 'top-right');
+  map.addControl(geolocateControl, 'bottom-right');
 
   map.on('load', async () => {
-    await loadMarkerIcons();
-    buildLayers();
-    applyFilters();
+    await hydrateStyleContent();
     bindMapEvents();
   });
 }
@@ -177,6 +182,8 @@ function bindUi() {
   });
 
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+  document.getElementById('style-venue-btn').addEventListener('click', () => setMapStyle('venue'));
+  document.getElementById('style-satellite-btn').addEventListener('click', () => setMapStyle('satellite'));
   document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebar);
   document.getElementById('detail-close').addEventListener('click', closeDetailPanel);
 
@@ -191,6 +198,10 @@ function bindUi() {
     const mobile = window.innerWidth <= 960;
     if (!mobile) {
       document.getElementById('mobile-scrim').hidden = true;
+      const app = document.getElementById('app');
+      app.classList.toggle('sidebar-open', appState.sidebarOpen);
+      app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
+      updateSidebarToggle(appState.sidebarOpen);
     }
     if (mobile) {
       document.getElementById('app').classList.remove('sidebar-collapsed');
@@ -208,6 +219,8 @@ function initializeSidebarState() {
   app.classList.toggle('sidebar-open', appState.sidebarOpen);
   app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
   updateSidebarToggle(appState.sidebarOpen);
+  updateFilterCount();
+  updateMapStyleButtons();
 }
 
 async function loadMarkerIcons() {
@@ -321,6 +334,9 @@ function buildLayers() {
 }
 
 function bindMapEvents() {
+  if (appState.mapEventsBound) return;
+  appState.mapEventsBound = true;
+
   map.on('click', LAYER_MARKERS, onMarkerClick);
   map.on('click', LAYER_ICONS, onMarkerClick);
 
@@ -371,6 +387,7 @@ function applyFilters() {
   }
 
   renderOverview(query);
+  updateFilterCount();
 }
 
 function renderOverview(query) {
@@ -558,10 +575,43 @@ function closeMobileSidebar() {
 
 function updateSidebarToggle(isOpen) {
   const toggle = document.getElementById('sidebar-toggle');
-  const icon = document.getElementById('sidebar-toggle-icon');
   toggle.setAttribute('aria-expanded', String(isOpen));
-  toggle.setAttribute('aria-label', isOpen ? 'Collapse sidebar' : 'Expand sidebar');
-  icon.innerHTML = isOpen ? '&#10094;' : '&#10095;';
+  toggle.setAttribute('aria-label', isOpen ? 'Collapse filters' : 'Expand filters');
+}
+
+function updateFilterCount() {
+  const countEl = document.getElementById('filters-count');
+  if (!countEl) return;
+  countEl.textContent = `(${appState.filteredLocations.length})`;
+}
+
+function updateMapStyleButtons() {
+  const isVenue = appState.activeMapStyle === 'venue';
+  const venueBtn = document.getElementById('style-venue-btn');
+  const satelliteBtn = document.getElementById('style-satellite-btn');
+  if (!venueBtn || !satelliteBtn) return;
+  venueBtn.classList.toggle('is-active', isVenue);
+  satelliteBtn.classList.toggle('is-active', !isVenue);
+  venueBtn.setAttribute('aria-pressed', String(isVenue));
+  satelliteBtn.setAttribute('aria-pressed', String(!isVenue));
+}
+
+async function setMapStyle(styleId) {
+  if (!map || appState.activeMapStyle === styleId) return;
+  appState.activeMapStyle = styleId;
+  updateMapStyleButtons();
+  const styleUrl = styleId === 'satellite' ? appState.satelliteStyleUrl : appState.venueStyleUrl;
+  map.setStyle(styleUrl);
+  map.once('style.load', async () => {
+    await hydrateStyleContent();
+  });
+}
+
+async function hydrateStyleContent() {
+  await loadMarkerIcons();
+  buildLayers();
+  applyFilters();
+  syncSelectedLayer();
 }
 
 function syncSelectedLayer() {
@@ -648,6 +698,13 @@ function resolveStyleUrl(rawStyle) {
   }
 
   return STYLE_FALLBACK;
+}
+
+function resolveSatelliteStyleUrl() {
+  if (window.MAPTILER_KEY) {
+    return `https://api.maptiler.com/maps/hybrid/style.json?key=${window.MAPTILER_KEY}`;
+  }
+  return SATELLITE_STYLE_FALLBACK;
 }
 
 function escapeHtml(value) {
