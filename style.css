@@ -238,17 +238,9 @@ body {
 }
 
 #app.sidebar-collapsed .filters-btn {
-  top: 50%;
-  left: 10px;
-  transform: translateY(-50%);
-  min-width: 46px;
-  border-radius: 999px;
-  justify-content: center;
-  padding: 0 12px;
-}
-
-#app.sidebar-collapsed #filters-label {
-  display: none;
+  top: 0;
+  left: 0;
+  transform: none;
 }
 
 .map-btn-glyph {
