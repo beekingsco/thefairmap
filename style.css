@@ -667,7 +667,7 @@ body {
     right: 0;
     bottom: 0;
     top: auto;
-    height: 74dvh;
+    height: 72dvh;
     border-right: 0;
     border-top: 1px solid var(--line);
     border-radius: 16px 16px 0 0;
@@ -699,7 +699,7 @@ body {
     top: auto;
     bottom: 0;
     width: 100%;
-    max-height: 82dvh;
+    max-height: 78dvh;
     border-left: 0;
     border-top: 1px solid var(--line);
     border-radius: 16px 16px 0 0;
@@ -744,10 +744,14 @@ body {
   }
 
   .map-style-btn {
-    min-width: 120px;
+    min-width: 112px;
+    max-width: 45vw;
     height: 34px;
     font-size: 12px;
     padding: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .mobile-categories-btn {
@@ -778,13 +782,20 @@ body {
 
   .style-controls {
     right: 6px;
+    gap: 5px;
   }
 
   .map-style-btn {
-    min-width: 114px;
+    min-width: 104px;
+    max-width: 46vw;
     height: 32px;
-    font-size: 12px;
+    font-size: 11px;
     gap: 6px;
+  }
+
+  .btn-icon {
+    width: 12px;
+    height: 12px;
   }
 }
 
