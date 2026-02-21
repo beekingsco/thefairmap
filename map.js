@@ -542,7 +542,7 @@ function buildLayers() {
     filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': ['get', 'color'],
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 9.2, 16, 10.8, 17.5, 12.2, 20, 13.8],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 11.5, 16, 13.5, 17.5, 15.25, 20, 17.25],
       'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 14, 1.9, 17, 2.2, 20, 2.5],
       'circle-stroke-color': '#ffffff',
       'circle-opacity': 0.98
@@ -561,10 +561,10 @@ function buildLayers() {
       'symbol-sort-key': ['-', 1000, ['to-number', ['id'], 0]],
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.55,
-        16, 0.63,
-        17.5, 0.69,
-        20, 0.78
+        14, 0.69,
+        16, 0.79,
+        17.5, 0.86,
+        20, 0.98
       ]
     }
   });
