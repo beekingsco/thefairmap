@@ -1,5 +1,4 @@
 let map;
-let popup;
 let geolocateControl;
 
 const STYLE_FALLBACK = 'https://tiles.openfreemap.org/styles/liberty';
@@ -383,10 +382,6 @@ function applyFilters() {
   if (!appState.filteredLocations.some((loc) => loc.id === appState.selectedLocationId)) {
     appState.selectedLocationId = null;
     syncSelectedLayer();
-    if (popup) {
-      popup.remove();
-      popup = null;
-    }
     closeDetailPanel();
   }
 
@@ -481,17 +476,6 @@ function openLocation(location, fly) {
   appState.selectedLocationId = location.id;
   syncSelectedLayer();
 
-  if (popup) popup.remove();
-  popup = new maplibregl.Popup({
-    closeButton: false,
-    closeOnClick: false,
-    offset: 18,
-    className: 'map-anchor-popup'
-  })
-    .setLngLat([location.lng, location.lat])
-    .setHTML(`<div class="anchor-title">${escapeHtml(location.name)}</div>`)
-    .addTo(map);
-
   renderDetail(location);
 
   if (fly) {
@@ -515,35 +499,16 @@ function renderDetail(location) {
   const category = appState.categoriesById.get(location.categoryId);
   const categoryName = category?.name || location.categoryName;
   const color = normalizeColor(category?.color || location.color);
-  const directionsHref = `https://www.google.com/maps/dir/?api=1&destination=${location.lat},${location.lng}`;
-  const shareUrl = `${location.origin || window.location.origin}?loc=${encodeURIComponent(location.id)}`;
+  const description = formatDescription(location.description);
 
   content.innerHTML = `
     <h2 class="detail-title">${escapeHtml(location.name)}</h2>
     <div class="detail-badge" style="background:${color};color:${pickTextColor(color)};">${escapeHtml(categoryName)}</div>
-    ${location.description ? `<div class="detail-description">${location.description}</div>` : ''}
-    ${location.address ? `<p class="detail-address">${escapeHtml(location.address)}</p>` : ''}
-    <div class="detail-actions">
-      <a class="detail-btn primary" href="${directionsHref}" target="_blank" rel="noopener">Get Directions</a>
-      <button id="detail-share" class="detail-btn" type="button">Share</button>
-    </div>
+    <div class="detail-description">${description}</div>
   `;
 
   panel.hidden = false;
   panel.classList.add('is-open');
-
-  const shareBtn = document.getElementById('detail-share');
-  shareBtn?.addEventListener('click', async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: location.name, url: shareUrl });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(shareUrl);
-      }
-    } catch (_) {
-      // no-op
-    }
-  });
 }
 
 function closeDetailPanel() {
@@ -730,6 +695,11 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function formatDescription(description) {
+  if (!description) return 'No description available.';
+  return escapeHtml(description).replace(/\n/g, '<br>');
 }
 
 if ('serviceWorker' in navigator) {
