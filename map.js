@@ -794,12 +794,7 @@ function renderDetail(location) {
   const description = formatDescription(location.description);
   const hero = location.photos.length
     ? `<img class="detail-hero" src="${escapeAttr(location.photos[0])}" alt="${escapeAttr(location.name)} photo" loading="lazy">`
-    : `
-      <div class="detail-photo-placeholder detail-hero-placeholder" role="img" aria-label="Photo placeholder for ${escapeAttr(location.name)}">
-        <span class="detail-photo-placeholder-icon" aria-hidden="true">&#128247;</span>
-        <span class="detail-photo-placeholder-text">Photo coming soon</span>
-      </div>
-    `;
+    : '';
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
   const metaLine = [sanitizeMetaAddress(location.address), categoryName].filter(Boolean).join(' | ');
 
