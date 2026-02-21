@@ -46,6 +46,7 @@ const appState = {
   filterCountRetryTimer: null,
   filterCountDeferredTimer: null,
   filterCountRetryAttempts: 0,
+  mapStyleLoading: false,
   detailClosing: false,
   detailCloseTimer: null,
   hoveredFeatureId: null
@@ -858,19 +859,35 @@ function updateMapStyleButtons() {
   if (!venueBtn || !satelliteBtn) return;
   venueBtn.classList.toggle('is-active', isVenue);
   satelliteBtn.classList.toggle('is-active', !isVenue);
+  venueBtn.disabled = appState.mapStyleLoading;
+  satelliteBtn.disabled = appState.mapStyleLoading;
   venueBtn.setAttribute('aria-pressed', String(isVenue));
   satelliteBtn.setAttribute('aria-pressed', String(!isVenue));
 }
 
 async function setMapStyle(styleId) {
-  if (!map || appState.activeMapStyle === styleId) return;
+  if (!map || appState.mapStyleLoading || appState.activeMapStyle === styleId) return;
+  const previousStyle = appState.activeMapStyle;
+  appState.mapStyleLoading = true;
   appState.activeMapStyle = styleId;
   updateMapStyleButtons();
   const styleUrl = styleId === 'satellite' ? appState.satelliteStyleUrl : appState.venueStyleUrl;
-  map.setStyle(styleUrl);
-  map.once('style.load', async () => {
-    await hydrateStyleContent();
-  });
+  try {
+    map.setStyle(styleUrl);
+    map.once('style.load', async () => {
+      try {
+        await hydrateStyleContent();
+      } finally {
+        appState.mapStyleLoading = false;
+        updateMapStyleButtons();
+      }
+    });
+  } catch (error) {
+    console.error('[map-style] failed to switch style', error);
+    appState.activeMapStyle = previousStyle;
+    appState.mapStyleLoading = false;
+    updateMapStyleButtons();
+  }
 }
 
 async function hydrateStyleContent() {

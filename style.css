@@ -367,14 +367,14 @@ body {
 
 .style-controls {
   position: fixed;
-  top: 10px;
+  top: max(10px, env(safe-area-inset-top));
   right: 60px;
   left: auto !important;
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
-  z-index: 9999;
+  z-index: 6000;
   pointer-events: auto;
 }
 
@@ -401,6 +401,11 @@ body {
   color: #101828;
   border-color: #bcc5d3;
   box-shadow: 0 3px 10px rgba(16, 24, 40, 0.18);
+}
+
+.map-style-btn:disabled {
+  opacity: 0.72;
+  cursor: wait;
 }
 
 .btn-icon {
