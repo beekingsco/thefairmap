@@ -44,6 +44,7 @@ const appState = {
   filtersInitialized: false,
   totalLocationCount: 0,
   filterCountRetryTimer: null,
+  filterCountDeferredTimer: null,
   filterCountRetryAttempts: 0,
   detailClosing: false,
   detailCloseTimer: null,
@@ -82,7 +83,7 @@ async function init() {
     filtered: appState.filteredLocations.length
   });
   updateFilterCount();
-  setTimeout(updateFilterCount, 250);
+  scheduleFilterCountRefresh(250);
   initializeSidebarState();
   bindUi();
   applyFilters();
@@ -226,6 +227,8 @@ function normalizeData(data) {
     .filter((category) => category.count > 0)
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   requestAnimationFrame(updateFilterCount);
+  scheduleFilterCountRefresh(120);
+  scheduleFilterCountRefresh(600);
 }
 
 function bindUi() {
@@ -796,8 +799,8 @@ function updateSidebarToggle(isOpen) {
 function updateFilterCount() {
   const countEl = document.getElementById('filters-count');
   if (!countEl) {
-    // If the element is not mounted yet, retry on next frame.
-    requestAnimationFrame(updateFilterCount);
+    // If the element is not mounted yet, retry shortly.
+    scheduleFilterCountRefresh(80);
     return;
   }
   const hasLocations = appState.locations.length > 0;
@@ -810,8 +813,8 @@ function updateFilterCount() {
   countEl.textContent = `(${appState.totalLocationCount})`;
   updateMobileCategoriesButton(appState.totalLocationCount);
 
-  // Retry a few times if data has not populated yet to survive async load races.
-  if (!hasLocations && appState.filterCountRetryAttempts < 20) {
+  // Retry while data is still empty to survive async load races.
+  if (!hasLocations) {
     appState.filterCountRetryAttempts += 1;
     if (appState.filterCountRetryTimer) clearTimeout(appState.filterCountRetryTimer);
     appState.filterCountRetryTimer = setTimeout(updateFilterCount, 150);
@@ -824,6 +827,16 @@ function updateFilterCount() {
       appState.filterCountRetryTimer = null;
     }
   }
+}
+
+function scheduleFilterCountRefresh(delay = 150) {
+  if (appState.filterCountDeferredTimer) {
+    clearTimeout(appState.filterCountDeferredTimer);
+  }
+  appState.filterCountDeferredTimer = setTimeout(() => {
+    appState.filterCountDeferredTimer = null;
+    updateFilterCount();
+  }, delay);
 }
 
 function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0) {
@@ -865,6 +878,7 @@ async function hydrateStyleContent() {
   buildLayers();
   appState.hoveredFeatureId = null;
   applyFilters();
+  scheduleFilterCountRefresh(120);
   syncSelectedLayer();
 }
 
