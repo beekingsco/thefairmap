@@ -252,6 +252,7 @@ function bindUi() {
   document.getElementById('style-venue-btn').addEventListener('click', () => setMapStyle('venue'));
   document.getElementById('style-satellite-btn').addEventListener('click', () => setMapStyle('satellite'));
   document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebar);
+  document.getElementById('detail-scrim').addEventListener('click', closeDetailPanel);
   document.getElementById('detail-close').addEventListener('click', closeDetailPanel);
 
   document.addEventListener('keydown', (event) => {
@@ -766,6 +767,8 @@ function getDetailAwareFlyOffset() {
 function renderDetail(location) {
   const panel = document.getElementById('detail-panel');
   const content = document.getElementById('detail-content');
+  const scrim = document.getElementById('detail-scrim');
+  const app = document.getElementById('app');
   const category = appState.categoriesById.get(location.categoryId);
   const categoryName = category?.name || location.categoryName;
   const color = normalizeColor(category?.color || location.color);
@@ -808,6 +811,12 @@ function renderDetail(location) {
   panel.setAttribute('aria-hidden', 'false');
   panel.classList.remove('is-open');
   panel.classList.remove('is-closing');
+  if (scrim) {
+    scrim.hidden = false;
+    scrim.classList.remove('is-open');
+    requestAnimationFrame(() => scrim.classList.add('is-open'));
+  }
+  if (app) app.classList.add('detail-open');
   requestAnimationFrame(() => panel.classList.add('is-open'));
   appState.detailClosing = false;
   syncMobileFloatingUi(true);
@@ -815,15 +824,23 @@ function renderDetail(location) {
 
 function closeDetailPanel() {
   const panel = document.getElementById('detail-panel');
+  const scrim = document.getElementById('detail-scrim');
+  const app = document.getElementById('app');
   if (!panel || panel.hidden || appState.detailClosing) return;
   appState.detailClosing = true;
   panel.classList.add('is-closing');
   panel.classList.remove('is-open');
+  if (scrim) scrim.classList.remove('is-open');
   const finalizeClose = () => {
     if (!appState.detailClosing) return;
     panel.hidden = true;
     panel.setAttribute('aria-hidden', 'true');
     panel.classList.remove('is-closing');
+    if (scrim) {
+      scrim.hidden = true;
+      scrim.classList.remove('is-open');
+    }
+    if (app) app.classList.remove('detail-open');
     appState.detailClosing = false;
     if (appState.detailCloseTimer) {
       clearTimeout(appState.detailCloseTimer);

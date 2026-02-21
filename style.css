@@ -438,6 +438,19 @@ body {
   transform: translateX(0);
 }
 
+#detail-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.28);
+  z-index: 4190;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+#detail-scrim.is-open {
+  opacity: 1;
+}
+
 .detail-close {
   position: absolute;
   top: 10px;
@@ -691,6 +704,11 @@ body {
     border-top: 1px solid var(--line);
     border-radius: 16px 16px 0 0;
     transform: translateY(104%);
+  }
+
+  #detail-scrim {
+    z-index: 4180;
+    background: rgba(16, 24, 40, 0.42);
   }
 
   #detail-panel::before {
