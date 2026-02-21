@@ -600,7 +600,7 @@ function closeMobileSidebar() {
 function updateSidebarToggle(isOpen) {
   const toggle = document.getElementById('sidebar-toggle');
   const glyph = toggle?.querySelector('.map-btn-glyph');
-  if (glyph) glyph.textContent = isOpen ? '\u2630' : '>';
+  if (glyph) glyph.textContent = '\u2630';
   toggle.setAttribute('aria-expanded', String(isOpen));
   toggle.setAttribute('aria-label', isOpen ? 'Collapse filters' : 'Expand filters');
 }
