@@ -865,9 +865,10 @@ body {
     border: 1px solid #afb0b3;
     border-radius: 10px 10px 0 0;
     transform: translateY(calc(100% - 54px));
-    transition: transform 0.24s ease;
+    transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 -6px 18px rgba(16, 24, 40, 0.2);
     z-index: 4200;
+    will-change: transform;
   }
 
   .sheet-handle-wrap {
@@ -907,6 +908,7 @@ body {
     border-top: 1px solid var(--line);
     border-radius: 16px 16px 0 0;
     transform: translateY(104%);
+    transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   #detail-scrim {
