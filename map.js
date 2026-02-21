@@ -45,6 +45,7 @@ const appState = {
   satelliteStyleUrl: SATELLITE_STYLE_FALLBACK,
   filtersInitialized: false,
   totalLocationCount: 0,
+  sourceLocationCount: 0,
   filterCountRetryTimer: null,
   filterCountDeferredTimer: null,
   filterCountRetryAttempts: 0,
@@ -76,17 +77,22 @@ const ICON_SVGS = {
 };
 
 async function init() {
+  console.log('[filters] init:start');
   const data = await fetchMapData();
+  console.log('[filters] init:data-loaded', {
+    categories: Array.isArray(data.categories) ? data.categories.length : 0,
+    locations: Array.isArray(data.locations) ? data.locations.length : 0
+  });
   appState.mapData = data;
   appState.venueStyleUrl = resolveVenueStyleUrl(data.map?.style);
   appState.satelliteStyleUrl = resolveSatelliteStyleUrl();
   normalizeData(data);
-  console.log('[filters] locations parsed and stored', {
+  console.log('[filters] init:locations-parsed', {
     locations: appState.locations.length,
     filtered: appState.filteredLocations.length
   });
-  updateFilterCount();
-  scheduleFilterCountRefresh(250);
+  updateFilterCount('init:after-normalize');
+  scheduleFilterCountRefresh(250, 'init:deferred-250ms');
   initializeSidebarState();
   bindUi();
   applyFilters();
@@ -143,6 +149,10 @@ async function fetchMapData() {
       const hasLocations = Array.isArray(json.locations) && json.locations.length > 0;
       const hasCategories = Array.isArray(json.categories) && json.categories.length > 0;
       if (hasLocations && hasCategories) {
+        console.log('[filters] fetchMapData:using-source', source, {
+          categories: json.categories.length,
+          locations: json.locations.length
+        });
         return json;
       }
     } catch (_) {
@@ -153,6 +163,7 @@ async function fetchMapData() {
 }
 
 function normalizeData(data) {
+  appState.sourceLocationCount = Array.isArray(data.locations) ? data.locations.length : 0;
   appState.categoriesById = new Map();
   appState.activeCategories = new Set();
   appState.categoryExpanded = new Map();
@@ -217,8 +228,13 @@ function normalizeData(data) {
   }
 
   appState.filteredLocations = [...appState.locations];
-  appState.totalLocationCount = appState.locations.length;
+  appState.totalLocationCount = appState.sourceLocationCount || appState.locations.length;
   appState.filtersInitialized = false;
+  console.log('[filters] normalizeData:totals', {
+    sourceLocationCount: appState.sourceLocationCount,
+    totalLocationCount: appState.totalLocationCount,
+    locations: appState.locations.length
+  });
 
   // Ensure category counts match the rendered data.
   const computedCounts = new Map();
@@ -229,9 +245,9 @@ function normalizeData(data) {
     .map((category) => ({ ...category, count: computedCounts.get(category.id) || category.count || 0 }))
     .filter((category) => category.count > 0)
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  requestAnimationFrame(updateFilterCount);
-  scheduleFilterCountRefresh(120);
-  scheduleFilterCountRefresh(600);
+  requestAnimationFrame(() => updateFilterCount('normalizeData:raf'));
+  scheduleFilterCountRefresh(120, 'normalizeData:deferred-120ms');
+  scheduleFilterCountRefresh(600, 'normalizeData:deferred-600ms');
 }
 
 function bindUi() {
@@ -624,7 +640,12 @@ function applyFilters() {
   }
 
   renderOverview(query);
-  updateFilterCount();
+  console.log('[filters] applyFilters:computed', {
+    query,
+    filtered: appState.filteredLocations.length,
+    total: appState.locations.length
+  });
+  updateFilterCount('applyFilters');
 }
 
 function renderOverview(query) {
@@ -895,28 +916,32 @@ function updateSidebarToggle(isOpen) {
   toggle.setAttribute('aria-label', isOpen ? 'Collapse filters' : 'Expand filters');
 }
 
-function updateFilterCount() {
+function updateFilterCount(source = 'unknown') {
   const countEl = document.getElementById('filters-count');
   if (!countEl) {
     // If the element is not mounted yet, retry shortly.
-    scheduleFilterCountRefresh(80);
+    console.log('[filters] updateFilterCount:countEl-missing', { source });
+    scheduleFilterCountRefresh(80, `${source}:retry-no-countEl`);
     return;
   }
   const hasLocations = appState.locations.length > 0;
   const filteredCount = appState.filteredLocations?.length ?? appState.locations?.length ?? 0;
-  appState.totalLocationCount = hasLocations ? appState.locations.length : (appState.totalLocationCount || 0);
+  const nextTotal = appState.sourceLocationCount || (hasLocations ? appState.locations.length : (appState.totalLocationCount || 0));
+  appState.totalLocationCount = nextTotal;
   console.log('[filters] updateFilterCount', {
+    source,
     locations: appState.locations.length,
-    filtered: filteredCount
+    filtered: filteredCount,
+    totalLocationCount: appState.totalLocationCount
   });
   countEl.textContent = `(${appState.totalLocationCount})`;
-  updateMobileCategoriesButton(appState.totalLocationCount);
+  updateMobileCategoriesButton(appState.totalLocationCount, `updateFilterCount:${source}`);
 
   // Retry while data is still empty to survive async load races.
   if (!hasLocations) {
     appState.filterCountRetryAttempts += 1;
     if (appState.filterCountRetryTimer) clearTimeout(appState.filterCountRetryTimer);
-    appState.filterCountRetryTimer = setTimeout(updateFilterCount, 150);
+    appState.filterCountRetryTimer = setTimeout(() => updateFilterCount(`${source}:retry-empty-locations`), 150);
     return;
   }
   if (hasLocations) {
@@ -928,17 +953,17 @@ function updateFilterCount() {
   }
 }
 
-function scheduleFilterCountRefresh(delay = 150) {
+function scheduleFilterCountRefresh(delay = 150, source = 'unknown') {
   if (appState.filterCountDeferredTimer) {
     clearTimeout(appState.filterCountDeferredTimer);
   }
   appState.filterCountDeferredTimer = setTimeout(() => {
     appState.filterCountDeferredTimer = null;
-    updateFilterCount();
+    updateFilterCount(`deferred:${source}`);
   }, delay);
 }
 
-function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0) {
+function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0, source = 'unknown') {
   const button = document.getElementById('mobile-categories-btn');
   if (!button) return;
   const label = document.getElementById('mobile-filters-label');
@@ -948,6 +973,12 @@ function updateMobileCategoriesButton(totalCount = appState.totalLocationCount |
   const text = open ? 'Close Filters' : `Filters (${totalCount})`;
   if (label) label.textContent = text;
   else button.textContent = text;
+  console.log('[filters] updateMobileCategoriesButton', {
+    source,
+    totalCount,
+    open,
+    text
+  });
 }
 
 function updateMapStyleButtons() {
@@ -993,7 +1024,7 @@ async function hydrateStyleContent() {
   buildLayers();
   appState.hoveredFeatureId = null;
   applyFilters();
-  scheduleFilterCountRefresh(120);
+  scheduleFilterCountRefresh(120, 'hydrateStyleContent');
   syncSelectedLayer();
 }
 
