@@ -94,6 +94,19 @@ body {
   background: #fcfcfd;
 }
 
+.sidebar-logo-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 12px 14px 10px;
+}
+
+.sidebar-logo {
+  width: 100%;
+  max-width: 160px;
+  height: auto;
+  display: block;
+}
+
 .sidebar-filters-btn {
   margin: 12px 14px 0;
   border: 1px solid #d0d5dd;
