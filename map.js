@@ -14,10 +14,11 @@ const SATELLITE_STYLE_FALLBACK = {
   },
   layers: [{ id: 'esri-imagery', type: 'raster', source: 'esri' }]
 };
-const DEFAULT_CENTER = [-95.8624, 32.5585];
-const DEFAULT_ZOOM = 17;
-const DEFAULT_PITCH = 60;
+const DEFAULT_CENTER = [-95.86125950671834, 32.560925506814755];
+const DEFAULT_ZOOM = 17.5;
+const DEFAULT_PITCH = 50;
 const DEFAULT_BEARING = 0;
+const LEGACY_CENTER = [-95.8624, 32.5585];
 const SOURCE_ID = 'locations';
 const LAYER_MARKERS = 'location-markers';
 const LAYER_ICONS = 'location-icons';
@@ -78,13 +79,14 @@ async function init() {
   bindUi();
   applyFilters();
   requestAnimationFrame(updateFilterCount);
+  const initialMapView = resolveInitialMapView(data);
 
   map = new maplibregl.Map({
     container: 'map',
     style: appState.venueStyleUrl,
-    center: data.map?.center || DEFAULT_CENTER,
-    zoom: Number.isFinite(data.map?.zoom) ? data.map.zoom : DEFAULT_ZOOM,
-    pitch: Number.isFinite(data.map?.pitch) ? data.map.pitch : DEFAULT_PITCH,
+    center: initialMapView.center,
+    zoom: initialMapView.zoom,
+    pitch: initialMapView.pitch,
     bearing: DEFAULT_BEARING,
     maxZoom: data.map?.maxZoom || 20,
     attributionControl: true,
@@ -330,17 +332,17 @@ function buildLayers() {
         ['boolean', ['feature-state', 'hover'], false],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 12.2,
-          16, 15.1,
-          17, 17.1,
-          20, 20.1
+          14, 12.8,
+          16, 15.9,
+          17.5, 18.0,
+          20, 21.0
         ],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 10.8,
-          16, 13.5,
-          17, 15.4,
-          20, 18.2
+          14, 11.4,
+          16, 14.2,
+          17.5, 16.2,
+          20, 18.8
         ]
       ],
       'circle-stroke-width': [
@@ -380,10 +382,10 @@ function buildLayers() {
       'icon-padding': 8,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.38,
-        16, 0.45,
-        17, 0.53,
-        20, 0.64
+        14, 0.43,
+        16, 0.52,
+        17.5, 0.62,
+        20, 0.74
       ]
     }
   });
@@ -895,6 +897,23 @@ function resolveSatelliteStyleUrl() {
     return `https://api.maptiler.com/maps/satellite/style.json?key=${window.MAPTILER_KEY}`;
   }
   return SATELLITE_STYLE_FALLBACK;
+}
+
+function resolveInitialMapView(data) {
+  const hasCenter = Array.isArray(data.map?.center) && data.map.center.length === 2;
+  let center = hasCenter ? data.map.center : DEFAULT_CENTER;
+  let zoom = Number.isFinite(data.map?.zoom) ? data.map.zoom : DEFAULT_ZOOM;
+  let pitch = Number.isFinite(data.map?.pitch) ? data.map.pitch : DEFAULT_PITCH;
+
+  const isLegacyCenter =
+    hasCenter &&
+    Math.abs(center[0] - LEGACY_CENTER[0]) < 1e-7 &&
+    Math.abs(center[1] - LEGACY_CENTER[1]) < 1e-7;
+  if (isLegacyCenter) center = DEFAULT_CENTER;
+  zoom = Math.max(zoom, DEFAULT_ZOOM);
+  pitch = Math.min(pitch, DEFAULT_PITCH);
+
+  return { center, zoom, pitch };
 }
 
 function escapeHtml(value) {
