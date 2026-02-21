@@ -220,6 +220,7 @@ function bindUi() {
   });
 
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+  document.getElementById('mobile-categories-btn').addEventListener('click', toggleSidebar);
   document.getElementById('style-venue-btn').addEventListener('click', () => setMapStyle('venue'));
   document.getElementById('style-satellite-btn').addEventListener('click', () => setMapStyle('satellite'));
   document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebar);
@@ -239,23 +240,31 @@ function bindUi() {
       const app = document.getElementById('app');
       app.classList.toggle('sidebar-open', appState.sidebarOpen);
       app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
+      app.classList.remove('mobile-sidebar-open');
       updateSidebarToggle(appState.sidebarOpen);
+      updateMobileCategoriesButton();
     }
     if (mobile) {
-      document.getElementById('app').classList.remove('sidebar-collapsed');
-      document.getElementById('app').classList.add('sidebar-open');
+      const app = document.getElementById('app');
+      app.classList.remove('sidebar-collapsed');
+      app.classList.add('sidebar-open');
       updateSidebarToggle(true);
+      updateMobileCategoriesButton();
     }
     map?.resize();
   });
 }
 
 function initializeSidebarState() {
+  const mobile = window.innerWidth <= 960;
   appState.sidebarOpen = false;
   const app = document.getElementById('app');
-  app.classList.toggle('sidebar-open', appState.sidebarOpen);
-  app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
+  app.classList.toggle('sidebar-open', mobile ? true : appState.sidebarOpen);
+  app.classList.toggle('sidebar-collapsed', mobile ? false : !appState.sidebarOpen);
+  app.classList.remove('mobile-sidebar-open');
+  document.getElementById('mobile-scrim').hidden = true;
   updateSidebarToggle(appState.sidebarOpen);
+  updateMobileCategoriesButton();
   updateFilterCount();
   updateMapStyleButtons();
 }
@@ -609,6 +618,7 @@ function toggleSidebar() {
     const app = document.getElementById('app');
     app.classList.toggle('mobile-sidebar-open');
     document.getElementById('mobile-scrim').hidden = !app.classList.contains('mobile-sidebar-open');
+    updateMobileCategoriesButton();
     return;
   }
 
@@ -626,6 +636,7 @@ function closeMobileSidebar() {
   const app = document.getElementById('app');
   app.classList.remove('mobile-sidebar-open');
   document.getElementById('mobile-scrim').hidden = true;
+  updateMobileCategoriesButton();
 }
 
 function updateSidebarToggle(isOpen) {
@@ -647,6 +658,14 @@ function updateFilterCount() {
     ? appState.totalLocationCount
     : loadedCount;
   countEl.textContent = `(${total || 0})`;
+}
+
+function updateMobileCategoriesButton() {
+  const button = document.getElementById('mobile-categories-btn');
+  if (!button) return;
+  const open = document.getElementById('app').classList.contains('mobile-sidebar-open');
+  button.setAttribute('aria-expanded', String(open));
+  button.textContent = open ? 'Close Categories' : 'Categories';
 }
 
 function updateMapStyleButtons() {
