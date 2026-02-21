@@ -147,14 +147,29 @@ function setupCategoryState() {
 function initSidebarControls() {
   // Debounced search for performance with 700+ locations
   let searchTimeout;
-  document.getElementById('search-input').addEventListener('input', () => {
+  const searchInput = document.getElementById('search-input');
+  searchInput.addEventListener('input', () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(refreshVisibleData, 180);
   });
 
-  // Escape closes popup / sidebar
+  // Enter on search flies to first result
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(searchTimeout);
+      refreshVisibleData();
+      if (visibleLocations.length > 0) {
+        openLocation(visibleLocations[0], true);
+      }
+    }
+  });
+
+  // Escape closes detail sheet / popup / sidebar
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      const sheet = document.getElementById('detail-sheet');
+      if (sheet && !sheet.hidden) { closeDetailSheet(); return; }
       if (popup) { popup.remove(); popup = null; selectedLocationId = null; syncSelectedLayer(); }
       if (window.innerWidth <= 960) closeSidebarMobile();
     }
@@ -182,6 +197,12 @@ function initSidebarControls() {
   document.getElementById('sidebar-collapse').addEventListener('click', toggleSidebarDesktop);
   document.getElementById('mobile-sidebar-toggle').addEventListener('click', toggleSidebarFromMapButton);
   document.getElementById('mobile-backdrop').addEventListener('click', closeSidebarMobile);
+
+  // Detail sheet close
+  document.getElementById('detail-close')?.addEventListener('click', closeDetailSheet);
+
+  // Mobile bottom nav
+  initMobileNav();
 
   window.addEventListener('resize', () => {
     if (window.innerWidth > 960) {
@@ -738,34 +759,32 @@ function openLocation(loc, flyTo) {
   const badgeColor = normalizeColor(loc.color || category?.color);
   const badgeText = getReadableTextColor(badgeColor);
 
+  // On mobile: use bottom sheet detail panel
+  // On desktop: use both popup (as anchor) and detail side panel
+  const isMobile = window.innerWidth <= 960;
+
   if (popup) popup.remove();
 
-  popup = new maplibregl.Popup({
-    offset: 18,
-    maxWidth: '360px',
-    className: 'fairmap-popup'
-  })
-    .setLngLat([loc.lng, loc.lat])
-    .setHTML(`
-      <article class="popup-card">
-        ${loc.image ? `<img src="${loc.image.replace(/"/g,'&quot;')}" alt="${escapeHtml(loc.name)}" class="popup-image" onerror="this.style.display='none'">` : ''}
-        <div class="popup-body">
-          ${loc.featured ? `<span class="popup-featured">⭐ Featured</span>` : ''}
-          <h3 class="popup-title">${escapeHtml(loc.name)}</h3>
-          <p class="popup-badge" style="--badge-color:${badgeColor};--badge-text:${badgeText};">
-            ${getCategoryIconPreviewHtml(category, 'popup-icon', true)}
-            <span>${escapeHtml(category?.name || loc.categoryName)}</span>
-          </p>
-          ${loc.address ? `<p class="popup-address">📍 ${escapeHtml(loc.address)}</p>` : ''}
-          ${loc.description ? `<div class="popup-description">${loc.description}</div>` : ''}
-          <div class="popup-actions">
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}" target="_blank" rel="noopener" class="popup-action-btn">📍 Directions</a>
-            <button onclick="navigator.share?.({title:'${escapeHtml(loc.name).replace(/'/g,"\\'")}',text:'Check out ${escapeHtml(loc.name).replace(/'/g,"\\'")} at First Monday!',url:location.origin+'?loc=${loc.id}'}).catch(()=>{})" class="popup-action-btn">↗ Share</button>
-          </div>
+  if (!isMobile) {
+    // Desktop: show a small popup anchor on the map
+    popup = new maplibregl.Popup({
+      offset: 18,
+      maxWidth: '240px',
+      className: 'fairmap-popup fairmap-popup-mini'
+    })
+      .setLngLat([loc.lng, loc.lat])
+      .setHTML(`
+        <div class="popup-mini-card">
+          <strong>${escapeHtml(loc.name)}</strong>
+          <span class="category-dot" style="--dot-color:${badgeColor};"></span>
+          <span style="font-size:0.75rem;color:#6a7784;">${escapeHtml(category?.name || loc.categoryName)}</span>
         </div>
-      </article>
-    `)
-    .addTo(map);
+      `)
+      .addTo(map);
+  }
+
+  // Show detail sheet (works on both mobile and desktop)
+  showDetailSheet(loc, category, badgeColor, badgeText);
 
   if (flyTo) {
     map.easeTo({
@@ -776,9 +795,79 @@ function openLocation(loc, flyTo) {
     });
   }
 
-  if (window.innerWidth <= 960) {
+  if (isMobile) {
     closeSidebarMobile();
   }
+}
+
+function showDetailSheet(loc, category, badgeColor, badgeText) {
+  const sheet = document.getElementById('detail-sheet');
+  const content = document.getElementById('detail-content');
+
+  const shareUrl = `${location.origin}?loc=${loc.id}`;
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
+  const appleDirectionsUrl = `https://maps.apple.com/?daddr=${loc.lat},${loc.lng}`;
+
+  content.innerHTML = `
+    ${loc.image ? `<img src="${loc.image.replace(/"/g,'&quot;')}" alt="${escapeHtml(loc.name)}" class="detail-hero" onerror="this.style.display='none'">` : ''}
+    <div class="detail-body">
+      ${loc.featured ? `<span class="detail-featured">⭐ Featured Vendor</span>` : ''}
+      <h2 class="detail-title">${escapeHtml(loc.name)}</h2>
+      <span class="detail-badge" style="background:${badgeColor};color:${badgeText};">
+        ${getCategoryIconPreviewHtml(category, 'popup-icon', true)}
+        ${escapeHtml(category?.name || loc.categoryName)}
+      </span>
+      ${loc.address ? `<div class="detail-address">📍 ${escapeHtml(loc.address)}</div>` : ''}
+      ${loc.description ? `<div class="detail-description">${loc.description}</div>` : ''}
+      <div class="detail-actions">
+        <a href="${directionsUrl}" target="_blank" rel="noopener" class="detail-action-btn primary">📍 Directions</a>
+        <button type="button" class="detail-action-btn secondary" id="detail-share-btn">↗ Share</button>
+      </div>
+      <div style="text-align:center;margin-top:8px;">
+        <a href="${appleDirectionsUrl}" target="_blank" rel="noopener" style="font-size:0.75rem;color:#6a7784;text-decoration:none;">Open in Apple Maps →</a>
+      </div>
+    </div>
+  `;
+
+  sheet.hidden = false;
+  // Force reflow for transition
+  sheet.offsetHeight;
+
+  // Share button handler
+  document.getElementById('detail-share-btn')?.addEventListener('click', () => {
+    if (navigator.share) {
+      navigator.share({
+        title: loc.name,
+        text: `Check out ${loc.name} at First Monday Trade Days!`,
+        url: shareUrl
+      }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(shareUrl).then(() => {
+        showToast('Link copied to clipboard!');
+      }).catch(() => {});
+    }
+  });
+}
+
+function closeDetailSheet() {
+  const sheet = document.getElementById('detail-sheet');
+  sheet.hidden = true;
+  selectedLocationId = null;
+  syncSelectedLayer();
+  if (popup) { popup.remove(); popup = null; }
+}
+
+function showToast(message) {
+  let toast = document.querySelector('.detail-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.className = 'detail-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('visible');
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => toast.classList.remove('visible'), 2400);
 }
 
 function getReadableTextColor(hex) {
@@ -889,6 +978,83 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+// ── Mobile Bottom Nav ─────────────────────────────────────────────────────
+function initMobileNav() {
+  const nav = document.getElementById('mobile-nav');
+  if (!nav) return;
+
+  function updateNavVisibility() {
+    nav.hidden = window.innerWidth > 960;
+  }
+  updateNavVisibility();
+  window.addEventListener('resize', updateNavVisibility);
+
+  nav.querySelectorAll('.mobile-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.nav;
+
+      // Update active state
+      nav.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      switch (action) {
+        case 'map':
+          closeSidebarMobile();
+          closeDetailSheet();
+          break;
+        case 'search':
+          openSidebarMobile();
+          setTimeout(() => {
+            const input = document.getElementById('search-input');
+            input?.focus();
+            input?.select();
+          }, 300);
+          break;
+        case 'categories':
+          openSidebarMobile();
+          // Ensure category panel is expanded
+          if (categoriesCollapsed) {
+            categoriesCollapsed = false;
+            const toggle = document.getElementById('category-panel-toggle');
+            toggle?.setAttribute('aria-expanded', 'true');
+            document.getElementById('category-list')?.classList.remove('is-collapsed');
+          }
+          break;
+        case 'nearby':
+          closeSidebarMobile();
+          closeDetailSheet();
+          // Trigger geolocation
+          if (geolocateControl) {
+            geolocateControl.trigger();
+          }
+          // After geolocate fires, open sidebar with sorted-by-distance locations
+          setTimeout(() => {
+            openSidebarMobile();
+          }, 800);
+          break;
+      }
+    });
+  });
+}
+
+// ── Detail sheet swipe-to-close ───────────────────────────────────────────
+(function setupDetailSheetGestures() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const handle = document.getElementById('detail-handle');
+    const sheet = document.getElementById('detail-sheet');
+    if (!handle || !sheet) return;
+
+    let startY = 0;
+    handle.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    handle.addEventListener('touchend', (e) => {
+      const deltaY = e.changedTouches[0].clientY - startY;
+      if (deltaY > 80) closeDetailSheet();
+    }, { passive: true });
+  });
+})();
 
 // Register service worker for PWA/offline support
 if ('serviceWorker' in navigator) {

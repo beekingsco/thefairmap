@@ -583,6 +583,21 @@ body {
 
 .popup-action-btn:hover { background: #ece5dc; }
 
+/* Mini popup for desktop (anchor point) */
+.fairmap-popup-mini .maplibregl-popup-content {
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.popup-mini-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.popup-mini-card strong {
+  font-weight: 700;
+}
+
 .maplibregl-ctrl-top-right {
   top: 58px;
 }
@@ -848,6 +863,289 @@ body.admin-page {
 }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DETAIL SHEET — bottom sheet on mobile, side panel on desktop
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.detail-sheet {
+  position: fixed;
+  z-index: 10;
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Desktop: right side panel */
+@media (min-width: 961px) {
+  .detail-sheet {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 400px;
+    max-width: 35vw;
+    border-left: 1px solid var(--border);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .detail-sheet:not([hidden]) {
+    transform: translateX(0);
+  }
+  .detail-sheet-handle { display: none; }
+}
+
+/* Mobile: bottom sheet */
+@media (max-width: 960px) {
+  .detail-sheet {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 82vh;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.18);
+    transform: translateY(100%);
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .detail-sheet:not([hidden]) {
+    transform: translateY(0);
+  }
+}
+
+.detail-sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+  cursor: grab;
+  flex-shrink: 0;
+}
+.detail-sheet-handle span {
+  width: 36px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.detail-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.06);
+  color: #444;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.detail-close:hover { background: rgba(0,0,0,0.1); }
+
+.detail-sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.detail-hero {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  background: #f0eee9;
+}
+
+.detail-body {
+  padding: 16px 20px 24px;
+}
+
+.detail-featured {
+  display: inline-block;
+  background: #fff3cd;
+  color: #856404;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.detail-title {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  padding-right: 36px;
+}
+
+.detail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 5px 11px;
+  margin-bottom: 12px;
+}
+
+.detail-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: #4e5963;
+  font-size: 0.85rem;
+}
+
+.detail-description {
+  font-size: 0.88rem;
+  color: #2a2f34;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.detail-description p:first-child { margin-top: 0; }
+.detail-description p:last-child { margin-bottom: 0; }
+
+.detail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.detail-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, transform 0.1s;
+  border: none;
+}
+.detail-action-btn:active { transform: scale(0.97); }
+
+.detail-action-btn.primary {
+  background: var(--accent);
+  color: #fff;
+}
+.detail-action-btn.primary:hover { background: #7a4d28; }
+
+.detail-action-btn.secondary {
+  background: #f5f0eb;
+  color: var(--accent);
+  border: 1px solid #e8dfd6;
+}
+.detail-action-btn.secondary:hover { background: #ece5dc; }
+
+.detail-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1e2328;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 50;
+  pointer-events: none;
+}
+.detail-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE BOTTOM NAV
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  display: flex;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  padding: 4px 0 calc(4px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+}
+
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px 6px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
+  min-height: 48px;
+}
+
+.mobile-nav-item.active {
+  color: var(--accent);
+}
+
+.mobile-nav-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.mobile-nav-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Show mobile nav only on mobile */
+@media (min-width: 961px) {
+  .mobile-nav { display: none !important; }
+}
+
+/* On mobile, add bottom padding for the nav bar */
+@media (max-width: 960px) {
+  .mobile-nav:not([hidden]) ~ #map-shell {
+    padding-bottom: 56px;
+  }
+  /* Adjust map controls above nav */
+  .maplibregl-ctrl-bottom-left,
+  .maplibregl-ctrl-bottom-right {
+    bottom: 60px !important;
+  }
+  /* Move geolocate and zoom up above the bottom nav */
+  #map-style-btn {
+    bottom: 70px !important;
+  }
+  /* Detail sheet above bottom nav */
+  .detail-sheet {
+    bottom: 56px;
+  }
+}
 
 /* Admin stat cards */
 .stat-card {

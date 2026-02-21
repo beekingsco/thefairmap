@@ -193,6 +193,7 @@
         <table class="admin-table">
           <thead>
             <tr>
+              <th style="width:32px;"><input type="checkbox" id="bulk-select-all" title="Select all on page"></th>
               <th>Name</th>
               <th>Booth / Address</th>
               <th>Category</th>
@@ -204,6 +205,54 @@
           <tbody id="location-tbody"></tbody>
         </table>
       </div>
+    </section>
+
+    <!-- User Management -->
+    <section class="admin-section" id="user-section" style="display:none;">
+      <h2>Team Members</h2>
+      <p class="subtitle" style="margin:0.3rem 0 1rem;">Manage who can edit the map. Editors can add/edit locations. Admins can manage users too.</p>
+      <div id="user-list" style="margin-bottom:1rem;"></div>
+
+      <details>
+        <summary style="cursor:pointer;font-size:0.88rem;font-weight:600;padding:0.3rem 0;">+ Add Team Member</summary>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.75rem;">
+          <div>
+            <label style="font-size:0.78rem;font-weight:600;color:#555;">Username</label>
+            <input id="new-user-name" type="text" placeholder="username" style="width:100%;padding:0.55rem;border:1px solid #d5dbe2;border-radius:8px;font-size:16px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:0.78rem;font-weight:600;color:#555;">Password</label>
+            <input id="new-user-pass" type="text" placeholder="password (min 6 chars)" style="width:100%;padding:0.55rem;border:1px solid #d5dbe2;border-radius:8px;font-size:16px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:0.78rem;font-weight:600;color:#555;">Display Name</label>
+            <input id="new-user-display" type="text" placeholder="Display Name" style="width:100%;padding:0.55rem;border:1px solid #d5dbe2;border-radius:8px;font-size:16px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:0.78rem;font-weight:600;color:#555;">Role</label>
+            <select id="new-user-role" style="width:100%;padding:0.55rem;border:1px solid #d5dbe2;border-radius:8px;font-size:16px;font-family:inherit;">
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <button id="btn-add-user" class="btn btn-primary" style="margin-top:0.75rem;">Add User</button>
+      </details>
+
+      <details style="margin-top:1rem;">
+        <summary style="cursor:pointer;font-size:0.88rem;font-weight:600;padding:0.3rem 0;">🔒 Change My Password</summary>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.75rem;">
+          <div>
+            <label style="font-size:0.78rem;font-weight:600;color:#555;">Current Password</label>
+            <input id="current-password" type="password" placeholder="Current password" style="width:100%;padding:0.55rem;border:1px solid #d5dbe2;border-radius:8px;font-size:16px;font-family:inherit;">
+          </div>
+          <div>
+            <label style="font-size:0.78rem;font-weight:600;color:#555;">New Password</label>
+            <input id="new-password" type="password" placeholder="New password (min 6 chars)" style="width:100%;padding:0.55rem;border:1px solid #d5dbe2;border-radius:8px;font-size:16px;font-family:inherit;">
+          </div>
+        </div>
+        <button id="btn-change-password" class="btn btn-primary" style="margin-top:0.75rem;">Update Password</button>
+      </details>
     </section>
   </div>
 

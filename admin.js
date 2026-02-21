@@ -38,9 +38,11 @@ async function init() {
   normalizeData();
   initMap();
   bindUI();
+  bindUserUI();
   populateCategorySelect();
   renderTable();
   updateStats();
+  loadUsers();
 }
 
 async function loadData() {
@@ -136,6 +138,12 @@ function bindUI() {
     currentPage = 1;
     renderTable(currentFilter);
   });
+
+  // Bulk select all
+  document.getElementById('bulk-select-all')?.addEventListener('change', (e) => {
+    document.querySelectorAll('.bulk-check').forEach(cb => cb.checked = e.target.checked);
+    updateBulkBar();
+  });
 }
 
 function updateImagePreview(url) {
@@ -216,12 +224,99 @@ function renderCategoryGrid() {
 
   grid.innerHTML = cats.map(cat => {
     const count = countMap.get(cat.id) || 0;
-    return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.6rem;background:#f9fafb;border-radius:8px;border:1px solid #e5ebf1;">
-      <span style="width:16px;height:16px;border-radius:4px;background:${cat.color};flex-shrink:0;"></span>
-      <span style="flex:1;font-size:0.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</span>
+    return `<div class="cat-grid-item" data-cat-id="${escapeHtml(cat.id)}" style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.6rem;background:#f9fafb;border-radius:8px;border:1px solid #e5ebf1;">
+      <input type="color" value="${cat.color}" data-cat-color="${escapeHtml(cat.id)}" style="width:24px;height:24px;border:none;border-radius:4px;cursor:pointer;padding:0;background:transparent;flex-shrink:0;" title="Change color">
+      <input type="text" value="${escapeHtml(cat.name)}" data-cat-name="${escapeHtml(cat.id)}" style="flex:1;font-size:0.82rem;font-weight:600;border:1px solid transparent;border-radius:4px;padding:2px 4px;background:transparent;font-family:inherit;" title="Edit name">
       <span style="font-size:0.72rem;color:#9aa5b1;flex-shrink:0;">${count}</span>
+      <button class="btn btn-sm" data-cat-save="${escapeHtml(cat.id)}" style="display:none;font-size:0.7rem;padding:2px 6px;" title="Save">✓</button>
+      ${count === 0 ? `<button class="btn btn-sm btn-danger" data-cat-delete="${escapeHtml(cat.id)}" style="font-size:0.7rem;padding:2px 6px;" title="Delete">✕</button>` : ''}
     </div>`;
   }).join('');
+
+  // Add "new category" row
+  grid.innerHTML += `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.6rem;background:#f0fdf4;border-radius:8px;border:1px dashed #86efac;">
+    <input type="color" id="new-cat-color" value="#7a7a7a" style="width:24px;height:24px;border:none;border-radius:4px;cursor:pointer;padding:0;background:transparent;flex-shrink:0;">
+    <input type="text" id="new-cat-name" placeholder="New category name" style="flex:1;font-size:0.82rem;font-weight:600;border:1px solid #d1d5db;border-radius:4px;padding:3px 6px;font-family:inherit;">
+    <button class="btn btn-sm btn-primary" id="btn-add-cat" style="font-size:0.72rem;padding:3px 8px;">+ Add</button>
+  </div>`;
+
+  // Bind category inline edit (show save button on change)
+  grid.querySelectorAll('[data-cat-name]').forEach(input => {
+    input.addEventListener('input', () => {
+      const id = input.dataset.catName;
+      const saveBtn = grid.querySelector(`[data-cat-save="${id}"]`);
+      if (saveBtn) saveBtn.style.display = '';
+    });
+  });
+  grid.querySelectorAll('[data-cat-color]').forEach(input => {
+    input.addEventListener('input', () => {
+      const id = input.dataset.catColor;
+      const saveBtn = grid.querySelector(`[data-cat-save="${id}"]`);
+      if (saveBtn) saveBtn.style.display = '';
+    });
+  });
+
+  // Save category
+  grid.querySelectorAll('[data-cat-save]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.catSave;
+      const name = grid.querySelector(`[data-cat-name="${id}"]`)?.value.trim();
+      const color = grid.querySelector(`[data-cat-color="${id}"]`)?.value;
+      if (!name) return;
+      try {
+        const res = await fetch(`/api/categories/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, color })
+        });
+        if (!res.ok) throw new Error('Failed');
+        // Update local
+        const cat = mapData.categories.find(c => c.id === id);
+        if (cat) { cat.name = name; cat.color = color; }
+        btn.style.display = 'none';
+        populateCategorySelect();
+        showToast('Category updated!');
+      } catch (e) { alert('Error: ' + e.message); }
+    });
+  });
+
+  // Delete category
+  grid.querySelectorAll('[data-cat-delete]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.catDelete;
+      const cat = mapData.categories.find(c => c.id === id);
+      if (!confirm(`Delete category "${cat?.name || id}"?`)) return;
+      try {
+        const res = await fetch(`/api/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Failed');
+        mapData.categories = mapData.categories.filter(c => c.id !== id);
+        renderCategoryGrid();
+        populateCategorySelect();
+        showToast('Category deleted.');
+      } catch (e) { alert('Error: ' + e.message); }
+    });
+  });
+
+  // Add new category
+  document.getElementById('btn-add-cat')?.addEventListener('click', async () => {
+    const name = document.getElementById('new-cat-name')?.value.trim();
+    const color = document.getElementById('new-cat-color')?.value || '#7a7a7a';
+    if (!name) { alert('Enter a category name.'); return; }
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Failed');
+      mapData.categories.push(data.category);
+      renderCategoryGrid();
+      populateCategorySelect();
+      showToast('Category added!');
+    } catch (e) { alert('Error: ' + e.message); }
+  });
 }
 
 function renderTable(filter = '') {
@@ -246,17 +341,20 @@ function renderTable(filter = '') {
 
   if (!total) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="6" style="text-align:center;color:#9aa5b1;padding:2rem;">No locations found.</td>`;
+    tr.innerHTML = `<td colspan="7" style="text-align:center;color:#9aa5b1;padding:2rem;">No locations found.</td>`;
     tbody.appendChild(tr);
     renderPagination(0, 0, 0);
+    updateBulkBar();
     return;
   }
 
   pageList.forEach((loc) => {
     const category = getCategory(loc.categoryId, loc.categoryName);
+    const hasCoords = Number.isFinite(loc.lat) && Number.isFinite(loc.lng);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${escapeHtml(loc.name)}</strong>${loc.featured ? ' ⭐' : ''}</td>
+      <td style="width:32px;"><input type="checkbox" class="bulk-check" data-bulk-id="${escapeHtml(loc.id)}"></td>
+      <td><strong>${escapeHtml(loc.name)}</strong>${loc.featured ? ' ⭐' : ''}${!hasCoords ? ' <span style="color:#c53030;" title="Missing coordinates">⚠️</span>' : ''}</td>
       <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(loc.address || '—')}</td>
       <td><span class="badge" style="background:${category.color};">${escapeHtml(category.name)}</span></td>
       <td style="font-size:0.78rem;white-space:nowrap;"><code>${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</code></td>
@@ -276,8 +374,63 @@ function renderTable(filter = '') {
   tbody.querySelectorAll('[data-action="delete"]').forEach((btn) => {
     btn.addEventListener('click', () => deleteLocation(btn.dataset.id));
   });
+  tbody.querySelectorAll('.bulk-check').forEach((cb) => {
+    cb.addEventListener('change', updateBulkBar);
+  });
 
   renderPagination(currentPage, totalPages, total);
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  let bar = document.getElementById('bulk-bar');
+  const checked = document.querySelectorAll('.bulk-check:checked');
+
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'bulk-bar';
+    bar.style.cssText = 'display:none;align-items:center;gap:0.75rem;padding:0.6rem 1rem;background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;margin-top:0.75rem;font-size:0.85rem;';
+    const tableWrap = document.querySelector('.admin-table-wrap');
+    if (tableWrap) tableWrap.before(bar);
+  }
+
+  if (checked.length === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+
+  bar.style.display = 'flex';
+  bar.innerHTML = `
+    <strong>${checked.length} selected</strong>
+    <button class="btn btn-sm btn-danger" id="bulk-delete-btn">🗑 Delete Selected</button>
+    <button class="btn btn-sm btn-secondary" id="bulk-clear-btn">Clear</button>
+  `;
+
+  bar.querySelector('#bulk-delete-btn')?.addEventListener('click', bulkDeleteSelected);
+  bar.querySelector('#bulk-clear-btn')?.addEventListener('click', () => {
+    document.querySelectorAll('.bulk-check:checked').forEach(cb => cb.checked = false);
+    updateBulkBar();
+  });
+}
+
+async function bulkDeleteSelected() {
+  const ids = [...document.querySelectorAll('.bulk-check:checked')].map(cb => cb.dataset.bulkId);
+  if (!ids.length) return;
+  if (!confirm(`Delete ${ids.length} location(s)? This cannot be undone.`)) return;
+
+  try {
+    const res = await fetch('/api/locations/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    mapData.locations = mapData.locations.filter(l => !ids.includes(l.id));
+    renderTable(currentFilter);
+    updateStats();
+    showToast(`Deleted ${data.deleted} location(s).`);
+  } catch (e) { alert('Bulk delete error: ' + e.message); }
 }
 
 function renderPagination(page, totalPages, total) {
@@ -616,6 +769,91 @@ function parseCSV(text) {
 
 function escapeHtml(value) {
   return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── User Management ──────────────────────────────────────────────────────────
+async function loadUsers() {
+  try {
+    const res = await fetch('/api/users');
+    if (!res.ok) return; // not admin
+    const { users } = await res.json();
+    document.getElementById('user-section').style.display = '';
+    renderUserList(users);
+  } catch {}
+}
+
+function renderUserList(users) {
+  const list = document.getElementById('user-list');
+  if (!list) return;
+  list.innerHTML = users.map(u => `
+    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid #edf0f3;">
+      <span style="width:34px;height:34px;border-radius:50%;background:${u.role === 'admin' ? '#8f5a2f' : '#6b7280'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0;">
+        ${escapeHtml(u.displayName.charAt(0).toUpperCase())}
+      </span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(u.displayName)}</div>
+        <div style="font-size:0.75rem;color:#6a7784;">@${escapeHtml(u.username)} · ${u.role}</div>
+      </div>
+      ${u.id !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="removeUser('${escapeHtml(u.id)}','${escapeHtml(u.displayName)}')">Remove</button>` : '<span style="font-size:0.72rem;color:#8f5a2f;font-weight:600;">Owner</span>'}
+    </div>
+  `).join('');
+}
+
+async function removeUser(id, name) {
+  if (!confirm(`Remove "${name}" from the team?`)) return;
+  const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (res.ok) { loadUsers(); showToast('User removed.'); }
+  else { const d = await res.json(); alert(d.error || 'Failed'); }
+}
+
+function bindUserUI() {
+  // Add user button
+  document.getElementById('btn-add-user')?.addEventListener('click', async () => {
+    const username = document.getElementById('new-user-name')?.value.trim();
+    const password = document.getElementById('new-user-pass')?.value.trim();
+    const displayName = document.getElementById('new-user-display')?.value.trim() || username;
+    const role = document.getElementById('new-user-role')?.value || 'editor';
+    if (!username || !password) { alert('Username and password required.'); return; }
+    if (password.length < 6) { alert('Password must be at least 6 characters.'); return; }
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, displayName, role })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('new-user-name').value = '';
+        document.getElementById('new-user-pass').value = '';
+        document.getElementById('new-user-display').value = '';
+        loadUsers();
+        showToast(`${displayName} added to the team!`);
+      } else {
+        alert(data.error || 'Failed to add user.');
+      }
+    } catch (e) { alert('Error: ' + e.message); }
+  });
+
+  // Change password button
+  document.getElementById('btn-change-password')?.addEventListener('click', async () => {
+    const oldPass = document.getElementById('current-password')?.value;
+    const newPass = document.getElementById('new-password')?.value;
+    if (!oldPass || !newPass) { alert('Both fields required.'); return; }
+    if (newPass.length < 6) { alert('New password must be at least 6 characters.'); return; }
+    try {
+      const res = await fetch('/api/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('current-password').value = '';
+        document.getElementById('new-password').value = '';
+        showToast('Password changed successfully!');
+      } else {
+        alert(data.error || 'Failed to change password.');
+      }
+    } catch (e) { alert('Error: ' + e.message); }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);

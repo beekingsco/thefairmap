@@ -73,6 +73,33 @@
     </main>
 
     <div id="mobile-backdrop" hidden></div>
+
+    <!-- Location Detail Bottom Sheet (mobile) / Side Panel (desktop) -->
+    <div id="detail-sheet" class="detail-sheet" hidden>
+      <div class="detail-sheet-handle" id="detail-handle"><span></span></div>
+      <button class="detail-close" id="detail-close" type="button" aria-label="Close">✕</button>
+      <div class="detail-sheet-content" id="detail-content"></div>
+    </div>
+
+    <!-- Mobile Bottom Nav -->
+    <nav id="mobile-nav" class="mobile-nav" hidden>
+      <button type="button" data-nav="map" class="mobile-nav-item active" aria-label="Map">
+        <span class="mobile-nav-icon">🗺️</span>
+        <span class="mobile-nav-label">Map</span>
+      </button>
+      <button type="button" data-nav="search" class="mobile-nav-item" aria-label="Search">
+        <span class="mobile-nav-icon">🔍</span>
+        <span class="mobile-nav-label">Search</span>
+      </button>
+      <button type="button" data-nav="categories" class="mobile-nav-item" aria-label="Categories">
+        <span class="mobile-nav-icon">≡</span>
+        <span class="mobile-nav-label">Categories</span>
+      </button>
+      <button type="button" data-nav="nearby" class="mobile-nav-item" aria-label="Near Me">
+        <span class="mobile-nav-icon">📍</span>
+        <span class="mobile-nav-label">Near Me</span>
+      </button>
+    </nav>
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
