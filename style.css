@@ -366,14 +366,15 @@ body {
 }
 
 .style-controls {
-  position: fixed;
+  position: fixed !important;
   top: max(10px, env(safe-area-inset-top));
-  right: 60px;
-  left: auto !important;
+  right: 10px !important;
+  left: unset !important;
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
+  width: max-content;
   z-index: 6000;
   pointer-events: auto;
 }
@@ -739,7 +740,8 @@ body {
 
   .style-controls {
     top: max(56px, calc(env(safe-area-inset-top) + 6px));
-    right: 8px;
+    right: 8px !important;
+    left: unset !important;
     gap: 6px;
   }
 
@@ -781,7 +783,8 @@ body {
   }
 
   .style-controls {
-    right: 6px;
+    right: 6px !important;
+    left: unset !important;
     gap: 5px;
   }
 
