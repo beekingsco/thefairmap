@@ -571,6 +571,11 @@ function renderOverview(query) {
 
     const row = document.createElement('div');
     row.className = 'category-row';
+    const toggleCategoryVisibility = () => {
+      if (appState.activeCategories.has(category.id)) appState.activeCategories.delete(category.id);
+      else appState.activeCategories.add(category.id);
+      applyFilters();
+    };
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
@@ -580,26 +585,35 @@ function renderOverview(query) {
     toggle.style.setProperty('--cat-color', category.color);
     toggle.addEventListener('click', (event) => {
       event.stopPropagation();
-      if (appState.activeCategories.has(category.id)) appState.activeCategories.delete(category.id);
-      else appState.activeCategories.add(category.id);
-      applyFilters();
+      toggleCategoryVisibility();
     });
 
     const head = document.createElement('button');
     head.type = 'button';
     head.className = 'category-head';
-    head.setAttribute('aria-expanded', String(expanded));
+    head.setAttribute('aria-pressed', String(active));
+    head.title = active ? 'Hide category markers' : 'Show category markers';
     head.innerHTML = `
       <span class="category-name">${escapeHtml(category.name)}</span>
       <span class="category-count">${visibleCounts.get(category.id) || 0}/${category.count}</span>
     `;
-    head.addEventListener('click', () => {
+    head.addEventListener('click', toggleCategoryVisibility);
+
+    const expandBtn = document.createElement('button');
+    expandBtn.type = 'button';
+    expandBtn.className = 'category-expand';
+    expandBtn.setAttribute('aria-label', expanded ? `Collapse ${category.name}` : `Expand ${category.name}`);
+    expandBtn.setAttribute('aria-expanded', String(expanded));
+    expandBtn.innerHTML = expanded ? '&#9660;' : '&#9654;';
+    expandBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
       appState.categoryExpanded.set(category.id, !expanded);
       renderOverview(query);
     });
 
     row.appendChild(toggle);
     row.appendChild(head);
+    row.appendChild(expandBtn);
     cat.appendChild(row);
 
     const locList = document.createElement('div');
