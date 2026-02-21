@@ -75,10 +75,14 @@ async function init() {
   appState.venueStyleUrl = resolveVenueStyleUrl(data.map?.style);
   appState.satelliteStyleUrl = resolveSatelliteStyleUrl();
   normalizeData(data);
+  console.log('[filters] locations parsed and stored', {
+    locations: appState.locations.length,
+    filtered: appState.filteredLocations.length
+  });
+  updateFilterCount();
   initializeSidebarState();
   bindUi();
   applyFilters();
-  requestAnimationFrame(updateFilterCount);
   const initialMapView = resolveInitialMapView(data);
 
   map = new maplibregl.Map({
@@ -282,7 +286,6 @@ function initializeSidebarState() {
   document.getElementById('mobile-scrim').hidden = true;
   updateSidebarToggle(appState.sidebarOpen);
   updateMobileCategoriesButton();
-  updateFilterCount();
   updateMapStyleButtons();
 }
 
@@ -755,8 +758,13 @@ function updateFilterCount() {
     requestAnimationFrame(updateFilterCount);
     return;
   }
+  if (!appState.locations.length) return;
   const filteredCount = appState.filteredLocations?.length ?? appState.locations?.length ?? 0;
   appState.totalLocationCount = appState.locations?.length ?? 0;
+  console.log('[filters] updateFilterCount', {
+    locations: appState.locations.length,
+    filtered: filteredCount
+  });
   countEl.textContent = `(${filteredCount})`;
   updateMobileCategoriesButton(filteredCount);
 }
