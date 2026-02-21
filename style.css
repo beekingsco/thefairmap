@@ -298,14 +298,14 @@ body {
 }
 
 .style-controls {
-  position: fixed;
+  position: absolute;
   top: max(12px, env(safe-area-inset-top));
   right: 14px;
-  display: flex !important;
+  display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
-  z-index: 3100;
+  z-index: 3600;
   pointer-events: auto;
   visibility: visible;
   opacity: 1;
