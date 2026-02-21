@@ -424,13 +424,13 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(404px, 32vw);
+  width: min(430px, 34vw);
   background: #fff;
   border-left: 1px solid var(--line);
   box-shadow: -6px 0 28px rgba(16, 24, 40, 0.16);
   z-index: 4200;
   transform: translateX(100%);
-  transition: transform 0.24s cubic-bezier(0.22, 0.86, 0.36, 1);
+  transition: transform 0.26s cubic-bezier(0.22, 0.86, 0.36, 1);
   will-change: transform;
 }
 
@@ -461,7 +461,7 @@ body {
 .detail-content {
   height: 100%;
   overflow: auto;
-  padding: 18px 16px 28px;
+  padding: 20px 18px 28px;
 }
 
 .detail-header {
@@ -479,24 +479,25 @@ body {
 
 .detail-title {
   margin: 0;
-  font-size: 23px;
-  line-height: 1.2;
+  font-size: 26px;
+  line-height: 1.14;
 }
 
 .detail-badge {
   display: inline-flex;
   margin-top: 10px;
   border-radius: 999px;
-  padding: 5px 11px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .detail-gallery {
-  margin-top: 16px;
+  margin-top: 18px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
 }
 
 .detail-photo:first-child {
@@ -508,7 +509,7 @@ body {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid #e4e7ec;
   background: #f2f4f7;
   transition: transform 0.2s ease;
@@ -529,7 +530,7 @@ body {
 }
 
 .detail-photo-placeholder {
-  margin-top: 14px;
+  margin-top: 18px;
   border: 1px dashed #d0d5dd;
   border-radius: 10px;
   min-height: 168px;
@@ -552,8 +553,16 @@ body {
   font-weight: 600;
 }
 
+.detail-body {
+  margin-top: 14px;
+  border: 1px solid #eaecf0;
+  border-radius: 12px;
+  background: #fcfcfd;
+  padding: 12px;
+}
+
 .detail-description {
-  margin-top: 12px;
+  margin-top: 0;
   font-size: 14px;
   line-height: 1.54;
   color: #344054;
@@ -566,7 +575,7 @@ body {
 }
 
 .detail-actions {
-  margin-top: 16px;
+  margin-top: 18px;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;

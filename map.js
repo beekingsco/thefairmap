@@ -22,6 +22,8 @@ const LEGACY_CENTER = [-95.8624, 32.5585];
 const SOURCE_ID = 'locations';
 const LAYER_MARKERS = 'location-markers';
 const LAYER_ICONS = 'location-icons';
+const LAYER_CLUSTERS = 'location-clusters';
+const LAYER_CLUSTER_COUNT = 'location-cluster-count';
 const LAYER_SELECTED = 'location-selected';
 const LAYER_HOVER = 'location-hover';
 
@@ -328,13 +330,53 @@ function buildLayers() {
   map.addSource(SOURCE_ID, {
     type: 'geojson',
     data: toFeatureCollection([]),
-    generateId: true
+    generateId: true,
+    cluster: true,
+    clusterRadius: 48,
+    clusterMaxZoom: 18
+  });
+
+  map.addLayer({
+    id: LAYER_CLUSTERS,
+    type: 'circle',
+    source: SOURCE_ID,
+    filter: ['has', 'point_count'],
+    paint: {
+      'circle-color': '#111111',
+      'circle-opacity': 0.84,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 3,
+      'circle-radius': [
+        'step',
+        ['get', 'point_count'],
+        19,
+        10, 23,
+        30, 27,
+        80, 31
+      ]
+    }
+  });
+
+  map.addLayer({
+    id: LAYER_CLUSTER_COUNT,
+    type: 'symbol',
+    source: SOURCE_ID,
+    filter: ['has', 'point_count'],
+    layout: {
+      'text-field': ['get', 'point_count_abbreviated'],
+      'text-size': 12,
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold']
+    },
+    paint: {
+      'text-color': '#ffffff'
+    }
   });
 
   map.addLayer({
     id: LAYER_MARKERS,
     type: 'circle',
     source: SOURCE_ID,
+    filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': ['get', 'color'],
       'circle-radius': [
@@ -389,7 +431,7 @@ function buildLayers() {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
       'icon-allow-overlap': false,
       'icon-ignore-placement': false,
-      'icon-padding': 22,
+      'icon-padding': 28,
       'symbol-sort-key': ['-', 1000, ['to-number', ['id'], 0]],
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
@@ -405,7 +447,7 @@ function buildLayers() {
     id: LAYER_HOVER,
     type: 'circle',
     source: SOURCE_ID,
-    filter: ['==', ['id'], -1],
+    filter: ['all', ['!', ['has', 'point_count']], ['==', ['id'], -1]],
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
@@ -423,7 +465,7 @@ function buildLayers() {
     id: LAYER_SELECTED,
     type: 'circle',
     source: SOURCE_ID,
-    filter: ['==', ['get', 'id'], ''],
+    filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'id'], '']],
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
@@ -490,8 +532,31 @@ function bindMapEvents() {
   if (appState.mapEventsBound) return;
   appState.mapEventsBound = true;
 
+  map.on('click', LAYER_CLUSTERS, (event) => {
+    const clusterFeature = event.features?.[0];
+    const clusterId = clusterFeature?.properties?.cluster_id;
+    if (clusterId === undefined || clusterId === null) return;
+    const source = map.getSource(SOURCE_ID);
+    if (!source || typeof source.getClusterExpansionZoom !== 'function') return;
+    source.getClusterExpansionZoom(Number(clusterId), (error, zoom) => {
+      if (error || !Number.isFinite(zoom)) return;
+      map.easeTo({
+        center: clusterFeature.geometry.coordinates,
+        zoom,
+        duration: 320
+      });
+    });
+  });
+
   map.on('click', LAYER_MARKERS, onMarkerClick);
   map.on('click', LAYER_ICONS, onMarkerClick);
+
+  map.on('mouseenter', LAYER_CLUSTERS, () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+  map.on('mouseleave', LAYER_CLUSTERS, () => {
+    map.getCanvas().style.cursor = '';
+  });
 
   map.on('mouseenter', LAYER_MARKERS, onMarkerMouseEnter);
   map.on('mouseleave', LAYER_MARKERS, onMarkerMouseLeave);
@@ -726,8 +791,10 @@ function renderDetail(location) {
       <div class="detail-badge" style="background:${color};color:${pickTextColor(color)};">${escapeHtml(categoryName)}</div>
     </header>
     ${galleryHtml}
-    <div class="detail-description">${description}</div>
-    ${location.address ? `<p class="detail-address">${escapeHtml(location.address)}</p>` : ''}
+    <section class="detail-body">
+      <div class="detail-description">${description}</div>
+      ${location.address ? `<p class="detail-address">${escapeHtml(location.address)}</p>` : ''}
+    </section>
     <div class="detail-actions">
       <a class="detail-btn primary" href="${directionsUrl}" target="_blank" rel="noreferrer noopener">Directions</a>
     </div>
