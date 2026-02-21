@@ -827,23 +827,15 @@ body.admin-page {
   .category-head { min-height: 48px; }
   .category-location { padding: 0.6rem 0.5rem; min-height: 44px; }
 
-  /* Floating filter button — bigger on mobile */
+  /* Hide old floating filter button on mobile — replaced by bottom nav */
   .map-floating-btn {
-    bottom: 1.5rem;
-    top: auto;
-    right: 1rem;
-    padding: 0.7rem 1rem;
-    font-size: 0.95rem;
-    border-radius: 14px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+    display: none !important;
   }
 
-  /* VFM header compact on mobile */
+  /* VFM header hidden on small mobile — map space is precious */
   .vfm-header {
-    padding: 0.5rem 0.75rem;
-    gap: 0.5rem;
+    display: none;
   }
-  .vfm-logo-area { width: 34px; height: 34px; font-size: 0.8rem; }
 
   /* Popup full-width on very small screens */
   .fairmap-popup .maplibregl-popup-content {

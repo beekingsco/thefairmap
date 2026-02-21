@@ -2,6 +2,7 @@ let map;
 let mapData;
 let popup;
 let geolocateControl;
+let userLocation = null;
 
 const activeCategories = new Set();
 const categoryById = new Map();
@@ -49,8 +50,6 @@ async function init() {
   });
 
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-
-  let userLocation = null;
 
   geolocateControl = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
@@ -271,6 +270,20 @@ async function buildMapLayers() {
     }
   });
 
+  // Featured glow ring (behind regular markers)
+  map.addLayer({
+    id: 'location-featured-glow',
+    type: 'circle',
+    source: SOURCE_ID,
+    filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'featured'], true]],
+    paint: {
+      'circle-color': '#fbbf24',
+      'circle-radius': 18,
+      'circle-opacity': 0.35,
+      'circle-blur': 0.5
+    }
+  });
+
   map.addLayer({
     id: LAYER_POINT_CIRCLES,
     type: 'circle',
@@ -278,9 +291,9 @@ async function buildMapLayers() {
     filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': ['get', 'color'],
-      'circle-radius': 12,
-      'circle-stroke-color': '#ffffff',
-      'circle-stroke-width': 1.5,
+      'circle-radius': ['case', ['==', ['get', 'featured'], true], 14, 12],
+      'circle-stroke-color': ['case', ['==', ['get', 'featured'], true], '#fbbf24', '#ffffff'],
+      'circle-stroke-width': ['case', ['==', ['get', 'featured'], true], 2.5, 1.5],
       'circle-opacity': 0.9
     }
   });
@@ -423,6 +436,7 @@ function asFeatureCollection(items) {
         color: loc.color,
         description: loc.description,
         address: loc.address,
+        featured: loc.featured,
         iconImageId: categoryIconImageIds.get(loc.categoryId) || FALLBACK_ICON_IMAGE_ID
       }
     }))
@@ -676,9 +690,14 @@ function renderLocationList() {
   list.innerHTML = '';
 
   if (visibleLocations.length === 0) {
-    const empty = document.createElement('p');
+    const query = document.getElementById('search-input').value.trim();
+    const empty = document.createElement('div');
     empty.className = 'location-empty';
-    empty.textContent = 'No locations match the current filters.';
+    empty.style.textAlign = 'center';
+    empty.style.padding = '2rem 1rem';
+    empty.innerHTML = query
+      ? `<div style="font-size:1.5rem;margin-bottom:0.5rem;">🔍</div><p>No results for "<strong>${escapeHtml(query)}</strong>"</p><p style="font-size:0.75rem;color:#9aa5b1;">Try a different search term or show more categories.</p>`
+      : `<div style="font-size:1.5rem;margin-bottom:0.5rem;">📭</div><p>No visible locations.</p><p style="font-size:0.75rem;color:#9aa5b1;">Enable some categories to see locations on the map.</p>`;
     list.appendChild(empty);
     return;
   }
