@@ -28,7 +28,8 @@ const appState = {
   mapEventsBound: false,
   activeMapStyle: 'venue',
   venueStyleUrl: STYLE_FALLBACK,
-  satelliteStyleUrl: SATELLITE_STYLE_FALLBACK
+  satelliteStyleUrl: SATELLITE_STYLE_FALLBACK,
+  filtersInitialized: false
 };
 
 const ICON_SVGS = {
@@ -371,6 +372,7 @@ function applyFilters() {
     const matchQuery = !query || loc.search.includes(query);
     return catVisible && matchQuery;
   });
+  appState.filtersInitialized = true;
 
   if (map?.getSource(SOURCE_ID)) {
     map.getSource(SOURCE_ID).setData(toFeatureCollection(appState.filteredLocations));
@@ -582,7 +584,8 @@ function updateSidebarToggle(isOpen) {
 function updateFilterCount() {
   const countEl = document.getElementById('filters-count');
   if (!countEl) return;
-  countEl.textContent = `(${appState.filteredLocations.length})`;
+  const visibleCount = appState.filtersInitialized ? appState.filteredLocations.length : appState.locations.length;
+  countEl.textContent = `(${visibleCount})`;
 }
 
 function updateMapStyleButtons() {
