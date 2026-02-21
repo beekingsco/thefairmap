@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/api/locations", "destination": "/data/locations.json" }
   ],
   "headers": [
     {
@@ -8,6 +9,13 @@
       "headers": [
         { "key": "X-Frame-Options", "value": "ALLOWALL" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    },
+    {
+      "source": "/data/locations.json",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json" },
+        { "key": "Cache-Control", "value": "public, max-age=60, stale-while-revalidate=300" }
       ]
     }
   ]

@@ -3,3 +3,4 @@ uploads/
 .env
 *.log
 .DS_Store
+data/users.json
