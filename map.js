@@ -200,6 +200,26 @@ function initSidebarControls() {
   // Detail sheet close
   document.getElementById('detail-close')?.addEventListener('click', closeDetailSheet);
 
+  // Map style switcher (only include MapTiler styles if key is set)
+  const mapStyles = [{ name: 'Bright', url: 'https://tiles.openfreemap.org/styles/bright' }];
+  if (window.MAPTILER_KEY) {
+    mapStyles.push(
+      { name: 'Streets', url: `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}` },
+      { name: 'Satellite', url: `https://api.maptiler.com/maps/hybrid/style.json?key=${window.MAPTILER_KEY}` },
+      { name: 'Terrain', url: `https://api.maptiler.com/maps/topo-v2/style.json?key=${window.MAPTILER_KEY}` }
+    );
+  }
+  let currentStyleIdx = 0;
+  const styleBtn = document.getElementById('map-style-btn');
+  if (mapStyles.length <= 1 && styleBtn) styleBtn.style.display = 'none';
+  styleBtn?.addEventListener('click', () => {
+    currentStyleIdx = (currentStyleIdx + 1) % mapStyles.length;
+    const style = mapStyles[currentStyleIdx];
+    map.setStyle(style.url);
+    styleBtn.textContent = `🗺️ ${style.name}`;
+    map.once('style.load', () => buildMapLayers());
+  });
+
   // Mobile bottom nav
   initMobileNav();
 
