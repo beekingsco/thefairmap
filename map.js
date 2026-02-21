@@ -27,7 +27,7 @@ const DEFAULT_MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright';
 const FALLBACK_ICON_IMAGE_ID = 'category-icon-fallback';
 
 async function init() {
-  const response = await fetch('./data/locations.json');
+  const response = await fetch('/api/locations');
   mapData = await response.json();
 
   document.getElementById('map-title').textContent = mapData.map?.name || 'First Monday Finder';
@@ -89,6 +89,7 @@ function hydrateLocations() {
       name: String(loc.name || 'Untitled'),
       description: loc.description || '',
       address: loc.address || '',
+      image: loc.image || '',
       lat: Number(loc.lat),
       lng: Number(loc.lng),
       featured: Boolean(loc.featured),
@@ -124,7 +125,20 @@ function setupCategoryState() {
 }
 
 function initSidebarControls() {
-  document.getElementById('search-input').addEventListener('input', refreshVisibleData);
+  // Debounced search for performance with 700+ locations
+  let searchTimeout;
+  document.getElementById('search-input').addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(refreshVisibleData, 180);
+  });
+
+  // Escape closes popup / sidebar
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (popup) { popup.remove(); popup = null; selectedLocationId = null; syncSelectedLayer(); }
+      if (window.innerWidth <= 960) closeSidebarMobile();
+    }
+  });
 
   document.getElementById('btn-select-all').addEventListener('click', () => {
     activeCategories.clear();
@@ -666,13 +680,17 @@ function openLocation(loc, flyTo) {
     .setLngLat([loc.lng, loc.lat])
     .setHTML(`
       <article class="popup-card">
-        <h3 class="popup-title">${escapeHtml(loc.name)}</h3>
-        <p class="popup-badge" style="--badge-color:${badgeColor};--badge-text:${badgeText};">
-          ${getCategoryIconPreviewHtml(category, 'popup-icon', true)}
-          <span>${escapeHtml(category?.name || loc.categoryName)}</span>
-        </p>
-        ${loc.address ? `<p class="popup-address">${escapeHtml(loc.address)}</p>` : ''}
-        ${loc.description ? `<div class="popup-description">${loc.description}</div>` : ''}
+        ${loc.image ? `<img src="${loc.image.replace(/"/g,'&quot;')}" alt="${escapeHtml(loc.name)}" class="popup-image" onerror="this.style.display='none'">` : ''}
+        <div class="popup-body">
+          ${loc.featured ? `<span class="popup-featured">⭐ Featured</span>` : ''}
+          <h3 class="popup-title">${escapeHtml(loc.name)}</h3>
+          <p class="popup-badge" style="--badge-color:${badgeColor};--badge-text:${badgeText};">
+            ${getCategoryIconPreviewHtml(category, 'popup-icon', true)}
+            <span>${escapeHtml(category?.name || loc.categoryName)}</span>
+          </p>
+          ${loc.address ? `<p class="popup-address">📍 ${escapeHtml(loc.address)}</p>` : ''}
+          ${loc.description ? `<div class="popup-description">${loc.description}</div>` : ''}
+        </div>
       </article>
     `)
     .addTo(map);

@@ -3,41 +3,109 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TheFairMap - Admin</title>
+  <title>Admin — TheFairMap</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Admin-specific overrides */
+    .admin-topbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      background: #1e2328;
+      color: #fff;
+      font-size: 0.88rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .admin-topbar .topbar-logo { font-size: 1.1rem; font-weight: 800; }
+    .admin-topbar .topbar-user { color: #9ca3af; margin-left: auto; }
+    .admin-topbar .btn-signout {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 0.35rem 0.8rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      transition: background 0.12s;
+    }
+    .admin-topbar .btn-signout:hover { background: rgba(255,255,255,0.2); }
+
+    .image-upload-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-start;
+      margin-top: 0.3rem;
+    }
+    .image-upload-row input { flex: 1; }
+    .btn-upload-img {
+      flex-shrink: 0;
+      padding: 0.55rem 0.9rem;
+      background: #e8edf3;
+      border: 1px solid #ced6de;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    .btn-upload-img:hover { background: #dde3ea; }
+    #img-preview {
+      margin-top: 0.5rem;
+      max-height: 140px;
+      border-radius: 8px;
+      display: none;
+      object-fit: cover;
+      width: 100%;
+    }
+    #img-preview.visible { display: block; }
+    #img-file-input { display: none; }
+  </style>
 </head>
 <body class="admin-page">
-  <div class="admin-wrap">
-    <h1>TheFairMap Admin</h1>
-    <p class="subtitle">Manage locations and categories. <a href="/">Back to viewer</a></p>
+
+  <!-- Top bar (shown after auth) -->
+  <div class="admin-topbar" id="topbar" style="display:none;">
+    <span class="topbar-logo">🗺️ TheFairMap</span>
+    <a href="/" style="color:#9ca3af;text-decoration:none;font-size:0.82rem;">← View Map</a>
+    <span class="topbar-user" id="topbar-user"></span>
+    <button class="btn-signout" id="btn-signout">Sign Out</button>
+  </div>
+
+  <div class="admin-wrap" id="admin-content" style="display:none;">
+    <h1>Admin Panel</h1>
+    <p class="subtitle">Manage vendor locations and categories for First Monday Trade Days.</p>
 
     <section class="admin-section">
       <div class="stats-row">
         <div class="stat-pill"><strong id="stat-total">0</strong> locations</div>
         <div class="stat-pill"><strong id="stat-cats">0</strong> categories in use</div>
         <div class="toolbar" style="margin-left:auto; margin-top:0;">
-          <button id="btn-export" class="btn btn-primary" type="button">Export JSON</button>
+          <button id="btn-export" class="btn btn-secondary" type="button">⬇ Export JSON</button>
           <input id="json-file" type="file" accept="application/json,.json" hidden>
-          <button id="btn-import-json" class="btn btn-secondary" type="button">Import JSON</button>
+          <button id="btn-import-json" class="btn btn-secondary" type="button">⬆ Import JSON</button>
         </div>
       </div>
     </section>
 
     <section class="admin-section">
-      <h2>Add / Edit Location</h2>
-      <p class="subtitle" style="margin-top:6px;">Click the map to set latitude and longitude.</p>
+      <h2 id="form-heading">Add Location</h2>
+      <p class="subtitle" style="margin-top:6px;">Click the map to set coordinates, or fill in latitude and longitude manually.</p>
       <div id="admin-map"></div>
 
       <form id="add-form" class="admin-form">
+        <input id="loc-id" type="hidden">
+
         <div class="admin-grid">
           <div>
             <label for="loc-name">Name *</label>
-            <input id="loc-name" type="text" required>
-          </div>
-          <div>
-            <label for="loc-id">ID (auto-generated if blank)</label>
-            <input id="loc-id" type="text" placeholder="auto">
+            <input id="loc-name" type="text" required placeholder="Vendor or location name">
           </div>
           <div>
             <label for="loc-category">Category *</label>
@@ -49,23 +117,33 @@
           </div>
           <div>
             <label for="loc-lat">Latitude *</label>
-            <input id="loc-lat" type="number" step="any" required>
+            <input id="loc-lat" type="number" step="any" required placeholder="32.5585">
           </div>
           <div>
             <label for="loc-lng">Longitude *</label>
-            <input id="loc-lng" type="number" step="any" required>
+            <input id="loc-lng" type="number" step="any" required placeholder="-95.8624">
           </div>
         </div>
 
         <label for="loc-desc" style="margin-top:10px;">Description (HTML supported)</label>
-        <textarea id="loc-desc" placeholder="<p>Details, links, formatting...</p>"></textarea>
+        <textarea id="loc-desc" placeholder="<p>Details, links, opening hours...</p>"></textarea>
 
-        <label style="display:flex; align-items:center; gap:8px; margin-top:10px;">
-          <input id="loc-featured" type="checkbox"> Featured
+        <!-- Image field -->
+        <label style="margin-top:10px;" for="loc-image">Image</label>
+        <div class="image-upload-row">
+          <input id="loc-image" type="url" placeholder="https://example.com/image.jpg or upload below">
+          <button type="button" class="btn-upload-img" id="btn-upload-img">📷 Upload</button>
+          <input type="file" id="img-file-input" accept="image/*">
+        </div>
+        <img id="img-preview" alt="Preview">
+
+        <label style="display:flex; align-items:center; gap:8px; margin-top:12px; font-size:0.88rem;">
+          <input id="loc-featured" type="checkbox"> Featured (highlighted on map)
         </label>
 
-        <div class="toolbar">
+        <div class="toolbar" style="margin-top:1rem;">
           <button id="btn-submit" type="submit" class="btn btn-primary">Add Location</button>
+          <button type="button" id="btn-cancel-edit" class="btn btn-secondary" style="display:none;">Cancel Edit</button>
           <button type="reset" class="btn btn-secondary">Clear</button>
         </div>
       </form>
@@ -73,8 +151,8 @@
 
     <section class="admin-section">
       <h2>CSV Import</h2>
-      <p class="subtitle" style="margin-top:6px;">Headers: name, categoryId/categoryName/category, address, lat, lng, description, featured</p>
-      <textarea id="csv-textarea" class="csv-area" placeholder="name,categoryName,address,lat,lng,description\nMy Booth,Food,Arbor 1,32.5600,-95.8600,<p>Open 9-5</p>"></textarea>
+      <p class="subtitle" style="margin-top:6px;">Headers: name, categoryId/categoryName/category, address, lat, lng, description, image, featured</p>
+      <textarea id="csv-textarea" class="csv-area" placeholder="name,categoryName,address,lat,lng,description&#10;My Booth,Food,Arbor 1,32.5600,-95.8600,<p>Open 9-5</p>"></textarea>
       <input id="csv-file" type="file" accept=".csv,.txt" style="margin-top:8px;">
       <div class="toolbar">
         <button id="btn-csv-import" type="button" class="btn btn-primary">Import CSV</button>
@@ -82,15 +160,19 @@
     </section>
 
     <section class="admin-section">
-      <h2>Locations</h2>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+        <h2 style="margin:0;">Locations</h2>
+        <input id="table-search" type="search" placeholder="Filter table…" style="padding:0.45rem 0.7rem;border:1px solid #d5dbe2;border-radius:8px;font-size:0.85rem;font-family:inherit;width:220px;">
+      </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Address</th>
+              <th>Booth / Address</th>
               <th>Category</th>
-              <th>Coordinates</th>
+              <th>Coords</th>
+              <th>Image</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -98,6 +180,11 @@
         </table>
       </div>
     </section>
+  </div>
+
+  <!-- Auth wall (shown while checking) -->
+  <div id="auth-wall" style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:inherit;">
+    <p style="color:#86868b;">Checking authentication…</p>
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>

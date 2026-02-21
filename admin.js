@@ -1,35 +1,48 @@
+'use strict';
+
 let adminMap;
 let mapData;
 let dropPin;
+let editingId = null;  // null = add mode, string = edit mode
 
-const ADMIN_PASS = 'fairmap2026';
-
-function checkAuth() {
-  const stored = sessionStorage.getItem('fairmap-admin');
-  if (stored === ADMIN_PASS) return true;
-
-  const pass = prompt('Enter admin password:');
-  if (pass === ADMIN_PASS) {
-    sessionStorage.setItem('fairmap-admin', pass);
-    return true;
+// ── Auth check ──────────────────────────────────────────────────────────────
+async function checkAuth() {
+  const res = await fetch('/api/me');
+  if (!res.ok) {
+    window.location.href = '/login';
+    return false;
   }
-
-  document.body.innerHTML = '<div style="padding:60px; text-align:center;"><h2>Access denied</h2><p>Refresh to try again.</p></div>';
-  return false;
+  const { user } = await res.json();
+  document.getElementById('topbar').style.display = 'flex';
+  document.getElementById('topbar-user').textContent = `Logged in as ${user.username}`;
+  document.getElementById('auth-wall').style.display = 'none';
+  document.getElementById('admin-content').style.display = 'block';
+  return true;
 }
 
+// Sign out
+document.getElementById('btn-signout').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+});
+
+// ── Init ────────────────────────────────────────────────────────────────────
 async function init() {
-  if (!checkAuth()) return;
+  const authed = await checkAuth();
+  if (!authed) return;
 
-  const response = await fetch('./data/locations.json');
-  mapData = await response.json();
-
+  await loadData();
   normalizeData();
   initMap();
   bindUI();
   populateCategorySelect();
   renderTable();
   updateStats();
+}
+
+async function loadData() {
+  const res = await fetch('/api/locations');
+  mapData = await res.json();
 }
 
 function normalizeData() {
@@ -39,9 +52,8 @@ function normalizeData() {
   }));
 
   mapData.locations = (mapData.locations || []).map((loc, idx) => {
-    const category = mapData.categories.find((cat) => cat.id === loc.categoryId || cat.id === loc.category);
+    const category = mapData.categories.find((c) => c.id === loc.categoryId || c.id === loc.category);
     const categoryId = loc.categoryId || loc.category || category?.id || '';
-
     return {
       id: String(loc.id || `loc-${Date.now()}-${idx}`),
       name: loc.name || 'Untitled',
@@ -50,18 +62,20 @@ function normalizeData() {
       lat: Number(loc.lat),
       lng: Number(loc.lng),
       featured: Boolean(loc.featured),
+      image: loc.image || '',
       categoryId,
       categoryName: loc.categoryName || category?.name || ''
     };
   }).filter((loc) => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
 }
 
+// ── Map ─────────────────────────────────────────────────────────────────────
 function initMap() {
   adminMap = new maplibregl.Map({
     container: 'admin-map',
     style: resolveMapStyleUrl(mapData.map?.style),
-    center: mapData.map.center,
-    zoom: Math.max((mapData.map.zoom || 17) - 1, 12),
+    center: mapData.map?.center || [-95.8624, 32.5585],
+    zoom: Math.max((mapData.map?.zoom || 17) - 1, 12),
     pitch: 0,
     bearing: 0
   });
@@ -71,7 +85,6 @@ function initMap() {
   adminMap.on('click', (event) => {
     document.getElementById('loc-lat').value = event.lngLat.lat.toFixed(7);
     document.getElementById('loc-lng').value = event.lngLat.lng.toFixed(7);
-
     if (dropPin) dropPin.remove();
     dropPin = new maplibregl.Marker({ color: '#bb3e2f' })
       .setLngLat([event.lngLat.lng, event.lngLat.lat])
@@ -87,19 +100,83 @@ function resolveMapStyleUrl(styleUrl) {
   return url;
 }
 
+// ── UI bindings ─────────────────────────────────────────────────────────────
 function bindUI() {
   document.getElementById('add-form').addEventListener('submit', upsertLocation);
+  document.getElementById('btn-cancel-edit').addEventListener('click', cancelEdit);
+
+  document.getElementById('add-form').addEventListener('reset', () => {
+    cancelEdit();
+    clearDropPin();
+    document.getElementById('img-preview').classList.remove('visible');
+    document.getElementById('img-preview').src = '';
+  });
+
   document.getElementById('btn-export').addEventListener('click', exportJSON);
   document.getElementById('btn-import-json').addEventListener('click', () => document.getElementById('json-file').click());
   document.getElementById('json-file').addEventListener('change', importJSON);
   document.getElementById('btn-csv-import').addEventListener('click', importCSV);
   document.getElementById('csv-file').addEventListener('change', handleCSVFile);
+
+  // Image upload
+  document.getElementById('btn-upload-img').addEventListener('click', () => document.getElementById('img-file-input').click());
+  document.getElementById('img-file-input').addEventListener('change', handleImageUpload);
+
+  // Show preview when URL typed
+  document.getElementById('loc-image').addEventListener('input', (e) => {
+    updateImagePreview(e.target.value);
+  });
+
+  // Table search/filter
+  document.getElementById('table-search').addEventListener('input', (e) => {
+    renderTable(e.target.value.trim().toLowerCase());
+  });
+}
+
+function updateImagePreview(url) {
+  const preview = document.getElementById('img-preview');
+  if (url) {
+    preview.src = url;
+    preview.classList.add('visible');
+    preview.onerror = () => { preview.classList.remove('visible'); };
+  } else {
+    preview.classList.remove('visible');
+    preview.src = '';
+  }
+}
+
+async function handleImageUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const btn = document.getElementById('btn-upload-img');
+  btn.textContent = 'Uploading…';
+  btn.disabled = true;
+
+  const form = new FormData();
+  form.append('image', file);
+
+  try {
+    const res = await fetch('/api/upload-image', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('loc-image').value = data.url;
+      updateImagePreview(data.url);
+    } else {
+      alert('Upload failed: ' + data.error);
+    }
+  } catch (e) {
+    alert('Upload error: ' + e.message);
+  } finally {
+    btn.textContent = '📷 Upload';
+    btn.disabled = false;
+    event.target.value = '';
+  }
 }
 
 function populateCategorySelect() {
   const select = document.getElementById('loc-category');
   select.innerHTML = '';
-
   mapData.categories
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -113,60 +190,72 @@ function populateCategorySelect() {
 
 function updateStats() {
   document.getElementById('stat-total').textContent = String(mapData.locations.length);
-
-  const used = new Set(mapData.locations.map((loc) => loc.categoryId).filter(Boolean));
+  const used = new Set(mapData.locations.map((l) => l.categoryId).filter(Boolean));
   document.getElementById('stat-cats').textContent = String(used.size);
 }
 
-function renderTable() {
+function renderTable(filter = '') {
   const tbody = document.getElementById('location-tbody');
   tbody.innerHTML = '';
 
-  const sorted = mapData.locations
-    .map((loc, idx) => ({ loc, idx }))
-    .sort((a, b) => a.loc.name.localeCompare(b.loc.name));
+  let list = mapData.locations.slice().sort((a, b) => a.name.localeCompare(b.name));
+  if (filter) {
+    list = list.filter(loc =>
+      loc.name.toLowerCase().includes(filter) ||
+      (loc.address || '').toLowerCase().includes(filter) ||
+      (loc.categoryName || '').toLowerCase().includes(filter)
+    );
+  }
 
-  sorted.forEach(({ loc, idx }) => {
+  if (!list.length) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="6" style="text-align:center;color:#9aa5b1;padding:2rem;">No locations found.</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  list.forEach((loc) => {
     const category = getCategory(loc.categoryId, loc.categoryName);
     const tr = document.createElement('tr');
 
     tr.innerHTML = `
-      <td><strong>${escapeHtml(loc.name)}</strong>${loc.featured ? ' <span title="Featured">&#9733;</span>' : ''}</td>
-      <td>${escapeHtml(loc.address || '-')}</td>
+      <td><strong>${escapeHtml(loc.name)}</strong>${loc.featured ? ' ⭐' : ''}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(loc.address || '—')}</td>
       <td><span class="badge" style="background:${category.color};">${escapeHtml(category.name)}</span></td>
-      <td><code>${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</code></td>
-      <td>
-        <button class="btn btn-sm btn-secondary" data-action="edit" data-idx="${idx}">Edit</button>
-        <button class="btn btn-sm btn-danger" data-action="delete" data-idx="${idx}">Delete</button>
+      <td style="font-size:0.78rem;white-space:nowrap;"><code>${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</code></td>
+      <td>${loc.image ? `<img src="${escapeHtml(loc.image)}" style="width:48px;height:34px;object-fit:cover;border-radius:5px;" loading="lazy">` : '—'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-sm btn-secondary" data-action="edit" data-id="${escapeHtml(loc.id)}">Edit</button>
+        <button class="btn btn-sm btn-danger" data-action="delete" data-id="${escapeHtml(loc.id)}">Delete</button>
       </td>
     `;
-
     tbody.appendChild(tr);
   });
 
-  tbody.querySelectorAll('button[data-action="edit"]').forEach((button) => {
-    button.addEventListener('click', () => editLocation(Number(button.dataset.idx)));
+  tbody.querySelectorAll('[data-action="edit"]').forEach((btn) => {
+    btn.addEventListener('click', () => editLocation(btn.dataset.id));
   });
-
-  tbody.querySelectorAll('button[data-action="delete"]').forEach((button) => {
-    button.addEventListener('click', () => deleteLocation(Number(button.dataset.idx)));
+  tbody.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+    btn.addEventListener('click', () => deleteLocation(btn.dataset.id));
   });
 }
 
-function upsertLocation(event) {
+// ── CRUD ─────────────────────────────────────────────────────────────────────
+async function upsertLocation(event) {
   event.preventDefault();
 
   const categoryId = document.getElementById('loc-category').value;
   const category = getCategory(categoryId);
 
   const payload = {
-    id: document.getElementById('loc-id').value.trim() || `loc-${Date.now()}`,
+    id: editingId || document.getElementById('loc-id').value.trim() || `loc-${Date.now()}`,
     name: document.getElementById('loc-name').value.trim(),
     description: document.getElementById('loc-desc').value,
     address: document.getElementById('loc-address').value.trim(),
     lat: Number(document.getElementById('loc-lat').value),
     lng: Number(document.getElementById('loc-lng').value),
     featured: document.getElementById('loc-featured').checked,
+    image: document.getElementById('loc-image').value.trim(),
     categoryId,
     categoryName: category.name
   };
@@ -176,27 +265,54 @@ function upsertLocation(event) {
     return;
   }
 
-  const form = document.getElementById('add-form');
-  const editIdxRaw = form.dataset.editIdx;
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
 
-  if (editIdxRaw !== undefined && editIdxRaw !== '') {
-    mapData.locations[Number(editIdxRaw)] = payload;
-    delete form.dataset.editIdx;
-    document.getElementById('btn-submit').textContent = 'Add Location';
-  } else {
-    mapData.locations.push(payload);
+  try {
+    let res;
+    if (editingId) {
+      res = await fetch(`/api/locations/${encodeURIComponent(editingId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch('/api/locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+
+    // Update local state
+    if (editingId) {
+      const idx = mapData.locations.findIndex(l => l.id === editingId);
+      if (idx !== -1) mapData.locations[idx] = data.location;
+    } else {
+      mapData.locations.push(data.location);
+    }
+
+    cancelEdit();
+    document.getElementById('add-form').reset();
+    clearDropPin();
+    renderTable(document.getElementById('table-search').value.trim().toLowerCase());
+    updateStats();
+    showToast(editingId ? 'Location updated!' : 'Location added!');
+  } catch (e) {
+    alert('Error saving location: ' + e.message);
+  } finally {
+    btn.disabled = false;
   }
-
-  form.reset();
-  clearDropPin();
-  renderTable();
-  updateStats();
 }
 
-function editLocation(idx) {
-  const loc = mapData.locations[idx];
+function editLocation(id) {
+  const loc = mapData.locations.find(l => l.id === id);
   if (!loc) return;
 
+  editingId = loc.id;
   document.getElementById('loc-id').value = loc.id;
   document.getElementById('loc-name').value = loc.name;
   document.getElementById('loc-category').value = loc.categoryId;
@@ -205,49 +321,61 @@ function editLocation(idx) {
   document.getElementById('loc-lng').value = String(loc.lng);
   document.getElementById('loc-desc').value = loc.description || '';
   document.getElementById('loc-featured').checked = Boolean(loc.featured);
+  document.getElementById('loc-image').value = loc.image || '';
+  updateImagePreview(loc.image || '');
 
-  const form = document.getElementById('add-form');
-  form.dataset.editIdx = String(idx);
+  document.getElementById('form-heading').textContent = `Edit: ${loc.name}`;
   document.getElementById('btn-submit').textContent = 'Update Location';
+  document.getElementById('btn-cancel-edit').style.display = '';
 
-  adminMap.flyTo({ center: [loc.lng, loc.lat], zoom: Math.max(adminMap.getZoom(), 16) });
   clearDropPin();
   dropPin = new maplibregl.Marker({ color: '#bb3e2f' }).setLngLat([loc.lng, loc.lat]).addTo(adminMap);
-  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  adminMap.flyTo({ center: [loc.lng, loc.lat], zoom: Math.max(adminMap.getZoom(), 17) });
+  document.getElementById('add-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function deleteLocation(idx) {
-  const loc = mapData.locations[idx];
+async function deleteLocation(id) {
+  const loc = mapData.locations.find(l => l.id === id);
   if (!loc) return;
+  if (!confirm(`Delete "${loc.name}"? This cannot be undone.`)) return;
 
-  if (!confirm(`Delete "${loc.name}"?`)) return;
-
-  mapData.locations.splice(idx, 1);
-  renderTable();
-  updateStats();
+  try {
+    const res = await fetch(`/api/locations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    mapData.locations = mapData.locations.filter(l => l.id !== id);
+    renderTable(document.getElementById('table-search').value.trim().toLowerCase());
+    updateStats();
+    showToast('Location deleted.');
+  } catch (e) {
+    alert('Error deleting: ' + e.message);
+  }
 }
 
+function cancelEdit() {
+  editingId = null;
+  document.getElementById('loc-id').value = '';
+  document.getElementById('form-heading').textContent = 'Add Location';
+  document.getElementById('btn-submit').textContent = 'Add Location';
+  document.getElementById('btn-cancel-edit').style.display = 'none';
+}
+
+// ── Import / Export ──────────────────────────────────────────────────────────
 function exportJSON() {
   const output = {
     ...mapData,
-    locations: mapData.locations.map((loc) => ({
-      id: loc.id,
-      name: loc.name,
-      description: loc.description,
-      address: loc.address,
-      lat: loc.lat,
-      lng: loc.lng,
-      categoryId: loc.categoryId,
-      categoryName: loc.categoryName,
+    locations: mapData.locations.map(loc => ({
+      id: loc.id, name: loc.name, description: loc.description,
+      address: loc.address, lat: loc.lat, lng: loc.lng,
+      image: loc.image || '',
+      categoryId: loc.categoryId, categoryName: loc.categoryName,
       featured: Boolean(loc.featured)
     }))
   };
-
   const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'locations.json';
+  link.download = `locations-${new Date().toISOString().slice(0,10)}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -257,135 +385,127 @@ function importJSON(event) {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = (loadEvent) => {
+  reader.onload = async (loadEvent) => {
     try {
       const parsed = JSON.parse(loadEvent.target.result);
-      if (!parsed.locations || !Array.isArray(parsed.locations)) {
-        throw new Error('JSON must include a locations array.');
-      }
+      if (!parsed.locations || !Array.isArray(parsed.locations)) throw new Error('JSON must include a locations array.');
 
-      mapData = {
-        ...mapData,
-        ...parsed,
-        map: parsed.map || mapData.map,
-        categories: Array.isArray(parsed.categories) ? parsed.categories : mapData.categories,
-        locations: parsed.locations
-      };
+      const mode = confirm('Replace ALL locations? (OK = replace, Cancel = merge)');
 
+      const res = await fetch('/api/import-locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          locations: parsed.locations,
+          categories: parsed.categories,
+          merge: !mode
+        })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+
+      // Reload
+      await loadData();
       normalizeData();
       populateCategorySelect();
       renderTable();
       updateStats();
-      alert(`Imported ${mapData.locations.length} locations from JSON.`);
+      showToast(`Imported — ${data.count} locations total.`);
     } catch (error) {
-      alert(`JSON import failed: ${error.message}`);
+      alert(`Import failed: ${error.message}`);
     }
-
     event.target.value = '';
   };
-
   reader.readAsText(file);
 }
 
 function importCSV() {
   const raw = document.getElementById('csv-textarea').value.trim();
-  if (!raw) {
-    alert('Paste CSV data first.');
-    return;
-  }
+  if (!raw) { alert('Paste CSV data first.'); return; }
 
   const rows = parseCSV(raw);
-  if (rows.length < 2) {
-    alert('CSV must include a header row and one data row.');
-    return;
-  }
+  if (rows.length < 2) { alert('CSV must include a header row and one data row.'); return; }
 
-  const headers = rows[0].map((header) => header.trim().toLowerCase());
-  const idxName = headers.indexOf('name');
-  const idxCatId = headers.indexOf('categoryid');
-  const idxCatName = headers.indexOf('categoryname');
-  const idxCategory = headers.indexOf('category');
-  const idxAddress = headers.indexOf('address');
-  const idxLat = headers.indexOf('lat');
-  const idxLng = headers.indexOf('lng');
-  const idxDescription = headers.indexOf('description');
-  const idxFeatured = headers.indexOf('featured');
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const col = name => headers.indexOf(name);
+  const idxName = col('name'), idxLat = col('lat'), idxLng = col('lng');
 
   if (idxName === -1 || idxLat === -1 || idxLng === -1) {
-    alert('CSV requires name, lat, and lng columns.');
-    return;
+    alert('CSV requires name, lat, and lng columns.'); return;
   }
 
-  let added = 0;
-
-  for (let i = 1; i < rows.length; i += 1) {
-    const cols = rows[i];
-    const name = (cols[idxName] || '').trim();
-    const lat = Number(cols[idxLat]);
-    const lng = Number(cols[idxLng]);
-
+  const newLocs = [];
+  for (let i = 1; i < rows.length; i++) {
+    const c = rows[i];
+    const name = (c[idxName] || '').trim();
+    const lat = Number(c[idxLat]);
+    const lng = Number(c[idxLng]);
     if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
-    const categoryId = resolveCategoryId(
-      (idxCatId !== -1 ? cols[idxCatId] : '') || '',
-      (idxCatName !== -1 ? cols[idxCatName] : '') || '',
-      (idxCategory !== -1 ? cols[idxCategory] : '') || ''
+    const catId = resolveCategoryId(
+      c[col('categoryid')] || '', c[col('categoryname')] || '', c[col('category')] || ''
     );
-
-    const category = getCategory(categoryId);
-
-    mapData.locations.push({
+    const category = getCategory(catId);
+    newLocs.push({
       id: `csv-${Date.now()}-${i}`,
-      name,
-      description: idxDescription !== -1 ? (cols[idxDescription] || '') : '',
-      address: idxAddress !== -1 ? (cols[idxAddress] || '') : '',
-      lat,
-      lng,
-      categoryId: category.id,
-      categoryName: category.name,
-      featured: idxFeatured !== -1 ? normalizeBoolean(cols[idxFeatured]) : false
+      name, description: c[col('description')] || '',
+      address: c[col('address')] || '',
+      image: c[col('image')] || '',
+      lat, lng,
+      categoryId: category.id, categoryName: category.name,
+      featured: normalizeBoolean(c[col('featured')])
     });
-
-    added += 1;
   }
 
-  renderTable();
-  updateStats();
-  document.getElementById('csv-textarea').value = '';
-  alert(`Imported ${added} locations from CSV.`);
+  fetch('/api/import-locations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locations: newLocs, merge: true })
+  }).then(r => r.json()).then(async (data) => {
+    if (!data.ok) throw new Error(data.error);
+    await loadData();
+    normalizeData();
+    renderTable();
+    updateStats();
+    document.getElementById('csv-textarea').value = '';
+    showToast(`Imported ${newLocs.length} locations from CSV.`);
+  }).catch(e => alert('CSV import failed: ' + e.message));
 }
 
 function handleCSVFile(event) {
   const file = event.target.files?.[0];
   if (!file) return;
-
   const reader = new FileReader();
-  reader.onload = (loadEvent) => {
-    document.getElementById('csv-textarea').value = loadEvent.target.result;
-  };
-
+  reader.onload = (e) => { document.getElementById('csv-textarea').value = e.target.result; };
   reader.readAsText(file);
 }
 
-function resolveCategoryId(catId, catName, fallbackCategory) {
-  const normalizedId = String(catId || '').trim();
-  if (mapData.categories.some((cat) => cat.id === normalizedId)) return normalizedId;
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(message, color = '#1e2328') {
+  const el = document.createElement('div');
+  el.textContent = message;
+  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+    background:${color};color:#fff;padding:0.65rem 1.25rem;border-radius:12px;
+    font-size:0.9rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);
+    animation:fadeIn 0.2s ease;font-family:inherit;`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2800);
+}
 
-  const nameNeedle = String(catName || fallbackCategory || '').trim().toLowerCase();
-  if (nameNeedle) {
-    const byName = mapData.categories.find((cat) => cat.name.toLowerCase() === nameNeedle);
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function resolveCategoryId(catId, catName, fallback) {
+  const id = String(catId || '').trim();
+  if (mapData.categories.some(c => c.id === id)) return id;
+  const needle = String(catName || fallback || '').trim().toLowerCase();
+  if (needle) {
+    const byName = mapData.categories.find(c => c.name.toLowerCase() === needle);
     if (byName) return byName.id;
   }
-
   return mapData.categories[0]?.id || '';
 }
 
 function getCategory(id, fallbackName = '') {
-  return mapData.categories.find((cat) => cat.id === id) || {
-    id,
-    name: fallbackName || 'Uncategorized',
-    color: '#707070'
-  };
+  return mapData.categories.find(c => c.id === id) || { id, name: fallbackName || 'Uncategorized', color: '#707070' };
 }
 
 function clearDropPin() {
@@ -401,63 +521,31 @@ function normalizeColor(input) {
 }
 
 function normalizeBoolean(value) {
-  const normalized = String(value || '').trim().toLowerCase();
-  return normalized === 'true' || normalized === '1' || normalized === 'yes';
+  const v = String(value || '').trim().toLowerCase();
+  return v === 'true' || v === '1' || v === 'yes';
 }
 
 function parseCSV(text) {
-  const rows = [];
-  let row = [];
-  let value = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
-    const next = text[i + 1];
-
+  const rows = []; let row = [], value = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i], next = text[i + 1];
     if (char === '"') {
-      if (inQuotes && next === '"') {
-        value += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-
-    if (char === ',' && !inQuotes) {
+      if (inQuotes && next === '"') { value += '"'; i++; } else inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      row.push(value); value = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i++;
       row.push(value);
-      value = '';
-      continue;
-    }
-
-    if ((char === '\n' || char === '\r') && !inQuotes) {
-      if (char === '\r' && next === '\n') i += 1;
-      row.push(value);
-      if (row.some((cell) => cell.length > 0)) rows.push(row);
-      row = [];
-      value = '';
-      continue;
-    }
-
-    value += char;
+      if (row.some(c => c.length > 0)) rows.push(row);
+      row = []; value = '';
+    } else value += char;
   }
-
-  if (value.length > 0 || row.length > 0) {
-    row.push(value);
-    rows.push(row);
-  }
-
+  if (value.length > 0 || row.length > 0) { row.push(value); rows.push(row); }
   return rows;
 }
 
 function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 document.addEventListener('DOMContentLoaded', init);
