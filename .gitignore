@@ -1,2 +1,5 @@
-.vercel
-mapme-export.json
+node_modules/
+uploads/
+.env
+*.log
+.DS_Store
