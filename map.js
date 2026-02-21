@@ -18,6 +18,7 @@ const appState = {
   categoriesById: new Map(),
   locations: [],
   categoryExpanded: new Map(),
+  categoryIconFiles: new Map(),
   activeCategories: new Set(),
   filteredLocations: [],
   selectedLocationId: null,
@@ -48,6 +49,7 @@ const ICON_SVGS = {
 
 async function init() {
   const data = await fetchMapData();
+  await loadIconManifest();
   appState.mapData = data;
   normalizeData(data);
   initializeSidebarState();
@@ -80,6 +82,20 @@ async function init() {
     applyFilters();
     bindMapEvents();
   });
+}
+
+async function loadIconManifest() {
+  try {
+    const res = await fetch('/data/icons/manifest.json');
+    if (!res.ok) return;
+    const manifest = await res.json();
+    for (const [categoryId, def] of Object.entries(manifest || {})) {
+      if (typeof def?.file !== 'string' || !def.file.endsWith('.svg')) continue;
+      appState.categoryIconFiles.set(String(categoryId), def.file);
+    }
+  } catch (_) {
+    // Keep generic icons when manifest cannot be loaded.
+  }
 }
 
 async function fetchMapData() {
@@ -128,7 +144,7 @@ function normalizeData(data) {
         categoryId,
         categoryName,
         color: normalizeColor(category?.color || loc.color),
-        iconType: mapCategoryToIconType(categoryName),
+        iconType: iconTypeForCategory(categoryId, categoryName),
         search: `${loc.name || ''} ${categoryName} ${loc.address || ''}`.toLowerCase()
       };
     })
@@ -195,6 +211,18 @@ function initializeSidebarState() {
 }
 
 async function loadMarkerIcons() {
+  const categoryIconFiles = new Set(appState.categoryIconFiles.values());
+  for (const iconFile of categoryIconFiles) {
+    const iconId = iconIdFromFile(iconFile);
+    if (map.hasImage(iconId)) continue;
+    try {
+      const image = await loadImageByUrl(`/data/icons/${iconFile}`);
+      map.addImage(iconId, image, { pixelRatio: 2 });
+    } catch (_) {
+      // fall back to generic icon
+    }
+  }
+
   const iconTypes = Object.keys(ICON_SVGS);
   for (const iconType of iconTypes) {
     if (map.hasImage(iconType)) continue;
@@ -210,6 +238,15 @@ function loadSvgImage(svgMarkup) {
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMarkup)}`;
+  });
+}
+
+function loadImageByUrl(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
   });
 }
 
@@ -571,6 +608,16 @@ function mapCategoryToIconType(name) {
   if (value.includes('entertain')) return 'star';
   if (value.includes('arbor') || value.includes('boardwalk') || value.includes('marker') || value.includes('visual')) return 'pin';
   return 'pin';
+}
+
+function iconTypeForCategory(categoryId, categoryName) {
+  const iconFile = appState.categoryIconFiles.get(String(categoryId));
+  if (iconFile) return iconIdFromFile(iconFile);
+  return mapCategoryToIconType(categoryName);
+}
+
+function iconIdFromFile(fileName) {
+  return `category-${String(fileName).replace(/\.svg$/i, '').replace(/[^a-z0-9-]/gi, '-')}`;
 }
 
 function normalizeColor(input) {
