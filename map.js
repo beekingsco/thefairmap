@@ -334,17 +334,17 @@ function buildLayers() {
         ['boolean', ['feature-state', 'hover'], false],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 12.8,
-          16, 15.9,
-          17.5, 18.0,
-          20, 21.0
+          14, 13.6,
+          16, 16.8,
+          17.5, 18.9,
+          20, 22.0
         ],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 11.4,
-          16, 14.2,
-          17.5, 16.2,
-          20, 18.8
+          14, 12.2,
+          16, 15.0,
+          17.5, 17.0,
+          20, 19.8
         ]
       ],
       'circle-stroke-width': [
@@ -381,13 +381,13 @@ function buildLayers() {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
       'icon-allow-overlap': false,
       'icon-ignore-placement': false,
-      'icon-padding': 8,
+      'icon-padding': 10,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.43,
-        16, 0.52,
-        17.5, 0.62,
-        20, 0.74
+        14, 0.46,
+        16, 0.56,
+        17.5, 0.66,
+        20, 0.78
       ]
     }
   });
