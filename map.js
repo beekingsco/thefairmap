@@ -54,7 +54,6 @@ const ICON_SVGS = {
 
 async function init() {
   const data = await fetchMapData();
-  await loadIconManifest();
   appState.mapData = data;
   appState.venueStyleUrl = resolveVenueStyleUrl(data.map?.style);
   appState.satelliteStyleUrl = resolveSatelliteStyleUrl();
@@ -155,6 +154,25 @@ function normalizeData(data) {
       };
     })
     .filter((loc) => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
+
+  // Keep orphaned category ids visible instead of dropping those locations from filters.
+  const missingCategoryIds = new Set(
+    appState.locations.map((loc) => loc.categoryId).filter((id) => !appState.categoriesById.has(id))
+  );
+  for (const categoryId of missingCategoryIds) {
+    const sample = appState.locations.find((loc) => loc.categoryId === categoryId);
+    const fallback = {
+      id: categoryId,
+      name: sample?.categoryName || 'Uncategorized',
+      color: normalizeColor(sample?.color || '#7a7a7a'),
+      count: 0
+    };
+    appState.categories.push(fallback);
+    appState.categoriesById.set(categoryId, fallback);
+    appState.activeCategories.add(categoryId);
+    appState.categoryExpanded.set(categoryId, false);
+  }
+
   appState.filteredLocations = [...appState.locations];
   appState.filtersInitialized = true;
 
@@ -226,24 +244,12 @@ function initializeSidebarState() {
 }
 
 async function loadMarkerIcons() {
-  const categoryIconFiles = new Set(appState.categoryIconFiles.values());
-  for (const iconFile of categoryIconFiles) {
-    const iconId = iconIdFromFile(iconFile);
-    if (map.hasImage(iconId)) continue;
-    try {
-      const image = await loadImageByUrl(`/data/icons/${iconFile}`);
-      map.addImage(iconId, image, { pixelRatio: 2 });
-    } catch (_) {
-      // fall back to generic icon
-    }
-  }
-
   const iconTypes = Object.keys(ICON_SVGS);
   for (const iconType of iconTypes) {
     if (map.hasImage(iconType)) continue;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">${ICON_SVGS[iconType]}</svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24">${ICON_SVGS[iconType]}</svg>`;
     const image = await loadSvgImage(svg);
-    map.addImage(iconType, image, { pixelRatio: 2 });
+    map.addImage(iconType, image, { pixelRatio: 4 });
   }
 }
 
@@ -282,16 +288,16 @@ function buildLayers() {
       'circle-color': ['get', 'color'],
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 8.4,
-        16, 10.8,
-        17, 12.2,
-        20, 14.4
+        14, 8.8,
+        16, 11.2,
+        17, 12.8,
+        20, 15.2
       ],
       'circle-stroke-width': [
         'interpolate', ['linear'], ['zoom'],
-        14, 1.2,
-        17, 1.8,
-        20, 2.2
+        14, 1.4,
+        17, 2,
+        20, 2.4
       ],
       'circle-stroke-color': '#ffffff'
     }
@@ -307,10 +313,10 @@ function buildLayers() {
       'icon-ignore-placement': true,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.55,
-        16, 0.64,
-        17, 0.72,
-        20, 0.86
+        14, 0.36,
+        16, 0.43,
+        17, 0.5,
+        20, 0.62
       ]
     }
   });
@@ -332,6 +338,53 @@ function buildLayers() {
       'circle-stroke-width': 1.6,
       'circle-stroke-color': '#111111'
     }
+  });
+
+  const areaFeatures = [
+    { name: 'Arbor 1', lng: -95.86333, lat: 32.55882 },
+    { name: 'Arbor 2', lng: -95.86225, lat: 32.55905 },
+    { name: 'Trade Center', lng: -95.86095, lat: 32.5581 },
+    { name: 'Food Court', lng: -95.86192, lat: 32.55758 },
+    { name: 'Boardwalk', lng: -95.86328, lat: 32.55795 },
+    { name: 'PARKING', lng: -95.86415, lat: 32.55695 }
+  ];
+
+  map.addSource('venue-areas', {
+    type: 'geojson',
+    data: {
+      type: 'FeatureCollection',
+      features: areaFeatures.map((area) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [area.lng, area.lat] },
+        properties: { name: area.name }
+      }))
+    }
+  });
+
+  map.addLayer({
+    id: 'venue-areas-labels',
+    type: 'symbol',
+    source: 'venue-areas',
+    layout: {
+      'text-field': ['get', 'name'],
+      'text-font': ['Open Sans Bold'],
+      'text-size': [
+        'interpolate', ['linear'], ['zoom'],
+        14, 11,
+        16, 13,
+        19, 16
+      ],
+      'text-letter-spacing': 0.08,
+      'text-transform': 'uppercase',
+      'text-allow-overlap': true,
+      'text-ignore-placement': true
+    },
+    paint: {
+      'text-color': '#313131',
+      'text-halo-color': 'rgba(255,255,255,0.92)',
+      'text-halo-width': 2
+    },
+    minzoom: 14
   });
 }
 
@@ -635,8 +688,7 @@ function mapCategoryToIconType(name) {
 }
 
 function iconTypeForCategory(categoryId, categoryName) {
-  const iconFile = appState.categoryIconFiles.get(String(categoryId));
-  if (iconFile) return iconIdFromFile(iconFile);
+  void categoryId;
   return mapCategoryToIconType(categoryName);
 }
 
