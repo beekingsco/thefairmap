@@ -288,21 +288,21 @@ body {
 }
 
 .style-controls {
-  position: fixed;
-  top: max(10px, env(safe-area-inset-top));
-  right: 10px;
-  display: flex;
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  display: flex !important;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   align-items: flex-end;
-  z-index: 2000;
+  z-index: 2200;
   pointer-events: auto;
   visibility: visible;
   opacity: 1;
 }
 
 .map-style-btn {
-  min-width: 132px;
+  min-width: 136px;
   height: 36px;
   border-radius: 999px;
   justify-content: center;
