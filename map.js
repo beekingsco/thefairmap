@@ -73,7 +73,9 @@ const appState = {
   mobileScrimTimer: null,
   hoveredFeatureId: null,
   hoverPopup: null,
-  popupPinned: false
+  popupPinned: false,
+  sidebarView: 'categories',
+  selectedCategoryId: null
 };
 
 const ICON_SVGS = {
@@ -766,12 +768,9 @@ function applyFilters() {
 
 function renderCategoryCard({ category, query, visibleCounts }) {
   const active = appState.activeCategories.has(category.id);
-  const visibleInCategory = appState.filteredLocations.filter((loc) => loc.categoryId === category.id);
-  const autoExpand = Boolean(query) && visibleInCategory.length > 0;
-  const expanded = autoExpand || appState.categoryExpanded.get(category.id) === true;
 
   const cat = document.createElement('article');
-  cat.className = `category-item ${expanded ? 'is-expanded' : ''} ${active ? '' : 'is-muted'}`;
+  cat.className = `category-item ${active ? '' : 'is-muted'}`;
 
   const row = document.createElement('div');
   row.className = 'category-row';
@@ -796,65 +795,30 @@ function renderCategoryCard({ category, query, visibleCounts }) {
   head.type = 'button';
   head.className = 'category-head';
   head.setAttribute('aria-pressed', String(active));
-  head.title = active ? 'Hide category markers' : 'Show category markers';
+  head.title = `Show ${category.name} locations`;
   head.innerHTML = `
     <span class="category-name">${escapeHtml(category.name)}</span>
     <span class="category-count">${visibleCounts.get(category.id) || 0}/${category.count}</span>
   `;
-  head.addEventListener('click', toggleCategoryVisibility);
-
-  const expandBtn = document.createElement('button');
-  expandBtn.type = 'button';
-  expandBtn.className = 'category-expand';
-  expandBtn.setAttribute('aria-label', expanded ? `Collapse ${category.name}` : `Expand ${category.name}`);
-  expandBtn.setAttribute('aria-expanded', String(expanded));
-  expandBtn.innerHTML = expanded ? '&#9660;' : '&#9654;';
-  expandBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    appState.categoryExpanded.set(category.id, !expanded);
+  head.addEventListener('click', () => {
+    appState.sidebarView = 'locations';
+    appState.selectedCategoryId = category.id;
     renderOverview(query);
   });
 
   row.appendChild(toggle);
   row.appendChild(head);
-  row.appendChild(expandBtn);
   cat.appendChild(row);
-
-  const locList = document.createElement('div');
-  locList.className = 'category-locations';
-  if (!expanded) locList.hidden = true;
-
-  if (visibleInCategory.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'category-empty';
-    empty.textContent = query ? 'No search matches.' : 'No visible locations.';
-    locList.appendChild(empty);
-  } else {
-    const limit = visibleInCategory.slice(0, 80);
-    for (const loc of limit) {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'location-row';
-      if (loc.id === appState.selectedLocationId) item.classList.add('is-selected');
-      item.textContent = loc.name;
-      item.addEventListener('click', () => openLocation(loc, true));
-      locList.appendChild(item);
-    }
-    if (visibleInCategory.length > limit.length) {
-      const more = document.createElement('p');
-      more.className = 'category-empty';
-      more.textContent = `${visibleInCategory.length - limit.length} more...`;
-      locList.appendChild(more);
-    }
-  }
-
-  cat.appendChild(locList);
   return cat;
 }
 
 function renderOverview(query) {
   const wrap = document.getElementById('overview-list');
   wrap.innerHTML = '';
+  if (appState.sidebarView === 'locations') {
+    renderCategoryLocationsView(wrap, query);
+    return;
+  }
   const groups = appState.categoryGroups.length > 0 ? appState.categoryGroups : buildCategoryGroups(appState.categories);
 
   const visibleCounts = new Map();
@@ -903,6 +867,57 @@ function renderOverview(query) {
     section.appendChild(groupBody);
     wrap.appendChild(section);
   }
+}
+
+function renderCategoryLocationsView(wrap, query) {
+  const category = appState.categoriesById.get(String(appState.selectedCategoryId || ''));
+  if (!category) {
+    appState.sidebarView = 'categories';
+    appState.selectedCategoryId = null;
+    renderOverview(query);
+    return;
+  }
+  const backButton = document.createElement('button');
+  backButton.type = 'button';
+  backButton.className = 'category-back-btn';
+  backButton.textContent = '\u2190 Back';
+  backButton.addEventListener('click', () => {
+    appState.sidebarView = 'categories';
+    appState.selectedCategoryId = null;
+    renderOverview(query);
+  });
+  wrap.appendChild(backButton);
+
+  const list = document.createElement('div');
+  list.className = 'category-location-list';
+  const locations = appState.filteredLocations.filter((loc) => loc.categoryId === category.id);
+  if (locations.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'category-empty';
+    empty.textContent = query ? 'No search matches in this category.' : 'No visible locations in this category.';
+    list.appendChild(empty);
+    wrap.appendChild(list);
+    return;
+  }
+
+  for (const loc of locations) {
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'category-location-row';
+    if (loc.id === appState.selectedLocationId) row.classList.add('is-selected');
+    const description = truncateDescriptionToText(loc.description);
+    row.innerHTML = `
+      <span class="category-location-dot" style="--dot-color:${escapeAttr(normalizeColor(loc.color))};"></span>
+      <span class="category-location-main">
+        <span class="category-location-name">${escapeHtml(loc.name)}</span>
+        <span class="category-location-address">${escapeHtml(sanitizeMetaAddress(loc.address) || 'Address unavailable')}</span>
+        <span class="category-location-desc">${escapeHtml(description || 'No description available.')}</span>
+      </span>
+    `;
+    row.addEventListener('click', () => openLocation(loc, true));
+    list.appendChild(row);
+  }
+  wrap.appendChild(list);
 }
 
 function openLocation(location, fly) {
@@ -1565,6 +1580,15 @@ function sanitizeMetaAddress(address) {
   if (!value) return '';
   if (/^-?\d+\.\d+\s*,\s*-?\d+\.\d+$/i.test(value)) return '';
   return value;
+}
+
+function truncateDescriptionToText(rawDescription) {
+  const source = String(rawDescription || '');
+  if (!source.trim()) return '';
+  const stripped = source.replace(/<\s*(script|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '');
+  const text = document.createElement('div');
+  text.innerHTML = stripped;
+  return (text.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
 function extractLocationPhotos(location) {
