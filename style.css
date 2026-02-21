@@ -367,9 +367,9 @@ body {
 
 .style-controls {
   position: fixed;
-  top: max(10px, env(safe-area-inset-top));
-  right: 12px;
-  left: auto;
+  top: 10px;
+  right: 60px;
+  left: auto !important;
   display: flex;
   flex-direction: row;
   gap: 8px;
