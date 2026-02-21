@@ -12,6 +12,18 @@
   <meta name="theme-color" content="#2f3d4d">
 </head>
 <body>
+  <!-- Style controls as direct child of body for position:fixed to work -->
+  <div class="style-controls" role="group" aria-label="Map style controls">
+    <button id="style-venue-btn" class="map-control-btn map-style-btn is-active" type="button" aria-pressed="true">
+      <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Zm8 10.1 2 .8V7.4l-2-.8v10Zm-6 .8 2-.8V6.6l-2 .8v10Zm14-.8v-10l-2 .8v10l2-.8Z"/></svg>
+      <span>Venue Map</span>
+    </button>
+    <button id="style-satellite-btn" class="map-control-btn map-style-btn" type="button" aria-pressed="false">
+      <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 4.7-1.4-1.4-4.2 4.2-1.1-1.1-3.8 3.8 1.1 1.1-2.4 2.4-1.6-.5-3.1 3.1 1.4 1.4 3.1-3.1-.5-1.6 2.4-2.4 1.1 1.1 3.8-3.8-1.1-1.1 4.2-4.2ZM7 18h2v2H7v-2Zm8-14h2v2h-2V4Zm3 3h2v2h-2V7Z"/></svg>
+      <span>Satellite</span>
+    </button>
+  </div>
+
   <div id="app" class="sidebar-collapsed">
     <aside id="sidebar" aria-label="Overview">
       <div class="sidebar-search-wrap">
@@ -40,17 +52,6 @@
           <span id="mobile-filters-label">Filters (0)</span>
         </button>
       </div>
-    <!-- Style controls moved outside #map-shell so position:fixed works (no ancestor transforms) -->
-    <div class="style-controls" role="group" aria-label="Map style controls">
-      <button id="style-venue-btn" class="map-control-btn map-style-btn is-active" type="button" aria-pressed="true">
-        <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Zm8 10.1 2 .8V7.4l-2-.8v10Zm-6 .8 2-.8V6.6l-2 .8v10Zm14-.8v-10l-2 .8v10l2-.8Z"/></svg>
-        <span>Venue Map</span>
-      </button>
-      <button id="style-satellite-btn" class="map-control-btn map-style-btn" type="button" aria-pressed="false">
-        <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 4.7-1.4-1.4-4.2 4.2-1.1-1.1-3.8 3.8 1.1 1.1-2.4 2.4-1.6-.5-3.1 3.1 1.4 1.4 3.1-3.1-.5-1.6 2.4-2.4 1.1 1.1 3.8-3.8-1.1-1.1 4.2-4.2ZM7 18h2v2H7v-2Zm8-14h2v2h-2V4Zm3 3h2v2h-2V7Z"/></svg>
-        <span>Satellite</span>
-      </button>
-    </div>
     </main>
 
     <section id="detail-panel" aria-label="Location details" hidden>
