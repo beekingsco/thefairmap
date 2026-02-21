@@ -330,12 +330,25 @@ function initializeSidebarState() {
 
 async function loadMarkerIcons() {
   const iconTypes = Object.keys(ICON_SVGS);
+  const iconTones = [
+    { suffix: 'white', fill: '#ffffff' },
+    { suffix: 'black', fill: '#111111' }
+  ];
   for (const iconType of iconTypes) {
-    if (map.hasImage(iconType)) continue;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24">${ICON_SVGS[iconType]}</svg>`;
-    const image = await loadSvgImage(svg);
-    map.addImage(iconType, image, { pixelRatio: 4 });
+    for (const tone of iconTones) {
+      const iconId = `${iconType}-${tone.suffix}`;
+      if (map.hasImage(iconId)) continue;
+      const svg = buildIconSvg(iconType, tone.fill);
+      const image = await loadSvgImage(svg);
+      map.addImage(iconId, image, { pixelRatio: 4 });
+    }
   }
+}
+
+function buildIconSvg(iconType, fillColor) {
+  const markup = ICON_SVGS[iconType] || ICON_SVGS.pin;
+  const tinted = markup.replace(/fill=\"#[0-9a-f]{3,8}\"/gi, `fill="${fillColor}"`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24">${tinted}</svg>`;
 }
 
 function loadSvgImage(svgMarkup) {
@@ -423,7 +436,7 @@ function buildLayers() {
     type: 'symbol',
     source: SOURCE_ID,
     layout: {
-      'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
+      'icon-image': ['coalesce', ['get', 'iconImage'], 'pin-white'],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
       'icon-padding': 14,
@@ -1187,10 +1200,20 @@ function toFeatureCollection(locations) {
       properties: {
         id: loc.id,
         color: loc.color,
-        iconType: loc.iconType
+        iconType: loc.iconType,
+        iconImage: `${loc.iconType}-${pickMarkerIconTone(loc.color)}`
       }
     }))
   };
+}
+
+function pickMarkerIconTone(hex) {
+  const color = normalizeColor(hex);
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 128 ? 'black' : 'white';
 }
 
 function mapCategoryToIconType(name) {
