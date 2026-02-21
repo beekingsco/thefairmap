@@ -64,6 +64,12 @@
         <span>Filters</span>
       </button>
       <div id="map" role="application" aria-label="Map"></div>
+      <!-- Floating map control buttons (top-right) -->
+      <div id="map-control-btns" style="position:absolute;top:12px;right:56px;z-index:3;display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        <button id="overlay-toggle-btn" class="map-ctrl-btn active" type="button" title="Hide venue overlay" hidden>🗺️ Venue Map</button>
+        <button id="map-style-btn" class="map-ctrl-btn" type="button" title="Switch map style">🛰️ Satellite</button>
+      </div>
+
       <div id="map-loader" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(236,232,224,0.9);z-index:2;pointer-events:none;transition:opacity 0.4s;">
         <div style="text-align:center;">
           <div style="font-size:2rem;margin-bottom:0.5rem;">🗺️</div>

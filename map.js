@@ -290,6 +290,44 @@ async function buildMapLayers() {
     }
   });
 
+  // ── Venue tileset overlay (from MapMe settings) ────────────────────────
+  if (window.MAPTILER_KEY) {
+    const OVERLAY_SOURCE = 'venue-tileset';
+    const OVERLAY_LAYER  = 'venue-tileset-layer';
+    if (!map.getSource(OVERLAY_SOURCE)) {
+      map.addSource(OVERLAY_SOURCE, {
+        type: 'raster',
+        tiles: [`https://api.maptiler.com/tiles/0196a1e2-92d2-7ed9-9540-2191fb00a1af/{z}/{x}/{y}.png?key=${window.MAPTILER_KEY}`],
+        tileSize: 256,
+        minzoom: 14,
+        maxzoom: 21
+      });
+    }
+    if (!map.getLayer(OVERLAY_LAYER)) {
+      map.addLayer({
+        id: OVERLAY_LAYER,
+        type: 'raster',
+        source: OVERLAY_SOURCE,
+        paint: {
+          'raster-opacity': 0.75,
+          'raster-fade-duration': 300
+        }
+      });
+    }
+    // Wire up overlay toggle button
+    const overlayBtn = document.getElementById('overlay-toggle-btn');
+    if (overlayBtn) {
+      overlayBtn.hidden = false;
+      let overlayVisible = true;
+      overlayBtn.addEventListener('click', () => {
+        overlayVisible = !overlayVisible;
+        map.setLayoutProperty(OVERLAY_LAYER, 'visibility', overlayVisible ? 'visible' : 'none');
+        overlayBtn.classList.toggle('active', overlayVisible);
+        overlayBtn.title = overlayVisible ? 'Hide venue overlay' : 'Show venue overlay';
+      });
+    }
+  }
+
   // Featured glow ring (behind regular markers)
   map.addLayer({
     id: 'location-featured-glow',
@@ -847,8 +885,9 @@ function showDetailSheet(loc, category, badgeColor, badgeText) {
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
   const appleDirectionsUrl = `https://maps.apple.com/?daddr=${loc.lat},${loc.lng}`;
 
+  const categoryEmoji = getCategoryEmoji(category);
   content.innerHTML = `
-    ${loc.image ? `<img src="${loc.image.replace(/"/g,'&quot;')}" alt="${escapeHtml(loc.name)}" class="detail-hero" onerror="this.style.display='none'">` : ''}
+    ${loc.image ? `<img src="${loc.image.replace(/"/g,'&quot;')}" alt="${escapeHtml(loc.name)}" class="detail-hero" onerror="this.outerHTML='<div class=\\'detail-hero-placeholder\\'>${categoryEmoji}</div>'">` : `<div class="detail-hero-placeholder">${categoryEmoji}</div>`}
     <div class="detail-body">
       ${loc.featured ? `<span class="detail-featured">⭐ Featured Vendor</span>` : ''}
       <h2 class="detail-title">${escapeHtml(loc.name)}</h2>
@@ -1001,6 +1040,30 @@ function normalizeColor(input) {
   if (typeof input !== 'string' || !input.startsWith('#')) return DEFAULT_COLOR;
   if (input.length === 9) return input.slice(0, 7);
   return input;
+}
+
+function getCategoryEmoji(category) {
+  // Map common category names to emojis for the placeholder
+  const name = (category?.name || '').toLowerCase();
+  if (name.includes('food') || name.includes('eat') || name.includes('drink')) return '🍽️';
+  if (name.includes('honey') || name.includes('bee')) return '🍯';
+  if (name.includes('craft') || name.includes('art') || name.includes('handmade')) return '🎨';
+  if (name.includes('antique') || name.includes('vintage')) return '🏺';
+  if (name.includes('plant') || name.includes('garden') || name.includes('flower')) return '🌿';
+  if (name.includes('cloth') || name.includes('apparel') || name.includes('wear') || name.includes('fashion')) return '👕';
+  if (name.includes('jewel') || name.includes('accessori')) return '💎';
+  if (name.includes('restroom') || name.includes('bathroom')) return '🚻';
+  if (name.includes('parking')) return '🅿️';
+  if (name.includes('entrance') || name.includes('gate')) return '🚪';
+  if (name.includes('info')) return 'ℹ️';
+  if (name.includes('atm') || name.includes('bank')) return '🏧';
+  if (name.includes('pet') || name.includes('animal')) return '🐾';
+  if (name.includes('tool') || name.includes('hardware')) return '🔧';
+  if (name.includes('candle') || name.includes('soap') || name.includes('beauty')) return '🕯️';
+  if (name.includes('leather')) return '🧳';
+  if (name.includes('furniture') || name.includes('home') || name.includes('decor')) return '🪑';
+  if (name.includes('toy') || name.includes('kid') || name.includes('child')) return '🧸';
+  return '📍';
 }
 
 function getCategoryIconPreviewHtml(category, className = 'category-icon-preview', invert = false) {
