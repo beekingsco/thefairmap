@@ -16,7 +16,7 @@ const SATELLITE_STYLE_FALLBACK = {
 };
 const DEFAULT_CENTER = [-95.8624, 32.5585];
 const DEFAULT_ZOOM = 17;
-const DEFAULT_PITCH = 0;
+const DEFAULT_PITCH = 60;
 const DEFAULT_BEARING = 0;
 const SOURCE_ID = 'locations';
 const LAYER_MARKERS = 'location-markers';
@@ -70,6 +70,7 @@ async function init() {
   appState.venueStyleUrl = resolveVenueStyleUrl(data.map?.style);
   appState.satelliteStyleUrl = resolveSatelliteStyleUrl();
   normalizeData(data);
+  updateFilterCount();
   initializeSidebarState();
   bindUi();
   applyFilters();
@@ -79,7 +80,7 @@ async function init() {
     style: appState.venueStyleUrl,
     center: data.map?.center || DEFAULT_CENTER,
     zoom: Number.isFinite(data.map?.zoom) ? data.map.zoom : DEFAULT_ZOOM,
-    pitch: DEFAULT_PITCH,
+    pitch: Number.isFinite(data.map?.pitch) ? data.map.pitch : DEFAULT_PITCH,
     bearing: DEFAULT_BEARING,
     maxZoom: data.map?.maxZoom || 20,
     attributionControl: true,
@@ -622,7 +623,13 @@ function updateSidebarToggle(isOpen) {
 function updateFilterCount() {
   const countEl = document.getElementById('filters-count');
   if (!countEl) return;
-  const total = Number.isFinite(appState.totalLocationCount) ? appState.totalLocationCount : appState.locations.length;
+  const loadedCount = Array.isArray(appState.locations) ? appState.locations.length : 0;
+  if ((!Number.isFinite(appState.totalLocationCount) || appState.totalLocationCount <= 0) && loadedCount > 0) {
+    appState.totalLocationCount = loadedCount;
+  }
+  const total = Number.isFinite(appState.totalLocationCount) && appState.totalLocationCount > 0
+    ? appState.totalLocationCount
+    : loadedCount;
   countEl.textContent = `(${total || 0})`;
 }
 
