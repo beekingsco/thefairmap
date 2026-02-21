@@ -129,7 +129,9 @@ async function fetchMapData() {
       const res = await fetch(source);
       if (!res.ok) continue;
       const json = await res.json();
-      if (Array.isArray(json.locations) && Array.isArray(json.categories)) {
+      const hasLocations = Array.isArray(json.locations) && json.locations.length > 0;
+      const hasCategories = Array.isArray(json.categories) && json.categories.length > 0;
+      if (hasLocations && hasCategories) {
         return json;
       }
     } catch (_) {
@@ -753,10 +755,8 @@ function updateFilterCount() {
     requestAnimationFrame(updateFilterCount);
     return;
   }
-  const total = appState.filtersInitialized
-    ? (appState.filteredLocations?.length ?? appState.locations?.length ?? 0)
-    : (appState.locations?.length ?? 0);
-  appState.totalLocationCount = appState.locations?.length ?? 0;
+  const total = appState.locations?.length ?? 0;
+  appState.totalLocationCount = total;
   countEl.textContent = `(${total})`;
   updateMobileCategoriesButton(total);
 }
