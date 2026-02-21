@@ -996,92 +996,133 @@ function removeAnchorPopup() {
 function bindMobileGestures() {
   const sidebar = document.getElementById('sidebar');
   const detailPanel = document.getElementById('detail-panel');
+  const sidebarHandle = sidebar?.querySelector('[data-sheet-handle="sidebar"]');
+  const detailHandle = detailPanel?.querySelector('[data-sheet-handle="detail"]');
   if (!sidebar || !detailPanel) return;
 
-  let sidebarStartY = null;
-  let detailStartY = null;
-  let sidebarDragging = false;
-  let detailDragging = false;
-  let sidebarDelta = 0;
-  let detailDelta = 0;
-
   const isMobile = () => window.innerWidth <= 960;
+  const OPEN_DRAG_THRESHOLD_VIEWPORT = 0.3;
+  const CLOSE_DRAG_THRESHOLD_PANEL = 0.4;
+  const SIDEBAR_PEEK_HEIGHT = 54;
 
-  const getTouchY = (event) => {
-    if (event.touches && event.touches[0]) return event.touches[0].clientY;
-    if (event.changedTouches && event.changedTouches[0]) return event.changedTouches[0].clientY;
-    return null;
+  const canDragPointer = (event) => event.isPrimary && event.button === 0;
+  const getSidebarClosedOffset = () => Math.max(sidebar.getBoundingClientRect().height - SIDEBAR_PEEK_HEIGHT, 0);
+
+  const bindSheetDrag = ({
+    panel,
+    handle,
+    requiresOpen,
+    getStartOffset,
+    getBounds,
+    finalize
+  }) => {
+    if (!panel || !handle) return;
+
+    let dragging = false;
+    let pointerId = null;
+    let startY = 0;
+    let startOffset = 0;
+    let currentOffset = 0;
+
+    const resetDragStyle = () => {
+      panel.style.transition = '';
+      panel.style.transform = '';
+      document.body.style.userSelect = '';
+    };
+
+    const finish = (cancelled = false) => {
+      if (!dragging) return;
+      dragging = false;
+      resetDragStyle();
+      if (!cancelled) finalize(startOffset, currentOffset);
+      pointerId = null;
+    };
+
+    const onPointerMove = (event) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      const delta = event.clientY - startY;
+      const bounds = getBounds();
+      if (!bounds) return;
+
+      let nextOffset = startOffset + delta;
+      if (nextOffset < bounds.min) {
+        nextOffset = bounds.min + (nextOffset - bounds.min) * 0.35;
+      }
+      if (nextOffset > bounds.max) nextOffset = bounds.max;
+      currentOffset = nextOffset;
+      panel.style.transform = `translateY(${nextOffset}px)`;
+      event.preventDefault();
+    };
+
+    const onPointerUp = (event) => {
+      if (event.pointerId !== pointerId) return;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+      finish(false);
+    };
+
+    const onPointerCancel = (event) => {
+      if (event.pointerId !== pointerId) return;
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+      finish(true);
+    };
+
+    handle.addEventListener('pointerdown', (event) => {
+      if (!isMobile() || !canDragPointer(event)) return;
+      if (requiresOpen && !panel.classList.contains('is-open')) return;
+      if (panel.hidden) return;
+      const bounds = getBounds();
+      if (!bounds) return;
+
+      dragging = true;
+      pointerId = event.pointerId;
+      startY = event.clientY;
+      startOffset = getStartOffset();
+      currentOffset = startOffset;
+
+      panel.style.transition = 'none';
+      document.body.style.userSelect = 'none';
+      window.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp, { passive: true });
+      window.addEventListener('pointercancel', onPointerCancel, { passive: true });
+      event.preventDefault();
+    });
   };
 
-  const inTopHandleZone = (event, target) => {
-    const y = getTouchY(event);
-    if (y === null) return false;
-    const rect = target.getBoundingClientRect();
-    return y <= rect.top + 52;
-  };
-
-  sidebar.addEventListener('touchstart', (event) => {
-    if (!isMobile() || !inTopHandleZone(event, sidebar)) return;
-    sidebarStartY = getTouchY(event);
-    sidebarDelta = 0;
-    sidebarDragging = true;
-    sidebar.style.transition = 'none';
-  }, { passive: true });
-
-  sidebar.addEventListener('touchmove', (event) => {
-    if (!sidebarDragging || sidebarStartY === null) return;
-    const y = getTouchY(event);
-    if (y === null) return;
-    const delta = y - sidebarStartY;
-    const app = document.getElementById('app');
-    const open = app.classList.contains('mobile-sidebar-open');
-    sidebarDelta = delta;
-    if (open && delta > 0) {
-      sidebar.style.transform = `translateY(${delta}px)`;
-    } else if (!open && delta < 0) {
-      const reveal = Math.min(Math.abs(delta), 78);
-      sidebar.style.transform = `translateY(calc(100% - 54px - ${reveal}px))`;
+  bindSheetDrag({
+    panel: sidebar,
+    handle: sidebarHandle,
+    requiresOpen: false,
+    getStartOffset: () => (document.getElementById('app').classList.contains('mobile-sidebar-open') ? 0 : getSidebarClosedOffset()),
+    getBounds: () => ({ min: 0, max: getSidebarClosedOffset() }),
+    finalize: (startOffset, endOffset) => {
+      const panelHeight = sidebar.getBoundingClientRect().height;
+      if (startOffset <= 1) {
+        setMobileSidebarOpen(endOffset <= panelHeight * CLOSE_DRAG_THRESHOLD_PANEL);
+        return;
+      }
+      const draggedUp = startOffset - endOffset;
+      setMobileSidebarOpen(draggedUp >= window.innerHeight * OPEN_DRAG_THRESHOLD_VIEWPORT);
     }
-  }, { passive: true });
-
-  sidebar.addEventListener('touchend', () => {
-    if (!sidebarDragging) return;
-    const app = document.getElementById('app');
-    const open = app.classList.contains('mobile-sidebar-open');
-    sidebar.style.transition = '';
-    sidebar.style.transform = '';
-    if (open && sidebarDelta > 70) setMobileSidebarOpen(false);
-    if (!open && sidebarDelta < -48) setMobileSidebarOpen(true);
-    sidebarStartY = null;
-    sidebarDelta = 0;
-    sidebarDragging = false;
   });
 
-  detailPanel.addEventListener('touchstart', (event) => {
-    if (!isMobile() || detailPanel.hidden || !inTopHandleZone(event, detailPanel)) return;
-    detailStartY = getTouchY(event);
-    detailDelta = 0;
-    detailDragging = true;
-    detailPanel.style.transition = 'none';
-  }, { passive: true });
-
-  detailPanel.addEventListener('touchmove', (event) => {
-    if (!detailDragging || detailStartY === null) return;
-    const y = getTouchY(event);
-    if (y === null) return;
-    const delta = Math.max(0, y - detailStartY);
-    detailDelta = delta;
-    detailPanel.style.transform = `translateY(${delta}px)`;
-  }, { passive: true });
-
-  detailPanel.addEventListener('touchend', () => {
-    if (!detailDragging) return;
-    detailPanel.style.transition = '';
-    detailPanel.style.transform = '';
-    if (detailDelta > 80) closeDetailPanel();
-    detailStartY = null;
-    detailDelta = 0;
-    detailDragging = false;
+  bindSheetDrag({
+    panel: detailPanel,
+    handle: detailHandle,
+    requiresOpen: true,
+    getStartOffset: () => 0,
+    getBounds: () => ({ min: -window.innerHeight * 0.12, max: detailPanel.getBoundingClientRect().height }),
+    finalize: (_, endOffset) => {
+      const panelHeight = detailPanel.getBoundingClientRect().height;
+      if (endOffset >= panelHeight * CLOSE_DRAG_THRESHOLD_PANEL) {
+        closeDetailPanel();
+        return;
+      }
+      detailPanel.classList.add('is-open');
+    }
   });
 }
 

@@ -1,43 +1,61 @@
-# TheFairMap — Round 4 Polish
+# TheFairMap Build Task — UPDATED 2026-02-21 4:15 PM
 
-## STATUS: Major progress. Keep going.
+## STATUS: Map is live and working. Now fix these 4 things.
 
-Live: https://thefairmap.vercel.app  
+Live: https://thefairmap.vercel.app
 Target: https://viewer.mapme.com/first-monday-finder
+Data: data/mapme-full-export.json (719 locations, 67 categories)
 
-## BUGS TO FIX FIRST
+---
 
-### 1. Filters count shows (0) — should show (716)
-The "Filters (0)" button on the left edge shows 0 instead of the total location count. Fix the initialization so it shows the correct total on page load.
+## PRIORITY 1: Drag-to-dismiss bottom sheet (MOST IMPORTANT)
 
-### 2. Venue Map / Satellite toggle buttons missing from top-right
-MapMe has two stacked buttons in the top-right corner:
-- "🗺 Venue Map" (highlighted/active by default)  
-- "🛰 Satellite" (below it)
-These toggle between the MapTiler streets style and a satellite imagery style. They should be styled as pill buttons with icons. Make sure they are VISIBLE — previous commits may have added them but they might be hidden or positioned off-screen.
+The mobile/detail slide-up panel must feel EXACTLY like MapMe:
+- User can grab the handle bar and DRAG it up (to expand) or drag DOWN to dismiss
+- It should follow the user's finger/mouse in real time — not just animate on tap
+- Snaps closed when dragged past ~40% of its height
+- Snaps open when dragged up past ~30% of viewport
+- Use pointer events (pointerdown/pointermove/pointerup) — NOT touch only
+- Add a visible drag handle bar at the top (4px wide, 36px tall rounded pill, gray, centered)
+- This applies to BOTH the detail panel (#detail-panel) AND the mobile sidebar sheet
 
-## UX POLISH AFTER BUGS
+Reference MapMe behavior: the bottom sheet feels like a native iOS sheet — smooth, responsive, real drag tracking.
 
-### 3. MapMe has a ">" chevron on the left edge (not "Filters (0)")
-On desktop, MapMe shows just a thin ">" chevron toggle to open the sidebar — NOT a "Filters" button. The Filters button with count is INSIDE the sidebar once it's open. Match this behavior.
+---
 
-### 4. Marker size and spacing
-MapMe markers at this zoom level are slightly larger and more spaced out. Our markers look a bit cluttered in dense areas. Consider adjusting circle-radius stops.
+## PRIORITY 2: First Monday Finder logo in sidebar
 
-### 5. Detail panel when clicking a marker
-When you click a marker in MapMe, a detail panel slides in from the right showing: vendor name, category badge, description, photos. Make sure our detail panel matches this behavior and styling.
+Below the search bar and above the category list, add a centered logo image.
+- Source: data/icons/fairmap-icon-192.png (or check if there's a better logo file in data/)
+- Display as centered image, max-width 160px, with padding
+- This matches MapMe which shows the map logo/branding in the sidebar header area
 
-### 6. Mobile responsiveness
-Test on 375px width viewport. MapMe's mobile shows: full-screen map, bottom drawer for categories, tap marker → bottom sheet with details. Match this.
+---
+
+## PRIORITY 3: Marker icon contrast (white OR black)
+
+Currently all icons inside markers are white. MapMe auto-picks white or black based on the marker's background color for maximum contrast.
+- For LIGHT colored markers (yellow, orange, light green, etc.) → use BLACK icons
+- For DARK colored markers (dark blue, dark green, dark red, purple, etc.) → use WHITE icons
+- Use luminance calculation: if (0.299*R + 0.587*G + 0.114*B) > 128 → use black icon; else white
+- Apply this to the MapLibre icon color paint property OR render icons accordingly
+
+---
+
+## PRIORITY 4: Keep comparing and fixing
+
+After all 3 above, keep loading https://viewer.mapme.com/first-monday-finder and fixing every visual difference you find. Never stop.
+
+---
 
 ## DEPLOYMENT
-After EACH fix, commit and deploy:
+After EACH fix:
 ```bash
 git add -A && git commit -m "vX.X: description"
-cd /Users/scoutbot/.openclaw/workspace/thefairmap && vercel --prod --yes --token=$VERCEL_TOKEN
+vercel --prod --yes --token=$VERCEL_TOKEN
 ```
 
 ## RULES
 - Vanilla HTML/CSS/JS only — NO frameworks
-- NEVER STOP. Keep finding and fixing differences.
-- When done with all items above, run: `openclaw system event --text "Done: Round 4 polish complete" --mode now`
+- Never stop working
+- Use Playwright (installed) for headless testing to verify fixes work before committing

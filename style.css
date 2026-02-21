@@ -63,6 +63,18 @@ body {
   transition: transform 0.24s ease, opacity 0.24s ease;
 }
 
+.sheet-handle-wrap {
+  display: none;
+}
+
+.sheet-handle {
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: #c5c8ce;
+}
+
 #app.sidebar-collapsed #sidebar {
   transform: translateX(-100%);
   width: 0;
@@ -803,16 +815,22 @@ body {
     z-index: 4200;
   }
 
-  #sidebar::before {
-    content: "";
-    width: 44px;
-    height: 5px;
-    border-radius: 999px;
-    background: #c5c8ce;
+  .sheet-handle-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
     position: absolute;
-    top: 8px;
+    top: 6px;
     left: 50%;
     transform: translateX(-50%);
+    z-index: 4;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .sheet-handle-wrap:active {
+    cursor: grabbing;
   }
 
   #app.mobile-sidebar-open #sidebar {
@@ -842,15 +860,7 @@ body {
   }
 
   #detail-panel::before {
-    content: "";
-    width: 44px;
-    height: 5px;
-    border-radius: 999px;
-    background: #c5c8ce;
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
+    content: none;
   }
 
   #detail-panel.is-open {
