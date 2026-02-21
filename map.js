@@ -1327,7 +1327,59 @@ function formatDescription(description) {
     .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
     .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, '');
   const hasHtml = /<[^>]+>/.test(strippedHandlers);
-  return hasHtml ? strippedHandlers : escapeHtml(strippedHandlers).replace(/\n/g, '<br>');
+  if (!hasHtml) return escapeHtml(strippedHandlers).replace(/\n/g, '<br>');
+  return replaceMapmeSocialIcons(strippedHandlers);
+}
+
+function replaceMapmeSocialIcons(html) {
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  const mapmeSocialPattern = /static-resources\.mapme\.com\/ps\/images\/social-network-icons\//i;
+  const emojiByNetwork = {
+    facebook: '📘',
+    fb: '📘',
+    instagram: '📸',
+    tiktok: '🎵',
+    twitter: '𝕏',
+    x: '𝕏',
+    youtube: '▶️',
+    website: '🌐',
+    web: '🌐'
+  };
+
+  const socialImgs = container.querySelectorAll('img');
+  socialImgs.forEach((img) => {
+    const src = String(img.getAttribute('src') || '').trim();
+    if (!mapmeSocialPattern.test(src)) return;
+    const parentLink = img.closest('a[href]');
+    const href = parentLink?.getAttribute('href') || '';
+    const alt = String(img.getAttribute('alt') || '').trim().toLowerCase();
+    const fileToken = src.split('/').pop()?.split('.')[0]?.toLowerCase() || '';
+    const network = alt || fileToken || 'social';
+    const emoji = emojiByNetwork[network] || '🔗';
+    const label = network === 'x' ? 'X' : network.charAt(0).toUpperCase() + network.slice(1);
+    const replacement = document.createElement(href ? 'a' : 'span');
+    replacement.className = 'social-link-fallback';
+    if (href) {
+      replacement.setAttribute('href', href);
+      replacement.setAttribute('target', '_blank');
+      replacement.setAttribute('rel', 'noopener noreferrer');
+    }
+    replacement.innerHTML = `<span class="social-emoji" aria-hidden="true">${emoji}</span><span>${escapeHtml(label)}</span>`;
+
+    if (parentLink) {
+      const host = parentLink.parentElement;
+      if (host && host !== container && host.children.length === 1) {
+        host.replaceWith(replacement);
+      } else {
+        parentLink.replaceWith(replacement);
+      }
+    } else {
+      img.replaceWith(replacement);
+    }
+  });
+
+  return container.innerHTML;
 }
 
 function sanitizeMetaAddress(address) {

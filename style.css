@@ -97,14 +97,36 @@ body {
 .sidebar-logo-wrap {
   display: flex;
   justify-content: center;
-  padding: 12px 14px 10px;
+  padding: 10px 14px 6px;
 }
 
-.sidebar-logo {
+.sidebar-brand {
   width: 100%;
-  max-width: 160px;
-  height: auto;
-  display: block;
+  border-radius: 4px;
+  background: var(--mapme-green);
+  color: #f5f8f2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 6px 8px 7px;
+}
+
+.sidebar-brand-script {
+  font-family: "Brush Script MT", "Segoe Script", cursive;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 0.008em;
+}
+
+.sidebar-brand-block {
+  font-family: "Trebuchet MS", "Arial Narrow", Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-top: -2px;
 }
 
 .sidebar-filters-btn {
@@ -648,6 +670,26 @@ body {
   font-size: 15px;
   line-height: 1.48;
   color: #4b5563;
+}
+
+.detail-description a.social-link-fallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 10px;
+  margin-bottom: 6px;
+  color: #2b5f1e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.detail-description a.social-link-fallback:hover {
+  text-decoration: underline;
+}
+
+.detail-description .social-emoji {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .detail-address {
