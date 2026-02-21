@@ -247,8 +247,7 @@ body {
   padding: 0 12px;
 }
 
-#app.sidebar-collapsed #filters-label,
-#app.sidebar-collapsed #filters-count {
+#app.sidebar-collapsed #filters-label {
   display: none;
 }
 
@@ -354,6 +353,7 @@ body {
   margin-top: 16px;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .detail-btn {
@@ -370,6 +370,7 @@ body {
   padding: 0 12px;
   cursor: pointer;
   text-decoration: none;
+  flex: 1 1 140px;
 }
 
 .detail-btn.primary {
@@ -425,6 +426,18 @@ body {
     transition: transform 0.24s ease;
     box-shadow: 0 -8px 26px rgba(16, 24, 40, 0.2);
     z-index: 6;
+  }
+
+  #sidebar::before {
+    content: "";
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: #c5c8ce;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   #app.mobile-sidebar-open #sidebar {
