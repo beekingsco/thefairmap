@@ -811,10 +811,13 @@ function updateFilterCount() {
 function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0) {
   const button = document.getElementById('mobile-categories-btn');
   if (!button) return;
+  const label = document.getElementById('mobile-filters-label');
   const open = document.getElementById('app').classList.contains('mobile-sidebar-open');
   button.setAttribute('aria-expanded', String(open));
   button.setAttribute('aria-label', open ? 'Close filters' : 'Open filters');
-  button.textContent = open ? 'Close Filters' : `\u2630 Filters (${totalCount})`;
+  const text = `Filters (${totalCount})`;
+  if (label) label.textContent = text;
+  else button.textContent = text;
 }
 
 function updateMapStyleButtons() {
