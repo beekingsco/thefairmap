@@ -342,17 +342,17 @@ function buildLayers() {
         ['boolean', ['feature-state', 'hover'], false],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 12.6,
-          16, 15.5,
-          17.5, 17.4,
-          20, 20.4
+          14, 12.9,
+          16, 15.9,
+          17.5, 18.0,
+          20, 21.2
         ],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 11.2,
-          16, 13.9,
-          17.5, 15.9,
-          20, 18.3
+          14, 11.5,
+          16, 14.4,
+          17.5, 16.6,
+          20, 19.4
         ]
       ],
       'circle-stroke-width': [
@@ -389,13 +389,14 @@ function buildLayers() {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
       'icon-allow-overlap': false,
       'icon-ignore-placement': false,
-      'icon-padding': 18,
+      'icon-padding': 22,
+      'symbol-sort-key': ['-', 1000, ['to-number', ['id'], 0]],
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.4,
-        16, 0.49,
-        17.5, 0.56,
-        20, 0.66
+        14, 0.42,
+        16, 0.52,
+        17.5, 0.6,
+        20, 0.7
       ]
     }
   });
@@ -408,12 +409,12 @@ function buildLayers() {
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 13.4,
-        17, 18.1,
-        20, 21.5
+        14, 14.6,
+        17, 19.5,
+        20, 23.2
       ],
       'circle-color': '#ffffff',
-      'circle-opacity': 0.25,
+      'circle-opacity': 0.3,
       'circle-stroke-width': 0
     }
   });
@@ -426,13 +427,13 @@ function buildLayers() {
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 12.4,
-        17, 16.1,
-        20, 18.7
+        14, 13.8,
+        17, 18.2,
+        20, 21.1
       ],
       'circle-color': '#ffffff',
-      'circle-opacity': 0.3,
-      'circle-stroke-width': 1.6,
+      'circle-opacity': 0.36,
+      'circle-stroke-width': 1.9,
       'circle-stroke-color': '#111111'
     }
   });
@@ -501,6 +502,10 @@ function bindMapEvents() {
 function onMarkerClick(event) {
   const feature = event.features?.[0];
   if (!feature?.properties?.id) return;
+  if (typeof feature.id === 'number' && map.getLayer(LAYER_HOVER)) {
+    appState.hoveredFeatureId = feature.id;
+    map.setFilter(LAYER_HOVER, ['==', ['id'], feature.id]);
+  }
   const location = appState.filteredLocations.find((loc) => loc.id === feature.properties.id);
   if (!location) return;
   openLocation(location, true);
