@@ -38,9 +38,28 @@ async function init() {
   setupCategoryState();
   initSidebarControls();
 
+  const preferredStyle = resolveMapStyleUrl(mapData.map?.style);
+  const fallbackStyle  = 'https://tiles.openfreemap.org/styles/bright';
+
+  // Pre-flight: test if MapTiler style is accessible before initialising the map
+  async function pickMapStyle() {
+    if (!preferredStyle.includes('maptiler.com')) return preferredStyle;
+    try {
+      const r = await fetch(preferredStyle, { method: 'HEAD' });
+      if (r.ok) return preferredStyle;
+      console.warn(`MapTiler style returned ${r.status} — falling back to OpenFreeMap`);
+      return fallbackStyle;
+    } catch {
+      console.warn('MapTiler style unreachable — falling back to OpenFreeMap');
+      return fallbackStyle;
+    }
+  }
+
+  const mapStyle = await pickMapStyle();
+
   map = new maplibregl.Map({
     container: 'map',
-    style: resolveMapStyleUrl(mapData.map?.style),
+    style: mapStyle,
     center: mapData.map?.center || [-95.8624, 32.5585],
     zoom: mapData.map?.zoom ?? 17,
     pitch: mapData.map?.pitch ?? 60,
