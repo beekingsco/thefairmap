@@ -290,9 +290,9 @@ body {
 }
 
 .style-controls {
-  position: absolute;
+  position: fixed;
   top: max(12px, env(safe-area-inset-top));
-  right: 12px;
+  right: 14px;
   display: flex !important;
   flex-direction: column;
   gap: 8px;
@@ -304,11 +304,11 @@ body {
 }
 
 .map-style-btn {
-  min-width: 136px;
+  min-width: 144px;
   height: 36px;
   border-radius: 999px;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .btn-icon {
@@ -460,7 +460,7 @@ body {
 }
 
 .maplibregl-ctrl-top-right {
-  top: 98px;
+  top: 106px;
   right: 10px;
   z-index: 2500;
 }
