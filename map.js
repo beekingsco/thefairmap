@@ -137,7 +137,7 @@ function normalizeData(data) {
 
   appState.locations = (data.locations || [])
     .map((loc, idx) => {
-      const categoryId = String(loc.categoryId || 'uncategorized');
+      const categoryId = String(loc.categoryId || loc.category || 'uncategorized');
       const category = appState.categoriesById.get(categoryId);
       const categoryName = loc.categoryName || category?.name || 'Uncategorized';
       return {
