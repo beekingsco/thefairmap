@@ -645,7 +645,7 @@ body {
     right: 0;
     bottom: 0;
     top: auto;
-    height: 68dvh;
+    height: 74dvh;
     border-right: 0;
     border-top: 1px solid var(--line);
     border-radius: 16px 16px 0 0;
@@ -727,13 +727,13 @@ body {
     display: inline-flex;
     position: fixed;
     left: 12px;
-    top: max(10px, env(safe-area-inset-top));
-    bottom: auto;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    top: auto;
     transform: none;
     border-radius: 999px;
-    min-width: 124px;
+    min-width: 132px;
     justify-content: center;
-    z-index: 45;
+    z-index: 4300;
   }
 
   .chevron-btn {
@@ -743,7 +743,7 @@ body {
 
 @media (max-width: 480px) {
   .mobile-categories-btn {
-    min-width: 118px;
+    min-width: 124px;
     height: 36px;
     padding: 0 11px;
     font-size: 12px;

@@ -738,6 +738,7 @@ function renderDetail(location) {
   panel.classList.remove('is-closing');
   requestAnimationFrame(() => panel.classList.add('is-open'));
   appState.detailClosing = false;
+  syncMobileFloatingUi(true);
 }
 
 function closeDetailPanel() {
@@ -756,10 +757,18 @@ function closeDetailPanel() {
       clearTimeout(appState.detailCloseTimer);
       appState.detailCloseTimer = null;
     }
+    syncMobileFloatingUi(false);
     panel.removeEventListener('transitionend', finalizeClose);
   };
   panel.addEventListener('transitionend', finalizeClose);
   appState.detailCloseTimer = setTimeout(finalizeClose, 320);
+}
+
+function syncMobileFloatingUi(detailOpen) {
+  if (window.innerWidth > 960) return;
+  const floatingFiltersBtn = document.getElementById('mobile-categories-btn');
+  if (!floatingFiltersBtn) return;
+  floatingFiltersBtn.hidden = Boolean(detailOpen);
 }
 
 function toggleSidebar() {
@@ -847,7 +856,7 @@ function updateMobileCategoriesButton(totalCount = appState.totalLocationCount |
   const open = document.getElementById('app').classList.contains('mobile-sidebar-open');
   button.setAttribute('aria-expanded', String(open));
   button.setAttribute('aria-label', open ? 'Close filters' : 'Open filters');
-  const text = `Filters (${totalCount})`;
+  const text = open ? 'Close Filters' : `Filters (${totalCount})`;
   if (label) label.textContent = text;
   else button.textContent = text;
 }
