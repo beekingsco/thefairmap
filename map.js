@@ -62,6 +62,7 @@ async function init() {
   normalizeData(data);
   initializeSidebarState();
   bindUi();
+  applyFilters();
 
   map = new maplibregl.Map({
     container: 'map',
@@ -155,6 +156,8 @@ function normalizeData(data) {
       };
     })
     .filter((loc) => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
+  appState.filteredLocations = [...appState.locations];
+  appState.filtersInitialized = true;
 
   // Ensure category counts match the rendered data.
   const computedCounts = new Map();
@@ -586,7 +589,9 @@ function updateSidebarToggle(isOpen) {
 function updateFilterCount() {
   const countEl = document.getElementById('filters-count');
   if (!countEl) return;
-  const visibleCount = appState.filtersInitialized ? appState.filteredLocations.length : appState.locations.length;
+  const visibleCount = appState.filtersInitialized
+    ? appState.filteredLocations.length
+    : appState.locations.length;
   countEl.textContent = `(${visibleCount})`;
 }
 
