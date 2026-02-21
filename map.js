@@ -1197,7 +1197,6 @@ function removeAnchorPopup() {
 function bindMobileGestures() {
   const sidebar = document.getElementById('sidebar');
   const detailPanel = document.getElementById('detail-panel');
-  const sidebarHandle = sidebar?.querySelector('[data-sheet-handle="sidebar"]');
   const detailHandle = detailPanel?.querySelector('[data-sheet-handle="detail"]');
   if (!sidebar || !detailPanel) return;
 
@@ -1208,16 +1207,23 @@ function bindMobileGestures() {
 
   const canDragPointer = (event) => event.isPrimary && event.button === 0;
   const getSidebarClosedOffset = () => Math.max(sidebar.getBoundingClientRect().height - SIDEBAR_PEEK_HEIGHT, 0);
+  const canStartSidebarDrag = (event) => {
+    const rect = sidebar.getBoundingClientRect();
+    const visibleBottom = Math.min(rect.bottom, window.innerHeight);
+    if (event.clientY < rect.top || event.clientY > visibleBottom) return false;
+    return event.clientY <= rect.top + 60;
+  };
 
   const bindSheetDrag = ({
     panel,
-    handle,
+    target,
     requiresOpen,
+    canStartDrag,
     getStartOffset,
     getBounds,
     finalize
   }) => {
-    if (!panel || !handle) return;
+    if (!panel || !target) return;
 
     let dragging = false;
     let pointerId = null;
@@ -1271,10 +1277,11 @@ function bindMobileGestures() {
       finish(true);
     };
 
-    handle.addEventListener('pointerdown', (event) => {
+    target.addEventListener('pointerdown', (event) => {
       if (!isMobile() || !canDragPointer(event)) return;
       if (requiresOpen && !panel.classList.contains('is-open')) return;
       if (panel.hidden) return;
+      if (typeof canStartDrag === 'function' && !canStartDrag(event)) return;
       const bounds = getBounds();
       if (!bounds) return;
 
@@ -1295,8 +1302,9 @@ function bindMobileGestures() {
 
   bindSheetDrag({
     panel: sidebar,
-    handle: sidebarHandle,
+    target: sidebar,
     requiresOpen: false,
+    canStartDrag: canStartSidebarDrag,
     getStartOffset: () => (document.getElementById('app').classList.contains('mobile-sidebar-open') ? 0 : getSidebarClosedOffset()),
     getBounds: () => ({ min: 0, max: getSidebarClosedOffset() }),
     finalize: (startOffset, endOffset) => {
@@ -1312,7 +1320,7 @@ function bindMobileGestures() {
 
   bindSheetDrag({
     panel: detailPanel,
-    handle: detailHandle,
+    target: detailHandle,
     requiresOpen: true,
     getStartOffset: () => 0,
     getBounds: () => ({ min: -window.innerHeight * 0.12, max: detailPanel.getBoundingClientRect().height }),
