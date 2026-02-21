@@ -653,18 +653,33 @@ function openLocation(location, fly) {
   renderDetail(location);
 
   if (fly) {
-    map.easeTo({
+    map.flyTo({
       center: [location.lng, location.lat],
-      zoom: Math.max(17, map.getZoom()),
+      zoom: Math.max(17.2, map.getZoom()),
       pitch: DEFAULT_PITCH,
       bearing: DEFAULT_BEARING,
-      duration: 450
+      curve: 1.35,
+      speed: 0.92,
+      essential: true,
+      offset: getDetailAwareFlyOffset()
     });
   }
 
   if (window.innerWidth <= 960) {
     closeMobileSidebar();
   }
+}
+
+function getDetailAwareFlyOffset() {
+  const mobile = window.innerWidth <= 960;
+  const detailPanel = document.getElementById('detail-panel');
+  if (!detailPanel) return [0, 0];
+  if (mobile) {
+    const mobilePanelHeight = Math.min(detailPanel.getBoundingClientRect().height || 0, window.innerHeight * 0.74);
+    return [0, Math.round(-mobilePanelHeight * 0.22)];
+  }
+  const desktopPanelWidth = detailPanel.getBoundingClientRect().width || Math.min(420, window.innerWidth * 0.33);
+  return [Math.round(-desktopPanelWidth * 0.36), 0];
 }
 
 function renderDetail(location) {
