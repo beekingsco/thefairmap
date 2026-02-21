@@ -2,7 +2,18 @@ let map;
 let geolocateControl;
 
 const STYLE_FALLBACK = 'https://tiles.openfreemap.org/styles/liberty';
-const SATELLITE_STYLE_FALLBACK = 'https://tiles.openfreemap.org/styles/liberty';
+const SATELLITE_STYLE_FALLBACK = {
+  version: 8,
+  sources: {
+    esri: {
+      type: 'raster',
+      tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+      tileSize: 256,
+      attribution: 'Imagery © Esri'
+    }
+  },
+  layers: [{ id: 'esri-imagery', type: 'raster', source: 'esri' }]
+};
 const DEFAULT_CENTER = [-95.8624, 32.5585];
 const DEFAULT_ZOOM = 17;
 const DEFAULT_PITCH = 0;

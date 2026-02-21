@@ -255,15 +255,17 @@ body {
 }
 
 .style-controls {
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: fixed;
+  top: 12px;
+  right: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
-  z-index: 41;
+  z-index: 60;
   pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
 }
 
 .map-style-btn {
