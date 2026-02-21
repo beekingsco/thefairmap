@@ -342,17 +342,17 @@ function buildLayers() {
         ['boolean', ['feature-state', 'hover'], false],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 12.9,
-          16, 15.9,
-          17.5, 18.0,
-          20, 21.2
+          14, 15.5,
+          16, 19.1,
+          17.5, 21.6,
+          20, 25.4
         ],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 11.5,
-          16, 14.4,
-          17.5, 16.6,
-          20, 19.4
+          14, 13.8,
+          16, 17.3,
+          17.5, 19.9,
+          20, 23.3
         ]
       ],
       'circle-stroke-width': [
@@ -393,10 +393,10 @@ function buildLayers() {
       'symbol-sort-key': ['-', 1000, ['to-number', ['id'], 0]],
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.42,
-        16, 0.52,
-        17.5, 0.6,
-        20, 0.7
+        14, 0.5,
+        16, 0.62,
+        17.5, 0.72,
+        20, 0.84
       ]
     }
   });
@@ -409,9 +409,9 @@ function buildLayers() {
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 14.6,
-        17, 19.5,
-        20, 23.2
+        14, 17.5,
+        17, 23.4,
+        20, 27.8
       ],
       'circle-color': '#ffffff',
       'circle-opacity': 0.3,
@@ -427,9 +427,9 @@ function buildLayers() {
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 13.8,
-        17, 18.2,
-        20, 21.1
+        14, 16.6,
+        17, 21.8,
+        20, 25.3
       ],
       'circle-color': '#ffffff',
       'circle-opacity': 0.36,
