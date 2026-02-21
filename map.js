@@ -337,17 +337,17 @@ function buildLayers() {
         ['boolean', ['feature-state', 'hover'], false],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 13.6,
-          16, 16.8,
-          17.5, 18.9,
-          20, 22.0
+          14, 12.4,
+          16, 15.3,
+          17.5, 17.3,
+          20, 20.2
         ],
         [
           'interpolate', ['linear'], ['zoom'],
-          14, 12.2,
-          16, 15.0,
-          17.5, 17.0,
-          20, 19.8
+          14, 11.0,
+          16, 13.7,
+          17.5, 15.7,
+          20, 18.1
         ]
       ],
       'circle-stroke-width': [
@@ -382,15 +382,15 @@ function buildLayers() {
     source: SOURCE_ID,
     layout: {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true,
-      'icon-padding': 10,
+      'icon-allow-overlap': false,
+      'icon-ignore-placement': false,
+      'icon-padding': 14,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.46,
-        16, 0.56,
-        17.5, 0.66,
-        20, 0.78
+        14, 0.42,
+        16, 0.5,
+        17.5, 0.58,
+        20, 0.68
       ]
     }
   });
