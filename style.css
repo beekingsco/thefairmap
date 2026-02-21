@@ -335,7 +335,7 @@ body {
 }
 
 #app.sidebar-open .chevron-btn {
-  left: calc(var(--sidebar-width) - 12px);
+  left: -12px;
 }
 
 .map-btn-glyph {
