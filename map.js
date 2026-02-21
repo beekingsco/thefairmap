@@ -50,6 +50,8 @@ async function init() {
 
   map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 
+  let userLocation = null;
+
   geolocateControl = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: false,
@@ -57,6 +59,10 @@ async function init() {
     showAccuracyCircle: false
   });
   map.addControl(geolocateControl, 'top-right');
+
+  geolocateControl.on('geolocate', (e) => {
+    userLocation = { lat: e.coords.latitude, lng: e.coords.longitude };
+  });
 
   map.on('load', async () => {
     await buildMapLayers();
@@ -656,14 +662,24 @@ function renderLocationList() {
     return;
   }
 
-  visibleLocations.slice(0, 200).forEach((loc) => {
+  // Sort by distance if user location is available
+  let sortedLocs = visibleLocations.slice(0, 200);
+  if (userLocation) {
+    sortedLocs = sortedLocs.map(loc => ({
+      ...loc,
+      _dist: distanceFt(userLocation.lat, userLocation.lng, loc.lat, loc.lng)
+    })).sort((a, b) => a._dist - b._dist);
+  }
+
+  sortedLocs.forEach((loc) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'location-item';
 
     const locationCategory = categoryById.get(loc.categoryId);
+    const distHtml = loc._dist != null ? `<span class="location-item-dist">${formatDistance(loc._dist)}</span>` : '';
     button.innerHTML = `
-      <span class="location-item-name">${escapeHtml(loc.name)}${loc.featured ? ' ⭐' : ''}</span>
+      <span class="location-item-name">${escapeHtml(loc.name)}${loc.featured ? ' ⭐' : ''} ${distHtml}</span>
       <span class="location-item-meta">
         <span class="category-dot" style="--dot-color:${loc.color};"></span>
         ${escapeHtml(locationCategory?.name || loc.categoryName)}
@@ -688,9 +704,35 @@ function updateResultCount() {
   document.getElementById('result-count').textContent = text;
 }
 
+function distanceFt(lat1, lng1, lat2, lng2) {
+  // Haversine in feet (good enough for fair grounds)
+  const R = 20902000; // Earth radius in feet
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function formatDistance(ft) {
+  if (ft < 300) return `${Math.round(ft)} ft`;
+  if (ft < 5280) return `${(ft/5280).toFixed(2)} mi`;
+  return `${(ft/5280).toFixed(1)} mi`;
+}
+
+function trackRecentView(loc) {
+  try {
+    let recent = JSON.parse(localStorage.getItem('fairmap-recent') || '[]');
+    recent = recent.filter(r => r.id !== loc.id);
+    recent.unshift({ id: loc.id, name: loc.name, time: Date.now() });
+    if (recent.length > 8) recent = recent.slice(0, 8);
+    localStorage.setItem('fairmap-recent', JSON.stringify(recent));
+  } catch {}
+}
+
 function openLocation(loc, flyTo) {
   selectedLocationId = loc.id;
   syncSelectedLayer();
+  trackRecentView(loc);
 
   const category = categoryById.get(loc.categoryId);
   const badgeColor = normalizeColor(loc.color || category?.color);
