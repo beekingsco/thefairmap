@@ -18,9 +18,15 @@ const DATA_DIR    = path.join(ROOT, 'data');
 const LOCATIONS_FILE = path.join(DATA_DIR, 'locations.json');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-// ── Admin credentials (plain-text comparison for simplicity) ───────────────
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'fairmap2026';
+// ── Users file ─────────────────────────────────────────────────────────────
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+function readUsers() {
+  try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
+  catch { return [{ id: 'admin', username: 'admin', displayName: 'Admin', role: 'admin', password: 'fairmap2026' }]; }
+}
+function writeUsers(users) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+}
 
 // ── Middleware ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '50mb' }));
@@ -75,9 +81,11 @@ function writeLocations(data) {
 // Auth
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  if (username === ADMIN_USER && password === ADMIN_PASS) {
-    req.session.user = { username };
-    return res.json({ ok: true });
+  const users = readUsers();
+  const user = users.find(u => u.username === username && u.password === password);
+  if (user) {
+    req.session.user = { id: user.id, username: user.username, displayName: user.displayName, role: user.role };
+    return res.json({ ok: true, user: { username: user.username, displayName: user.displayName, role: user.role } });
   }
   res.status(401).json({ ok: false, error: 'Invalid credentials' });
 });
@@ -128,6 +136,36 @@ app.post('/api/upload-image', requireAuth, upload.single('image'), (req, res) =>
   if (!req.file) return res.status(400).json({ ok: false, error: 'No file' });
   const url = `/uploads/${req.file.filename}`;
   res.json({ ok: true, url });
+});
+
+// User management (admin-only)
+app.get('/api/users', requireAuth, (req, res) => {
+  if (req.session.user.role !== 'admin') return res.status(403).json({ ok: false, error: 'Admin only' });
+  const users = readUsers().map(u => ({ id: u.id, username: u.username, displayName: u.displayName, role: u.role }));
+  res.json({ ok: true, users });
+});
+
+app.post('/api/users', requireAuth, (req, res) => {
+  if (req.session.user.role !== 'admin') return res.status(403).json({ ok: false, error: 'Admin only' });
+  const { username, password, displayName, role } = req.body;
+  if (!username || !password) return res.status(400).json({ ok: false, error: 'Username and password required' });
+  const users = readUsers();
+  if (users.some(u => u.username === username)) return res.status(400).json({ ok: false, error: 'Username already exists' });
+  const newUser = { id: `user-${Date.now()}`, username, password, displayName: displayName || username, role: role || 'editor' };
+  users.push(newUser);
+  writeUsers(users);
+  res.json({ ok: true, user: { id: newUser.id, username: newUser.username, displayName: newUser.displayName, role: newUser.role } });
+});
+
+app.delete('/api/users/:id', requireAuth, (req, res) => {
+  if (req.session.user.role !== 'admin') return res.status(403).json({ ok: false, error: 'Admin only' });
+  if (req.params.id === 'admin') return res.status(400).json({ ok: false, error: 'Cannot delete the primary admin' });
+  let users = readUsers();
+  const before = users.length;
+  users = users.filter(u => u.id !== req.params.id);
+  if (users.length === before) return res.status(404).json({ ok: false, error: 'User not found' });
+  writeUsers(users);
+  res.json({ ok: true });
 });
 
 // Bulk import (replace locations array, keep categories + map config)
@@ -185,5 +223,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🗺️  TheFairMap running at http://localhost:${PORT}`);
-  console.log(`   Admin: http://localhost:${PORT}/admin  (user: ${ADMIN_USER})`);
+  console.log(`   Admin: http://localhost:${PORT}/admin`);
 });

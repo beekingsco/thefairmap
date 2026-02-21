@@ -1,0 +1,16 @@
+[
+  {
+    "id": "admin",
+    "username": "admin",
+    "displayName": "Admin",
+    "role": "admin",
+    "password": "fairmap2026"
+  },
+  {
+    "id": "user-1771663527261",
+    "username": "vfm",
+    "password": "firstmonday2026",
+    "displayName": "VFM Team",
+    "role": "editor"
+  }
+]
