@@ -4,6 +4,9 @@ let adminMap;
 let mapData;
 let dropPin;
 let editingId = null;  // null = add mode, string = edit mode
+const PAGE_SIZE = 50;
+let currentPage = 1;
+let currentFilter = '';
 
 // ── Auth check ──────────────────────────────────────────────────────────────
 async function checkAuth() {
@@ -129,7 +132,9 @@ function bindUI() {
 
   // Table search/filter
   document.getElementById('table-search').addEventListener('input', (e) => {
-    renderTable(e.target.value.trim().toLowerCase());
+    currentFilter = e.target.value.trim().toLowerCase();
+    currentPage = 1;
+    renderTable(currentFilter);
   });
 }
 
@@ -192,9 +197,31 @@ function updateStats() {
   document.getElementById('stat-total').textContent = String(mapData.locations.length);
   const used = new Set(mapData.locations.map((l) => l.categoryId).filter(Boolean));
   document.getElementById('stat-cats').textContent = String(used.size);
+  renderCategoryGrid();
+}
+
+function renderCategoryGrid() {
+  const grid = document.getElementById('category-grid');
+  if (!grid) return;
+
+  const countMap = new Map();
+  mapData.locations.forEach(l => countMap.set(l.categoryId, (countMap.get(l.categoryId) || 0) + 1));
+
+  const cats = mapData.categories.slice().sort((a, b) => (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0));
+  document.getElementById('cat-count-badge').textContent = `(${cats.length})`;
+
+  grid.innerHTML = cats.map(cat => {
+    const count = countMap.get(cat.id) || 0;
+    return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.6rem;background:#f9fafb;border-radius:8px;border:1px solid #e5ebf1;">
+      <span style="width:16px;height:16px;border-radius:4px;background:${cat.color};flex-shrink:0;"></span>
+      <span style="flex:1;font-size:0.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</span>
+      <span style="font-size:0.72rem;color:#9aa5b1;flex-shrink:0;">${count}</span>
+    </div>`;
+  }).join('');
 }
 
 function renderTable(filter = '') {
+  currentFilter = filter;
   const tbody = document.getElementById('location-tbody');
   tbody.innerHTML = '';
 
@@ -207,17 +234,23 @@ function renderTable(filter = '') {
     );
   }
 
-  if (!list.length) {
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  currentPage = Math.min(currentPage, totalPages);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageList = list.slice(start, start + PAGE_SIZE);
+
+  if (!total) {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td colspan="6" style="text-align:center;color:#9aa5b1;padding:2rem;">No locations found.</td>`;
     tbody.appendChild(tr);
+    renderPagination(0, 0, 0);
     return;
   }
 
-  list.forEach((loc) => {
+  pageList.forEach((loc) => {
     const category = getCategory(loc.categoryId, loc.categoryName);
     const tr = document.createElement('tr');
-
     tr.innerHTML = `
       <td><strong>${escapeHtml(loc.name)}</strong>${loc.featured ? ' ⭐' : ''}</td>
       <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(loc.address || '—')}</td>
@@ -226,7 +259,8 @@ function renderTable(filter = '') {
       <td>${loc.image ? `<img src="${escapeHtml(loc.image)}" style="width:48px;height:34px;object-fit:cover;border-radius:5px;" loading="lazy">` : '—'}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-sm btn-secondary" data-action="edit" data-id="${escapeHtml(loc.id)}">Edit</button>
-        <button class="btn btn-sm btn-danger" data-action="delete" data-id="${escapeHtml(loc.id)}">Delete</button>
+        <a class="btn btn-sm btn-secondary" href="/?loc=${encodeURIComponent(loc.id)}" target="_blank" title="View on map">🗺️</a>
+        <button class="btn btn-sm btn-danger" data-action="delete" data-id="${escapeHtml(loc.id)}">✕</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -237,6 +271,38 @@ function renderTable(filter = '') {
   });
   tbody.querySelectorAll('[data-action="delete"]').forEach((btn) => {
     btn.addEventListener('click', () => deleteLocation(btn.dataset.id));
+  });
+
+  renderPagination(currentPage, totalPages, total);
+}
+
+function renderPagination(page, totalPages, total) {
+  let el = document.getElementById('table-pagination');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'table-pagination';
+    el.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;font-size:0.85rem;color:#5f6770;';
+    document.querySelector('.admin-table-wrap').after(el);
+  }
+
+  if (totalPages <= 1) {
+    el.innerHTML = total > 0 ? `<span>${total} location${total === 1 ? '' : 's'}</span>` : '';
+    return;
+  }
+
+  const start = (page - 1) * PAGE_SIZE + 1;
+  const end = Math.min(page * PAGE_SIZE, total);
+  el.innerHTML = `
+    <button class="btn btn-sm btn-secondary" id="pg-prev" ${page <= 1 ? 'disabled' : ''}>‹ Prev</button>
+    <span>Page <strong>${page}</strong> of ${totalPages} · ${start}–${end} of ${total}</span>
+    <button class="btn btn-sm btn-secondary" id="pg-next" ${page >= totalPages ? 'disabled' : ''}>Next ›</button>
+  `;
+
+  el.querySelector('#pg-prev')?.addEventListener('click', () => {
+    if (currentPage > 1) { currentPage--; renderTable(currentFilter); }
+  });
+  el.querySelector('#pg-next')?.addEventListener('click', () => {
+    if (currentPage < totalPages) { currentPage++; renderTable(currentFilter); }
   });
 }
 

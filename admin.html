@@ -150,6 +150,16 @@
     </section>
 
     <section class="admin-section">
+      <details>
+        <summary style="cursor:pointer;font-size:1.1rem;font-weight:700;padding:0.3rem 0;user-select:none;">
+          Categories <span id="cat-count-badge" style="font-size:0.78rem;color:#5f6770;font-weight:400;"></span>
+        </summary>
+        <p class="subtitle" style="margin:0.5rem 0;">Manage vendor categories — rename, change colors, or delete unused ones.</p>
+        <div id="category-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem;margin-top:0.75rem;max-height:400px;overflow-y:auto;"></div>
+      </details>
+    </section>
+
+    <section class="admin-section">
       <h2>CSV Import</h2>
       <p class="subtitle" style="margin-top:6px;">Headers: name, categoryId/categoryName/category, address, lat, lng, description, image, featured</p>
       <textarea id="csv-textarea" class="csv-area" placeholder="name,categoryName,address,lat,lng,description&#10;My Booth,Food,Arbor 1,32.5600,-95.8600,<p>Open 9-5</p>"></textarea>

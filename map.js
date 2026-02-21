@@ -62,6 +62,20 @@ async function init() {
     await buildMapLayers();
     refreshVisibleData();
     updateMobileToggleButton();
+
+    // Hide loading overlay
+    const loader = document.getElementById('map-loader');
+    if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.remove(), 500); }
+
+    // Deep-link support: ?loc=id
+    const urlParams = new URLSearchParams(window.location.search);
+    const locParam = urlParams.get('loc');
+    if (locParam) {
+      const target = locations.find(l => l.id === locParam);
+      if (target) {
+        setTimeout(() => openLocation(target, true), 600);
+      }
+    }
   });
 
   map.on('moveend', queueClusterColorRefresh);
@@ -169,6 +183,17 @@ function initSidebarControls() {
     }
     updateMobileToggleButton();
   });
+
+  // Swipe-to-close on mobile sidebar
+  let touchStartX = 0;
+  const sidebar = document.getElementById('sidebar');
+  sidebar.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  sidebar.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX;
+    if (deltaX < -60 && window.innerWidth <= 960) closeSidebarMobile();
+  }, { passive: true });
 }
 
 async function buildMapLayers() {
@@ -638,10 +663,11 @@ function renderLocationList() {
 
     const locationCategory = categoryById.get(loc.categoryId);
     button.innerHTML = `
-      <span class="location-item-name">${escapeHtml(loc.name)}</span>
+      <span class="location-item-name">${escapeHtml(loc.name)}${loc.featured ? ' ⭐' : ''}</span>
       <span class="location-item-meta">
         <span class="category-dot" style="--dot-color:${loc.color};"></span>
         ${escapeHtml(locationCategory?.name || loc.categoryName)}
+        ${loc.address ? `<span class="location-item-addr">· ${escapeHtml(loc.address)}</span>` : ''}
       </span>
     `;
 
@@ -690,6 +716,10 @@ function openLocation(loc, flyTo) {
           </p>
           ${loc.address ? `<p class="popup-address">📍 ${escapeHtml(loc.address)}</p>` : ''}
           ${loc.description ? `<div class="popup-description">${loc.description}</div>` : ''}
+          <div class="popup-actions">
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}" target="_blank" rel="noopener" class="popup-action-btn">📍 Directions</a>
+            <button onclick="navigator.share?.({title:'${escapeHtml(loc.name).replace(/'/g,"\\'")}',text:'Check out ${escapeHtml(loc.name).replace(/'/g,"\\'")} at First Monday!',url:location.origin+'?loc=${loc.id}'}).catch(()=>{})" class="popup-action-btn">↗ Share</button>
+          </div>
         </div>
       </article>
     `)
@@ -791,9 +821,10 @@ function updateMobileToggleButton() {
   button.setAttribute('aria-expanded', String(isOpen));
   button.setAttribute('aria-label', isOpen ? 'Close filters' : 'Open filters');
 
+  const count = visibleLocations.length;
   button.innerHTML = isOpen
     ? '<span class="hamburger-icon">&#10005;</span><span>Close</span>'
-    : '<span class="hamburger-icon">&#9776;</span><span>Filters</span>';
+    : `<span class="hamburger-icon">&#9776;</span><span>Filters</span>${count > 0 ? `<span class="filter-badge">${count}</span>` : ''}`;
 }
 
 function normalizeColor(input) {
@@ -815,6 +846,11 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// Register service worker for PWA/offline support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -102,7 +102,7 @@ body {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 10px;
-  font-size: 0.92rem;
+  font-size: 16px; /* prevents iOS zoom on focus */
   padding: 10px 12px;
   outline: none;
 }
@@ -309,6 +309,14 @@ body {
   color: #5b6877;
 }
 
+.location-item-addr {
+  color: #8a97a4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
 .location-empty {
   margin: 0;
   font-size: 0.78rem;
@@ -375,6 +383,17 @@ body {
   line-height: 1.1;
 }
 
+.filter-badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 99px;
+  min-width: 20px;
+  text-align: center;
+}
+
 .map-floating-btn {
   position: absolute;
   top: 68px;
@@ -420,11 +439,17 @@ body {
 .fairmap-popup .maplibregl-popup-close-button {
   top: 6px;
   right: 6px;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 20px;
   color: #4f5f6f;
+  background: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .popup-card {
@@ -505,6 +530,34 @@ body {
 .popup-description p:last-child {
   margin-bottom: 0;
 }
+
+.popup-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #edf0f3;
+}
+
+.popup-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: #f5f0eb;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+
+.popup-action-btn:hover { background: #ece5dc; }
 
 .maplibregl-ctrl-top-right {
   top: 58px;

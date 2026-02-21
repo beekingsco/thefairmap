@@ -1,0 +1,26 @@
+{
+  "name": "TheFairMap — First Monday Trade Days",
+  "short_name": "FairMap",
+  "description": "Interactive vendor map for First Monday Trade Days in Canton, Texas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ece8e0",
+  "theme_color": "#8f5a2f",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/data/icons/fairmap-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/data/icons/fairmap-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["navigation", "shopping"],
+  "lang": "en-US"
+}

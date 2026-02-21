@@ -7,6 +7,13 @@
   <meta name="description" content="Interactive map for First Monday Trade Days vendors and amenities.">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#8f5a2f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FairMap">
+  <link rel="apple-touch-icon" href="/data/icons/fairmap-icon-192.png">
+  <meta name="description" content="Interactive vendor map for First Monday Trade Days in Canton, Texas. Find vendors, get directions, explore categories.">
 </head>
 <body>
   <div id="app" class="sidebar-open">
@@ -56,6 +63,12 @@
         <span>Filters</span>
       </button>
       <div id="map" role="application" aria-label="Map"></div>
+      <div id="map-loader" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(236,232,224,0.9);z-index:2;pointer-events:none;transition:opacity 0.4s;">
+        <div style="text-align:center;">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">🗺️</div>
+          <div style="color:#5f6770;font-size:0.85rem;font-weight:600;">Loading map…</div>
+        </div>
+      </div>
     </main>
 
     <div id="mobile-backdrop" hidden></div>
