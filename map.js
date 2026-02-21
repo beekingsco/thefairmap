@@ -52,7 +52,9 @@ const appState = {
   mapStyleLoading: false,
   detailClosing: false,
   detailCloseTimer: null,
-  hoveredFeatureId: null
+  hoveredFeatureId: null,
+  hoverPopup: null,
+  popupPinned: false
 };
 
 const ICON_SVGS = {
@@ -282,6 +284,7 @@ function bindUi() {
   document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebar);
   document.getElementById('detail-scrim').addEventListener('click', closeDetailPanel);
   document.getElementById('detail-close').addEventListener('click', closeDetailPanel);
+  bindMobileGestures();
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
@@ -565,10 +568,12 @@ function onMarkerClick(event) {
   }
   const location = appState.filteredLocations.find((loc) => loc.id === feature.properties.id);
   if (!location) return;
+  showAnchorPopup(location, feature.geometry?.coordinates, true);
   openLocation(location, true);
 }
 
 function onMarkerMouseEnter(event) {
+  if (window.innerWidth <= 960) return;
   const feature = event.features?.[0];
   const id = feature?.id;
   if (typeof id !== 'number') return;
@@ -581,6 +586,10 @@ function onMarkerMouseEnter(event) {
   if (map.getLayer(LAYER_HOVER)) {
     map.setFilter(LAYER_HOVER, ['==', ['id'], id]);
   }
+  if (!appState.popupPinned) {
+    const location = appState.filteredLocations.find((loc) => loc.id === feature?.properties?.id);
+    if (location) showAnchorPopup(location, feature.geometry?.coordinates, false);
+  }
 }
 
 function onMarkerMouseLeave() {
@@ -592,6 +601,7 @@ function onMarkerMouseLeave() {
   if (map.getLayer(LAYER_HOVER)) {
     map.setFilter(LAYER_HOVER, ['==', ['id'], -1]);
   }
+  if (!appState.popupPinned) removeAnchorPopup();
 }
 
 function applyFilters() {
@@ -769,30 +779,26 @@ function renderDetail(location) {
   const categoryName = category?.name || location.categoryName;
   const color = normalizeColor(category?.color || location.color);
   const description = formatDescription(location.description);
-  const galleryHtml = location.photos.length
-    ? `
-      <div class="detail-gallery" aria-label="Location photos">
-        ${location.photos.slice(0, 6).map((url) => `<img class="detail-photo" src="${escapeAttr(url)}" alt="${escapeAttr(location.name)} photo" loading="lazy">`).join('')}
-      </div>
-    `
+  const hero = location.photos.length
+    ? `<img class="detail-hero" src="${escapeAttr(location.photos[0])}" alt="${escapeAttr(location.name)} photo" loading="lazy">`
     : `
-      <div class="detail-photo-placeholder" role="img" aria-label="Photo placeholder for ${escapeAttr(location.name)}">
+      <div class="detail-photo-placeholder detail-hero-placeholder" role="img" aria-label="Photo placeholder for ${escapeAttr(location.name)}">
         <span class="detail-photo-placeholder-icon" aria-hidden="true">&#128247;</span>
         <span class="detail-photo-placeholder-text">Photo coming soon</span>
       </div>
     `;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
+  const metaLine = [sanitizeMetaAddress(location.address), categoryName].filter(Boolean).join(' | ');
 
   content.innerHTML = `
-    <header class="detail-header">
-      <p class="detail-label">Vendor</p>
+    <div class="detail-media">${hero}</div>
+    <header class="detail-header mapme-detail-header">
       <h2 class="detail-title">${escapeHtml(location.name)}</h2>
+      ${metaLine ? `<p class="detail-meta">${escapeHtml(metaLine)}</p>` : ''}
       <div class="detail-badge" style="background:${color};color:${pickTextColor(color)};">${escapeHtml(categoryName)}</div>
     </header>
-    ${galleryHtml}
     <section class="detail-body">
       <div class="detail-description">${description}</div>
-      ${location.address ? `<p class="detail-address">${escapeHtml(location.address)}</p>` : ''}
     </section>
     <div class="detail-actions">
       <a class="detail-btn primary" href="${directionsUrl}" target="_blank" rel="noreferrer noopener">Directions</a>
@@ -823,6 +829,8 @@ function closeDetailPanel() {
   const scrim = document.getElementById('detail-scrim');
   const app = document.getElementById('app');
   if (!panel || panel.hidden || appState.detailClosing) return;
+  appState.popupPinned = false;
+  removeAnchorPopup();
   appState.detailClosing = true;
   panel.classList.add('is-closing');
   panel.classList.remove('is-open');
@@ -860,9 +868,7 @@ function toggleSidebar() {
   const mobile = window.innerWidth <= 960;
   if (mobile) {
     const app = document.getElementById('app');
-    app.classList.toggle('mobile-sidebar-open');
-    document.getElementById('mobile-scrim').hidden = !app.classList.contains('mobile-sidebar-open');
-    updateMobileCategoriesButton();
+    setMobileSidebarOpen(!app.classList.contains('mobile-sidebar-open'));
     return;
   }
 
@@ -877,9 +883,15 @@ function toggleSidebar() {
 
 function closeMobileSidebar() {
   if (window.innerWidth > 960) return;
+  setMobileSidebarOpen(false);
+}
+
+function setMobileSidebarOpen(open) {
   const app = document.getElementById('app');
-  app.classList.remove('mobile-sidebar-open');
-  document.getElementById('mobile-scrim').hidden = true;
+  if (!app) return;
+  app.classList.toggle('mobile-sidebar-open', open);
+  const scrim = document.getElementById('mobile-scrim');
+  if (scrim) scrim.hidden = !open;
   updateMobileCategoriesButton();
 }
 
@@ -953,6 +965,123 @@ function updateMobileCategoriesButton(totalCount = appState.totalLocationCount |
     totalCount,
     open,
     text
+  });
+}
+
+function showAnchorPopup(location, coordinates, pin) {
+  if (!map || !location) return;
+  const lngLat = Array.isArray(coordinates) && coordinates.length >= 2
+    ? [Number(coordinates[0]), Number(coordinates[1])]
+    : [Number(location.lng), Number(location.lat)];
+  if (!Number.isFinite(lngLat[0]) || !Number.isFinite(lngLat[1])) return;
+  if (!appState.hoverPopup) {
+    appState.hoverPopup = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: [0, -12],
+      className: 'map-anchor-popup'
+    });
+  }
+  appState.hoverPopup
+    .setLngLat(lngLat)
+    .setHTML(`<span>${escapeHtml(location.name)}</span>`)
+    .addTo(map);
+  appState.popupPinned = Boolean(pin);
+}
+
+function removeAnchorPopup() {
+  if (appState.hoverPopup) appState.hoverPopup.remove();
+}
+
+function bindMobileGestures() {
+  const sidebar = document.getElementById('sidebar');
+  const detailPanel = document.getElementById('detail-panel');
+  if (!sidebar || !detailPanel) return;
+
+  let sidebarStartY = null;
+  let detailStartY = null;
+  let sidebarDragging = false;
+  let detailDragging = false;
+  let sidebarDelta = 0;
+  let detailDelta = 0;
+
+  const isMobile = () => window.innerWidth <= 960;
+
+  const getTouchY = (event) => {
+    if (event.touches && event.touches[0]) return event.touches[0].clientY;
+    if (event.changedTouches && event.changedTouches[0]) return event.changedTouches[0].clientY;
+    return null;
+  };
+
+  const inTopHandleZone = (event, target) => {
+    const y = getTouchY(event);
+    if (y === null) return false;
+    const rect = target.getBoundingClientRect();
+    return y <= rect.top + 52;
+  };
+
+  sidebar.addEventListener('touchstart', (event) => {
+    if (!isMobile() || !inTopHandleZone(event, sidebar)) return;
+    sidebarStartY = getTouchY(event);
+    sidebarDelta = 0;
+    sidebarDragging = true;
+    sidebar.style.transition = 'none';
+  }, { passive: true });
+
+  sidebar.addEventListener('touchmove', (event) => {
+    if (!sidebarDragging || sidebarStartY === null) return;
+    const y = getTouchY(event);
+    if (y === null) return;
+    const delta = y - sidebarStartY;
+    const app = document.getElementById('app');
+    const open = app.classList.contains('mobile-sidebar-open');
+    sidebarDelta = delta;
+    if (open && delta > 0) {
+      sidebar.style.transform = `translateY(${delta}px)`;
+    } else if (!open && delta < 0) {
+      const reveal = Math.min(Math.abs(delta), 78);
+      sidebar.style.transform = `translateY(calc(100% - 54px - ${reveal}px))`;
+    }
+  }, { passive: true });
+
+  sidebar.addEventListener('touchend', () => {
+    if (!sidebarDragging) return;
+    const app = document.getElementById('app');
+    const open = app.classList.contains('mobile-sidebar-open');
+    sidebar.style.transition = '';
+    sidebar.style.transform = '';
+    if (open && sidebarDelta > 70) setMobileSidebarOpen(false);
+    if (!open && sidebarDelta < -48) setMobileSidebarOpen(true);
+    sidebarStartY = null;
+    sidebarDelta = 0;
+    sidebarDragging = false;
+  });
+
+  detailPanel.addEventListener('touchstart', (event) => {
+    if (!isMobile() || detailPanel.hidden || !inTopHandleZone(event, detailPanel)) return;
+    detailStartY = getTouchY(event);
+    detailDelta = 0;
+    detailDragging = true;
+    detailPanel.style.transition = 'none';
+  }, { passive: true });
+
+  detailPanel.addEventListener('touchmove', (event) => {
+    if (!detailDragging || detailStartY === null) return;
+    const y = getTouchY(event);
+    if (y === null) return;
+    const delta = Math.max(0, y - detailStartY);
+    detailDelta = delta;
+    detailPanel.style.transform = `translateY(${delta}px)`;
+  }, { passive: true });
+
+  detailPanel.addEventListener('touchend', () => {
+    if (!detailDragging) return;
+    detailPanel.style.transition = '';
+    detailPanel.style.transform = '';
+    if (detailDelta > 80) closeDetailPanel();
+    detailStartY = null;
+    detailDelta = 0;
+    detailDragging = false;
   });
 }
 
@@ -1132,7 +1261,21 @@ function escapeAttr(value) {
 
 function formatDescription(description) {
   if (!description) return 'No description available.';
-  return escapeHtml(description).replace(/\n/g, '<br>');
+  const raw = String(description);
+  const stripScript = raw.replace(/<\s*(script|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '');
+  const strippedHandlers = stripScript
+    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, '')
+    .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, '');
+  const hasHtml = /<[^>]+>/.test(strippedHandlers);
+  return hasHtml ? strippedHandlers : escapeHtml(strippedHandlers).replace(/\n/g, '<br>');
+}
+
+function sanitizeMetaAddress(address) {
+  const value = String(address || '').trim();
+  if (!value) return '';
+  if (/^-?\d+\.\d+\s*,\s*-?\d+\.\d+$/i.test(value)) return '';
+  return value;
 }
 
 function extractLocationPhotos(location) {
