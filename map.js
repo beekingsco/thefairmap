@@ -383,6 +383,7 @@ function bindUi() {
   document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
   document.getElementById('mobile-categories-btn').addEventListener('click', toggleSidebar);
   document.getElementById('mobile-peek-bar')?.addEventListener('click', () => setMobileSidebarOpen(true));
+  document.getElementById('mobile-sheet-collapse')?.addEventListener('click', () => setMobileSidebarOpen(false));
   document.getElementById('style-venue-btn').addEventListener('click', () => setMapStyle('venue'));
   document.getElementById('style-satellite-btn').addEventListener('click', () => setMapStyle('satellite'));
   document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebar);
@@ -399,10 +400,12 @@ function bindUi() {
 
   window.addEventListener('resize', () => {
     const mobile = window.innerWidth <= 960;
+    const mobileCollapse = document.getElementById('mobile-sheet-collapse');
     if (!mobile) {
       const mobileScrim = document.getElementById('mobile-scrim');
       mobileScrim.hidden = true;
       mobileScrim.classList.remove('is-open');
+      if (mobileCollapse) mobileCollapse.hidden = true;
       const app = document.getElementById('app');
       app.classList.toggle('sidebar-open', appState.sidebarOpen);
       app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
@@ -414,6 +417,7 @@ function bindUi() {
       const app = document.getElementById('app');
       app.classList.remove('sidebar-collapsed');
       app.classList.add('sidebar-open');
+      if (mobileCollapse) mobileCollapse.hidden = !app.classList.contains('mobile-sidebar-open');
       updateSidebarToggle(true);
       updateMobileCategoriesButton();
     }
@@ -438,6 +442,8 @@ function initializeSidebarState() {
   const mobileScrim = document.getElementById('mobile-scrim');
   mobileScrim.hidden = true;
   mobileScrim.classList.remove('is-open');
+  const mobileCollapse = document.getElementById('mobile-sheet-collapse');
+  if (mobileCollapse) mobileCollapse.hidden = !mobile;
   updateSidebarToggle(appState.sidebarOpen);
   updateMobileCategoriesButton();
   updateMapStyleButtons();
@@ -1080,6 +1086,8 @@ function setMobileSidebarOpen(open) {
   const app = document.getElementById('app');
   if (!app) return;
   app.classList.toggle('mobile-sidebar-open', open);
+  const mobileCollapse = document.getElementById('mobile-sheet-collapse');
+  if (mobileCollapse) mobileCollapse.hidden = !open;
   const scrim = document.getElementById('mobile-scrim');
   if (scrim) {
     if (appState.mobileScrimTimer) {
