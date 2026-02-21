@@ -106,7 +106,7 @@ async function init() {
     pitch: initialMapView.pitch,
     bearing: DEFAULT_BEARING,
     maxZoom: data.map?.maxZoom || 20,
-    attributionControl: true,
+    attributionControl: false,
     antialias: true
   });
 
@@ -118,6 +118,7 @@ async function init() {
     showUserHeading: true
   });
   map.addControl(geolocateControl, 'top-right');
+  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: 'Mapme' }), 'bottom-left');
 
   map.on('load', async () => {
     await hydrateStyleContent();
@@ -252,7 +253,18 @@ function normalizeData(data) {
 
 function bindUi() {
   const searchInput = document.getElementById('search-input');
+  const mobileSearchInput = document.getElementById('mobile-search-input');
+  const syncSearch = (value, source) => {
+    if (searchInput && source !== searchInput) searchInput.value = value;
+    if (mobileSearchInput && source !== mobileSearchInput) mobileSearchInput.value = value;
+  };
+
   searchInput.addEventListener('input', () => {
+    syncSearch(searchInput.value, searchInput);
+    applyFilters();
+  });
+  mobileSearchInput?.addEventListener('input', () => {
+    syncSearch(mobileSearchInput.value, mobileSearchInput);
     applyFilters();
   });
 
@@ -306,7 +318,7 @@ function initializeSidebarState() {
   const app = document.getElementById('app');
   app.classList.toggle('sidebar-open', mobile ? true : appState.sidebarOpen);
   app.classList.toggle('sidebar-collapsed', mobile ? false : !appState.sidebarOpen);
-  app.classList.remove('mobile-sidebar-open');
+  app.classList.toggle('mobile-sidebar-open', mobile);
   document.getElementById('mobile-scrim').hidden = true;
   updateSidebarToggle(appState.sidebarOpen);
   updateMobileCategoriesButton();
@@ -320,6 +332,17 @@ async function loadMarkerIcons() {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24">${ICON_SVGS[iconType]}</svg>`;
     const image = await loadSvgImage(svg);
     map.addImage(iconType, image, { pixelRatio: 4 });
+  }
+
+  for (const fileName of new Set(appState.categoryIconFiles.values())) {
+    const iconId = iconIdFromFile(fileName);
+    if (map.hasImage(iconId)) continue;
+    try {
+      const image = await loadImageByUrl(`/data/icons/${fileName}`);
+      map.addImage(iconId, image, { pixelRatio: 2 });
+    } catch (_) {
+      // Generic icon fallback remains available.
+    }
   }
 }
 
@@ -396,47 +419,10 @@ function buildLayers() {
     filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': ['get', 'color'],
-      'circle-radius': [
-        'case',
-        ['boolean', ['feature-state', 'hover'], false],
-        [
-          'interpolate', ['linear'], ['zoom'],
-          14, 15.5,
-          16, 19.1,
-          17.5, 21.6,
-          20, 25.4
-        ],
-        [
-          'interpolate', ['linear'], ['zoom'],
-          14, 13.8,
-          16, 17.3,
-          17.5, 19.9,
-          20, 23.3
-        ]
-      ],
-      'circle-stroke-width': [
-        'case',
-        ['boolean', ['feature-state', 'hover'], false],
-        [
-          'interpolate', ['linear'], ['zoom'],
-          14, 2.6,
-          17, 3.1,
-          20, 3.5
-        ],
-        [
-          'interpolate', ['linear'], ['zoom'],
-          14, 1.8,
-          17, 2.4,
-          20, 2.9
-        ]
-      ],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 9.2, 16, 10.8, 17.5, 12.2, 20, 13.8],
+      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 14, 1.9, 17, 2.2, 20, 2.5],
       'circle-stroke-color': '#ffffff',
-      'circle-opacity': [
-        'case',
-        ['boolean', ['feature-state', 'hover'], false],
-        1,
-        0.97
-      ]
+      'circle-opacity': 0.98
     }
   });
 
@@ -446,16 +432,16 @@ function buildLayers() {
     source: SOURCE_ID,
     layout: {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
-      'icon-allow-overlap': false,
-      'icon-ignore-placement': false,
-      'icon-padding': 28,
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+      'icon-padding': 14,
       'symbol-sort-key': ['-', 1000, ['to-number', ['id'], 0]],
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.5,
-        16, 0.62,
-        17.5, 0.72,
-        20, 0.84
+        14, 0.55,
+        16, 0.63,
+        17.5, 0.69,
+        20, 0.78
       ]
     }
   });
@@ -1075,7 +1061,8 @@ function mapCategoryToIconType(name) {
 }
 
 function iconTypeForCategory(categoryId, categoryName) {
-  void categoryId;
+  const mappedIconFile = appState.categoryIconFiles.get(String(categoryId));
+  if (mappedIconFile) return iconIdFromFile(mappedIconFile);
   return mapCategoryToIconType(categoryName);
 }
 
@@ -1117,9 +1104,7 @@ function resolveStyleUrl(rawStyle) {
 }
 
 function resolveVenueStyleUrl(rawStyle) {
-  if (window.MAPTILER_KEY) {
-    return `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}`;
-  }
+  if (window.MAPTILER_KEY) return `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}`;
   return resolveStyleUrl(rawStyle);
 }
 
