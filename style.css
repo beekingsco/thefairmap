@@ -369,14 +369,13 @@ body {
   position: fixed;
   top: max(10px, env(safe-area-inset-top));
   right: 12px;
+  left: auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
-  align-items: flex-end;
+  align-items: flex-start;
   z-index: 9999;
   pointer-events: auto;
-  visibility: visible;
-  opacity: 1;
 }
 
 .map-style-btn {
