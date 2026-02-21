@@ -1210,21 +1210,42 @@ function removeAnchorPopup() {
 function bindMobileGestures() {
   const sidebar = document.getElementById('sidebar');
   const detailPanel = document.getElementById('detail-panel');
-  const detailHandle = detailPanel?.querySelector('[data-sheet-handle="detail"]');
   if (!sidebar || !detailPanel) return;
 
   const isMobile = () => window.innerWidth <= 960;
   const OPEN_DRAG_THRESHOLD_VIEWPORT = 0.3;
   const CLOSE_DRAG_THRESHOLD_PANEL = 0.4;
+  const CLOSE_VELOCITY_THRESHOLD = 0.5;
   const SIDEBAR_PEEK_HEIGHT = 54;
+  const OPEN_SNAP_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+  const CLOSE_SNAP_EASING = 'cubic-bezier(0.32, 0, 0.67, 0)';
 
   const canDragPointer = (event) => event.isPrimary && event.button === 0;
   const getSidebarClosedOffset = () => Math.max(sidebar.getBoundingClientRect().height - SIDEBAR_PEEK_HEIGHT, 0);
+  const isInteractiveTarget = (node) => Boolean(node?.closest('button, a, input, textarea, select, label'));
   const canStartSidebarDrag = (event) => {
     const rect = sidebar.getBoundingClientRect();
     const visibleBottom = Math.min(rect.bottom, window.innerHeight);
     if (event.clientY < rect.top || event.clientY > visibleBottom) return false;
-    return event.clientY <= rect.top + 60;
+    if (isInteractiveTarget(event.target)) return false;
+    return event.clientY <= rect.top + 100;
+  };
+  const canStartDetailDrag = (event) => {
+    const rect = detailPanel.getBoundingClientRect();
+    if (event.clientY < rect.top || event.clientY > rect.bottom) return false;
+    if (isInteractiveTarget(event.target)) return false;
+    return event.clientY <= rect.top + 100;
+  };
+
+  const applySnapTransition = (panel, easing) => {
+    panel.style.transition = `transform 340ms ${easing}`;
+    panel.style.transform = '';
+    const clear = () => {
+      panel.style.transition = '';
+      panel.removeEventListener('transitionend', clear);
+    };
+    panel.addEventListener('transitionend', clear);
+    setTimeout(clear, 420);
   };
 
   const bindSheetDrag = ({
@@ -1241,6 +1262,7 @@ function bindMobileGestures() {
     let dragging = false;
     let pointerId = null;
     let startY = 0;
+    let startTime = 0;
     let startOffset = 0;
     let currentOffset = 0;
 
@@ -1250,11 +1272,18 @@ function bindMobileGestures() {
       document.body.style.userSelect = '';
     };
 
-    const finish = (cancelled = false) => {
+    const finish = (event, cancelled = false) => {
       if (!dragging) return;
       dragging = false;
-      resetDragStyle();
-      if (!cancelled) finalize(startOffset, currentOffset);
+      document.body.style.userSelect = '';
+      if (!cancelled) {
+        const elapsed = Math.max(Number(event?.timeStamp || 0) - startTime, 1);
+        const distance = Number(event?.clientY || startY) - startY;
+        const velocity = distance / elapsed;
+        finalize(startOffset, currentOffset, velocity);
+      } else {
+        resetDragStyle();
+      }
       pointerId = null;
     };
 
@@ -1279,7 +1308,7 @@ function bindMobileGestures() {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerCancel);
-      finish(false);
+      finish(event, false);
     };
 
     const onPointerCancel = (event) => {
@@ -1287,7 +1316,7 @@ function bindMobileGestures() {
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerCancel);
-      finish(true);
+      finish(event, true);
     };
 
     target.addEventListener('pointerdown', (event) => {
@@ -1301,6 +1330,7 @@ function bindMobileGestures() {
       dragging = true;
       pointerId = event.pointerId;
       startY = event.clientY;
+      startTime = Number(event.timeStamp || 0);
       startOffset = getStartOffset();
       currentOffset = startOffset;
 
@@ -1320,29 +1350,41 @@ function bindMobileGestures() {
     canStartDrag: canStartSidebarDrag,
     getStartOffset: () => (document.getElementById('app').classList.contains('mobile-sidebar-open') ? 0 : getSidebarClosedOffset()),
     getBounds: () => ({ min: 0, max: getSidebarClosedOffset() }),
-    finalize: (startOffset, endOffset) => {
+    finalize: (startOffset, endOffset, velocity) => {
+      if (velocity > CLOSE_VELOCITY_THRESHOLD) {
+        applySnapTransition(sidebar, CLOSE_SNAP_EASING);
+        setMobileSidebarOpen(false);
+        return;
+      }
       const panelHeight = sidebar.getBoundingClientRect().height;
       if (startOffset <= 1) {
-        setMobileSidebarOpen(endOffset <= panelHeight * CLOSE_DRAG_THRESHOLD_PANEL);
+        const shouldOpen = endOffset <= panelHeight * CLOSE_DRAG_THRESHOLD_PANEL;
+        applySnapTransition(sidebar, shouldOpen ? OPEN_SNAP_EASING : CLOSE_SNAP_EASING);
+        setMobileSidebarOpen(shouldOpen);
         return;
       }
       const draggedUp = startOffset - endOffset;
-      setMobileSidebarOpen(draggedUp >= window.innerHeight * OPEN_DRAG_THRESHOLD_VIEWPORT);
+      const shouldOpen = draggedUp >= window.innerHeight * OPEN_DRAG_THRESHOLD_VIEWPORT;
+      applySnapTransition(sidebar, shouldOpen ? OPEN_SNAP_EASING : CLOSE_SNAP_EASING);
+      setMobileSidebarOpen(shouldOpen);
     }
   });
 
   bindSheetDrag({
     panel: detailPanel,
-    target: detailHandle,
+    target: detailPanel,
     requiresOpen: true,
+    canStartDrag: canStartDetailDrag,
     getStartOffset: () => 0,
     getBounds: () => ({ min: -window.innerHeight * 0.12, max: detailPanel.getBoundingClientRect().height }),
-    finalize: (_, endOffset) => {
+    finalize: (_, endOffset, velocity) => {
       const panelHeight = detailPanel.getBoundingClientRect().height;
-      if (endOffset >= panelHeight * CLOSE_DRAG_THRESHOLD_PANEL) {
+      if (velocity > CLOSE_VELOCITY_THRESHOLD || endOffset >= panelHeight * CLOSE_DRAG_THRESHOLD_PANEL) {
+        applySnapTransition(detailPanel, CLOSE_SNAP_EASING);
         closeDetailPanel();
         return;
       }
+      applySnapTransition(detailPanel, OPEN_SNAP_EASING);
       detailPanel.classList.add('is-open');
     }
   });
