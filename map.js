@@ -379,8 +379,8 @@ function buildLayers() {
     source: SOURCE_ID,
     layout: {
       'icon-image': ['coalesce', ['get', 'iconType'], 'pin'],
-      'icon-allow-overlap': false,
-      'icon-ignore-placement': false,
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
       'icon-padding': 10,
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
@@ -767,7 +767,7 @@ function updateMobileCategoriesButton(totalCount = appState.totalLocationCount |
   const open = document.getElementById('app').classList.contains('mobile-sidebar-open');
   button.setAttribute('aria-expanded', String(open));
   button.setAttribute('aria-label', open ? 'Close filters' : 'Open filters');
-  button.textContent = open ? 'Close Filters' : `Filters (${totalCount})`;
+  button.textContent = open ? 'Close Filters' : `\u2630 Filters (${totalCount})`;
 }
 
 function updateMapStyleButtons() {
