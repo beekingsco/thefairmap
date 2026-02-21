@@ -66,14 +66,22 @@ async function init() {
   });
 
   map.on('load', async () => {
-    await buildMapLayers();
+    // Always hide loader — even if buildMapLayers errors, the map canvas must show
+    const loader = document.getElementById('map-loader');
+    const hideLoader = () => {
+      if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.remove(), 500); }
+    };
+
+    try {
+      await buildMapLayers();
+    } catch (err) {
+      console.error('[TheFairMap] buildMapLayers error:', err);
+    }
+
+    hideLoader();
     refreshVisibleData();
     renderMobileCatSheet();
     updateMobileToggleButton();
-
-    // Hide loading overlay
-    const loader = document.getElementById('map-loader');
-    if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.remove(), 500); }
 
     // Deep-link support: ?loc=id
     const urlParams = new URLSearchParams(window.location.search);
@@ -533,10 +541,14 @@ function asFeatureCollection(items) {
 }
 
 async function loadCategoryMarkerImages() {
-  await addFallbackMarkerIcon();
+  try {
+    await addFallbackMarkerIcon();
+  } catch (err) {
+    console.warn('[TheFairMap] Fallback icon error:', err);
+  }
 
   const loaders = [...categoryById.values()].map((category) => loadCategoryMarkerImage(category));
-  await Promise.all(loaders);
+  await Promise.allSettled(loaders); // allSettled so one bad icon can't block the rest
 }
 
 async function loadCategoryMarkerImage(category) {
