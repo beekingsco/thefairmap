@@ -12,7 +12,7 @@
   <meta name="theme-color" content="#2f3d4d">
 </head>
 <body>
-  <div id="app" class="sidebar-open">
+  <div id="app" class="sidebar-collapsed">
     <aside id="sidebar" aria-label="Overview">
       <div class="sidebar-search-wrap">
         <label for="search-input" class="sr-only">Search</label>
@@ -24,8 +24,8 @@
       <div id="overview-list" class="overview-list" aria-live="polite"></div>
     </aside>
 
-    <button id="sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true">
-      <span id="sidebar-toggle-icon">&#10094;</span>
+    <button id="sidebar-toggle" type="button" aria-label="Expand sidebar" aria-expanded="false">
+      <span id="sidebar-toggle-icon">&#10095;</span>
     </button>
 
     <main id="map-shell">

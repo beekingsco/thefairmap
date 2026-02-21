@@ -21,7 +21,7 @@ const appState = {
   activeCategories: new Set(),
   filteredLocations: [],
   selectedLocationId: null,
-  sidebarOpen: true,
+  sidebarOpen: false,
   overviewOpen: true
 };
 
@@ -50,6 +50,7 @@ async function init() {
   const data = await fetchMapData();
   appState.mapData = data;
   normalizeData(data);
+  initializeSidebarState();
   bindUi();
 
   map = new maplibregl.Map({
@@ -175,8 +176,22 @@ function bindUi() {
     if (!mobile) {
       document.getElementById('mobile-scrim').hidden = true;
     }
+    if (mobile) {
+      document.getElementById('app').classList.remove('sidebar-collapsed');
+      document.getElementById('app').classList.add('sidebar-open');
+      updateSidebarToggle(true);
+    }
     map?.resize();
   });
+}
+
+function initializeSidebarState() {
+  const mobile = window.innerWidth <= 960;
+  appState.sidebarOpen = mobile ? true : false;
+  const app = document.getElementById('app');
+  app.classList.toggle('sidebar-open', appState.sidebarOpen);
+  app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
+  updateSidebarToggle(appState.sidebarOpen);
 }
 
 async function loadMarkerIcons() {
@@ -492,12 +507,7 @@ function toggleSidebar() {
   const app = document.getElementById('app');
   app.classList.toggle('sidebar-open', appState.sidebarOpen);
   app.classList.toggle('sidebar-collapsed', !appState.sidebarOpen);
-
-  const toggle = document.getElementById('sidebar-toggle');
-  const icon = document.getElementById('sidebar-toggle-icon');
-  toggle.setAttribute('aria-expanded', String(appState.sidebarOpen));
-  toggle.setAttribute('aria-label', appState.sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar');
-  icon.innerHTML = appState.sidebarOpen ? '&#10094;' : '&#10095;';
+  updateSidebarToggle(appState.sidebarOpen);
 
   setTimeout(() => map?.resize(), 220);
 }
@@ -507,6 +517,14 @@ function closeMobileSidebar() {
   const app = document.getElementById('app');
   app.classList.remove('mobile-sidebar-open');
   document.getElementById('mobile-scrim').hidden = true;
+}
+
+function updateSidebarToggle(isOpen) {
+  const toggle = document.getElementById('sidebar-toggle');
+  const icon = document.getElementById('sidebar-toggle-icon');
+  toggle.setAttribute('aria-expanded', String(isOpen));
+  toggle.setAttribute('aria-label', isOpen ? 'Collapse sidebar' : 'Expand sidebar');
+  icon.innerHTML = isOpen ? '&#10094;' : '&#10095;';
 }
 
 function syncSelectedLayer() {
