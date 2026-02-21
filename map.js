@@ -894,11 +894,11 @@ function renderCategoryLocationsView(wrap, query) {
 
   const list = document.createElement('div');
   list.className = 'category-location-list';
-  const locations = appState.filteredLocations.filter((loc) => loc.categoryId === category.id);
+  const locations = appState.locations.filter((loc) => loc.categoryId === category.id);
   if (locations.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'category-empty';
-    empty.textContent = query ? 'No search matches in this category.' : 'No visible locations in this category.';
+    empty.textContent = 'No locations in this category.';
     list.appendChild(empty);
     wrap.appendChild(list);
     return;
