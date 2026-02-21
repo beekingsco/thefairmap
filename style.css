@@ -258,14 +258,16 @@ body {
   right: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   align-items: flex-end;
-  z-index: 31;
+  z-index: 41;
   pointer-events: auto;
 }
 
 .map-style-btn {
-  min-width: 114px;
+  min-width: 132px;
+  height: 36px;
+  border-radius: 999px;
   justify-content: center;
   font-weight: 600;
 }
@@ -392,7 +394,7 @@ body {
 }
 
 .maplibregl-ctrl-top-right {
-  top: 96px;
+  top: 98px;
   right: 10px;
 }
 
@@ -460,7 +462,7 @@ body {
   }
 
   .maplibregl-ctrl-top-right {
-    top: 104px;
+    top: 108px;
   }
 
   #app.sidebar-collapsed .filters-btn {

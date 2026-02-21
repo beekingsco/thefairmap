@@ -74,14 +74,14 @@ async function init() {
     antialias: true
   });
 
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 
   geolocateControl = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: false,
     showUserHeading: true
   });
-  map.addControl(geolocateControl, 'bottom-right');
+  map.addControl(geolocateControl, 'top-right');
 
   map.on('load', async () => {
     await hydrateStyleContent();

@@ -1,25 +1,34 @@
-# TheFairMap Build Task — UPDATED 2026-02-21 1:30 PM
+# TheFairMap — Round 4 Polish
 
-## STATUS: MAP IS LIVE — NOW POLISH TO MATCH MAPME
+## STATUS: Major progress. Keep going.
 
-The map is rendering all 719 markers with MapTiler streets-v2 tiles. Chris's MapTiler key is deployed in config.js.
+Live: https://thefairmap.vercel.app  
+Target: https://viewer.mapme.com/first-monday-finder
 
-## YOUR JOB: Fix these 4 things in ORDER
+## BUGS TO FIX FIRST
 
-### 1. MAP PITCH (3D tilt)
-Set map `pitch: 60` in the MapLibre GL initialization options in map.js. MapMe uses a dramatic 3D aerial tilt. Also set `bearing: 0` and ensure smooth rotation works.
+### 1. Filters count shows (0) — should show (716)
+The "Filters (0)" button on the left edge shows 0 instead of the total location count. Fix the initialization so it shows the correct total on page load.
 
-### 2. SIDEBAR COLLAPSED BY DEFAULT (desktop)
-On desktop (>768px), the category sidebar should start COLLAPSED — just the ">" chevron toggle visible on the left edge. The full sidebar only opens when user clicks the chevron. On mobile, keep the drawer behavior as-is.
+### 2. Venue Map / Satellite toggle buttons missing from top-right
+MapMe has two stacked buttons in the top-right corner:
+- "🗺 Venue Map" (highlighted/active by default)  
+- "🛰 Satellite" (below it)
+These toggle between the MapTiler streets style and a satellite imagery style. They should be styled as pill buttons with icons. Make sure they are VISIBLE — previous commits may have added them but they might be hidden or positioned off-screen.
 
-### 3. MARKER ICONS INSIDE CIRCLES 
-Each marker in MapMe has a small white icon inside the colored circle representing its category (fork/knife for food, shirt for clothing, ring for jewelry, etc.). The icon SVGs already exist in `data/icons/`. Load them into the markers.
+## UX POLISH AFTER BUGS
 
-### 4. TOP CONTROL BUTTONS
-Match MapMe's control layout:
-- Top-left: "≡ Filters (716)" button (hamburger + count badge)
-- Top-right: "🗺 Venue Map" button (active/highlighted) + "🛰 Satellite" button below it
-- These should toggle between map styles
+### 3. MapMe has a ">" chevron on the left edge (not "Filters (0)")
+On desktop, MapMe shows just a thin ">" chevron toggle to open the sidebar — NOT a "Filters" button. The Filters button with count is INSIDE the sidebar once it's open. Match this behavior.
+
+### 4. Marker size and spacing
+MapMe markers at this zoom level are slightly larger and more spaced out. Our markers look a bit cluttered in dense areas. Consider adjusting circle-radius stops.
+
+### 5. Detail panel when clicking a marker
+When you click a marker in MapMe, a detail panel slides in from the right showing: vendor name, category badge, description, photos. Make sure our detail panel matches this behavior and styling.
+
+### 6. Mobile responsiveness
+Test on 375px width viewport. MapMe's mobile shows: full-screen map, bottom drawer for categories, tap marker → bottom sheet with details. Match this.
 
 ## DEPLOYMENT
 After EACH fix, commit and deploy:
@@ -28,14 +37,7 @@ git add -A && git commit -m "vX.X: description"
 cd /Users/scoutbot/.openclaw/workspace/thefairmap && vercel --prod --yes --token=$VERCEL_TOKEN
 ```
 
-## REFERENCE
-- MapMe target: https://viewer.mapme.com/first-monday-finder
-- Our site: https://thefairmap.vercel.app
-- Data: data/mapme-full-export.json (719 locations, 67 categories with colors/shapes)
-- Icons: data/icons/*.svg
-
 ## RULES
 - Vanilla HTML/CSS/JS only — NO frameworks
-- NEVER STOP. Keep finding differences and fixing them.
-- After the 4 items above, keep comparing with MapMe and fixing any visual differences you find.
-- When completely finished with all 4, run: `openclaw system event --text "Done: All 4 MapMe UI fixes deployed" --mode now`
+- NEVER STOP. Keep finding and fixing differences.
+- When done with all items above, run: `openclaw system event --text "Done: Round 4 polish complete" --mode now`
