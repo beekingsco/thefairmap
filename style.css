@@ -232,6 +232,22 @@ body {
   position: absolute;
   top: 0;
   left: 0;
+  transition: top 0.2s ease, left 0.2s ease, transform 0.2s ease;
+}
+
+#app.sidebar-collapsed .filters-btn {
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  min-width: 46px;
+  border-radius: 999px;
+  justify-content: center;
+  padding: 0 12px;
+}
+
+#app.sidebar-collapsed #filters-label,
+#app.sidebar-collapsed #filters-count {
+  display: none;
 }
 
 .map-btn-glyph {
@@ -424,6 +440,21 @@ body {
 
   .maplibregl-ctrl-top-right {
     top: 112px;
+  }
+
+  #app.sidebar-collapsed .filters-btn {
+    top: 0;
+    left: 0;
+    transform: none;
+    min-width: initial;
+    border-radius: 10px;
+    justify-content: flex-start;
+    padding: 0 14px;
+  }
+
+  #app.sidebar-collapsed #filters-label,
+  #app.sidebar-collapsed #filters-count {
+    display: inline;
   }
 }
 
