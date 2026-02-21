@@ -649,10 +649,15 @@ function updateSidebarToggle(isOpen) {
 
 function updateFilterCount() {
   const countEl = document.getElementById('filters-count');
-  const total = appState.filteredLocations?.length || appState.locations?.length || 0;
-  appState.totalLocationCount = appState.locations?.length || 0;
-  if (countEl) countEl.textContent = `(${total})`;
-  updateMobileCategoriesButton(total || 0);
+  if (!countEl) {
+    // If the element is not mounted yet, retry on next frame.
+    requestAnimationFrame(updateFilterCount);
+    return;
+  }
+  const total = appState.filteredLocations?.length ?? appState.locations?.length ?? 0;
+  appState.totalLocationCount = appState.locations?.length ?? 0;
+  countEl.textContent = `(${total})`;
+  updateMobileCategoriesButton(total);
 }
 
 function updateMobileCategoriesButton(totalCount = appState.totalLocationCount || appState.locations.length || 0) {
