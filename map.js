@@ -136,12 +136,14 @@ function normalizeData(data) {
 
   appState.locations = (data.locations || [])
     .map((loc, idx) => {
+      const name = String(loc.name || '').trim();
+      if (!name) return null;
       const categoryId = String(loc.categoryId || loc.category || 'uncategorized');
       const category = appState.categoriesById.get(categoryId);
       const categoryName = loc.categoryName || category?.name || 'Uncategorized';
       return {
         id: String(loc.id || `loc-${idx}`),
-        name: String(loc.name || 'Untitled'),
+        name,
         description: typeof loc.description === 'string' ? loc.description : '',
         address: typeof loc.address === 'string' ? loc.address : '',
         lat: Number(loc.lat),
@@ -153,7 +155,7 @@ function normalizeData(data) {
         search: `${loc.name || ''} ${categoryName} ${loc.address || ''}`.toLowerCase()
       };
     })
-    .filter((loc) => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
+    .filter((loc) => loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
 
   // Keep orphaned category ids visible instead of dropping those locations from filters.
   const missingCategoryIds = new Set(
