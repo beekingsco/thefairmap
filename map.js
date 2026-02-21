@@ -284,10 +284,10 @@ function buildLayers() {
       'circle-color': ['get', 'color'],
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
-        14, 11,
-        16, 14,
-        17, 16,
-        20, 18
+        14, 13,
+        16, 16,
+        17, 18,
+        20, 20
       ],
       'circle-stroke-width': [
         'interpolate', ['linear'], ['zoom'],
