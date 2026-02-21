@@ -669,7 +669,10 @@ function renderDetail(location) {
       </div>
     `
     : `
-      <div class="detail-gallery-empty">No photos available.</div>
+      <div class="detail-photo-placeholder" role="img" aria-label="Photo placeholder for ${escapeAttr(location.name)}">
+        <span class="detail-photo-placeholder-icon" aria-hidden="true">&#128247;</span>
+        <span class="detail-photo-placeholder-text">Photo coming soon</span>
+      </div>
     `;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
 
@@ -689,6 +692,7 @@ function renderDetail(location) {
     appState.detailCloseTimer = null;
   }
   panel.hidden = false;
+  panel.setAttribute('aria-hidden', 'false');
   panel.classList.remove('is-open');
   panel.classList.remove('is-closing');
   requestAnimationFrame(() => panel.classList.add('is-open'));
@@ -704,6 +708,7 @@ function closeDetailPanel() {
   const finalizeClose = () => {
     if (!appState.detailClosing) return;
     panel.hidden = true;
+    panel.setAttribute('aria-hidden', 'true');
     panel.classList.remove('is-closing');
     appState.detailClosing = false;
     if (appState.detailCloseTimer) {

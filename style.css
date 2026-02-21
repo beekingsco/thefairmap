@@ -406,6 +406,30 @@ body {
   background: #f9fafb;
 }
 
+.detail-photo-placeholder {
+  margin-top: 14px;
+  border: 1px dashed #d0d5dd;
+  border-radius: 10px;
+  min-height: 168px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2f6 100%);
+  color: #667085;
+}
+
+.detail-photo-placeholder-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.detail-photo-placeholder-text {
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .detail-description {
   margin-top: 14px;
   font-size: 13px;
