@@ -333,17 +333,6 @@ async function loadMarkerIcons() {
     const image = await loadSvgImage(svg);
     map.addImage(iconType, image, { pixelRatio: 4 });
   }
-
-  for (const fileName of new Set(appState.categoryIconFiles.values())) {
-    const iconId = iconIdFromFile(fileName);
-    if (map.hasImage(iconId)) continue;
-    try {
-      const image = await loadImageByUrl(`/data/icons/${fileName}`);
-      map.addImage(iconId, image, { pixelRatio: 2 });
-    } catch (_) {
-      // Generic icon fallback remains available.
-    }
-  }
 }
 
 function loadSvgImage(svgMarkup) {
@@ -1061,8 +1050,7 @@ function mapCategoryToIconType(name) {
 }
 
 function iconTypeForCategory(categoryId, categoryName) {
-  const mappedIconFile = appState.categoryIconFiles.get(String(categoryId));
-  if (mappedIconFile) return iconIdFromFile(mappedIconFile);
+  void categoryId;
   return mapCategoryToIconType(categoryName);
 }
 

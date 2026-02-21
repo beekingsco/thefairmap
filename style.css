@@ -720,13 +720,27 @@ body {
     background: #2f6d14;
     color: #f5f6f7;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
     line-height: 1;
+    gap: 1px;
+    pointer-events: none;
+  }
+
+  .mobile-brand-script {
+    font-family: "Brush Script MT", "Segoe Script", cursive;
+    font-size: 32px;
     font-weight: 700;
     letter-spacing: 0.01em;
-    pointer-events: none;
+  }
+
+  .mobile-brand-block {
+    font-family: "Trebuchet MS", "Arial Narrow", Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
   }
 
   #app {
