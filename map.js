@@ -477,11 +477,7 @@ function initializeSidebarState() {
 }
 
 function updateMapBrandOverlayPosition() {
-  const overlay = document.getElementById(MAP_BRAND_OVERLAY_ID);
-  const mapShell = document.getElementById('map-shell');
-  if (!overlay || !mapShell) return;
-  const rect = mapShell.getBoundingClientRect();
-  overlay.style.left = `${Math.round(rect.left + rect.width / 2)}px`;
+  // Positioning handled entirely by CSS (left:0; right:0; justify-content:center)
 }
 
 async function loadMarkerIcons() {
