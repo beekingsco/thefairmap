@@ -1018,7 +1018,12 @@ body {
   }
 
   .map-brand-overlay {
-    display: none !important;
+    display: flex;
+    top: calc(52px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 0 0 6px 6px;
+    z-index: 6050;
   }
 
   .map-brand-script {
