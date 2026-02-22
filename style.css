@@ -1029,6 +1029,8 @@ body {
     transform: translateX(-50%);
     border-radius: 0 0 6px 6px;
     z-index: 6050;
+    box-shadow: none;
+    background: transparent;
   }
 
   .map-brand-script {
@@ -1172,8 +1174,19 @@ body {
   }
 
   .maplibregl-ctrl-top-right {
-    top: 148px;
+    top: calc(60px + env(safe-area-inset-top));
     right: 12px;
+  }
+
+  /* Hide zoom buttons on mobile — pinch to zoom instead */
+  .maplibregl-ctrl-zoom-in,
+  .maplibregl-ctrl-zoom-out {
+    display: none !important;
+  }
+
+  /* If zoom group becomes empty, hide the whole group */
+  .maplibregl-ctrl-group:not(:has(.maplibregl-ctrl-geolocate)) {
+    display: none;
   }
 
   .style-controls {
