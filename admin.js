@@ -43,6 +43,8 @@ async function init() {
   renderTable();
   updateStats();
   loadUsers();
+  loadApprovals();
+  loadClaims();
 }
 
 async function loadData() {
@@ -854,6 +856,187 @@ function bindUserUI() {
       }
     } catch (e) { alert('Error: ' + e.message); }
   });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// APPROVALS QUEUE
+// ══════════════════════════════════════════════════════════════════════════
+
+let reviewingType = ''; // 'approval' or 'claim'
+let reviewingId = '';
+
+async function loadApprovals() {
+  try {
+    const res = await fetch('/api/admin/pending');
+    const data = await res.json();
+    if (!data.ok) return;
+
+    const badge = document.getElementById('approvals-badge');
+    const list = document.getElementById('approvals-list');
+
+    if (data.pending.length === 0) {
+      badge.style.display = 'none';
+      list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem;text-align:center;padding:1rem;">No pending approvals ✓</p>';
+      return;
+    }
+
+    badge.textContent = data.pending.length;
+    badge.style.display = '';
+
+    list.innerHTML = data.pending.map(p => `
+      <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border:1px solid #e2e5ea;border-radius:8px;margin-bottom:0.5rem;background:#fff;">
+        <div style="flex:1;">
+          <strong>${esc(p.name)}</strong>
+          <span style="display:inline-block;padding:0.1rem 0.4rem;border-radius:12px;font-size:0.7rem;font-weight:700;color:#fff;background:${tierColor(p.listingTier)};margin-left:0.5rem;">${p.listingTier || 'unclaimed'}</span>
+          <div style="font-size:0.8rem;color:#6b7280;margin-top:0.2rem;">by ${esc(p.ownerName)}</div>
+        </div>
+        <button class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.8rem;" onclick="openApprovalReview('${p.id}')">Review</button>
+      </div>
+    `).join('');
+  } catch (e) { console.error('loadApprovals:', e); }
+}
+
+function openApprovalReview(locationId) {
+  fetch('/api/admin/pending').then(r => r.json()).then(data => {
+    const p = data.pending.find(x => x.id === locationId);
+    if (!p) return alert('Not found');
+    reviewingType = 'approval';
+    reviewingId = locationId;
+
+    const fields = ['name', 'description', 'shortDescription', 'address', 'categoryId', 'images', 'videoUrl', 'website', 'socialLinks'];
+    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">';
+    html += '<div><h4 style="font-size:0.8rem;text-transform:uppercase;color:#6b7280;margin-bottom:0.5rem;">Current (Live)</h4>';
+    fields.forEach(f => {
+      const val = p.currentData[f];
+      const disp = typeof val === 'object' ? JSON.stringify(val) : (val || '—');
+      const changed = p.pendingChanges[f] !== undefined;
+      html += `<div style="padding:0.4rem;border-radius:6px;font-size:0.82rem;margin-bottom:0.4rem;${changed ? 'background:#fef9c3;' : ''}"><span style="font-weight:600;font-size:0.72rem;color:#6b7280;">${f}</span><br>${esc(String(disp))}</div>`;
+    });
+    html += '</div><div><h4 style="font-size:0.8rem;text-transform:uppercase;color:#6b7280;margin-bottom:0.5rem;">Proposed Changes</h4>';
+    fields.forEach(f => {
+      if (p.pendingChanges[f] !== undefined) {
+        const val = p.pendingChanges[f];
+        const disp = typeof val === 'object' ? JSON.stringify(val) : (val || '—');
+        html += `<div style="padding:0.4rem;border-radius:6px;font-size:0.82rem;margin-bottom:0.4rem;background:#dcfce7;"><span style="font-weight:600;font-size:0.72rem;color:#6b7280;">${f}</span><br>${esc(String(disp))}</div>`;
+      }
+    });
+    html += '</div></div>';
+
+    document.getElementById('review-modal-title').textContent = 'Review: ' + esc(p.name);
+    document.getElementById('review-modal-body').innerHTML = html;
+    document.getElementById('review-modal').classList.add('visible');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// CLAIMS QUEUE
+// ══════════════════════════════════════════════════════════════════════════
+
+async function loadClaims() {
+  try {
+    const res = await fetch('/api/admin/claims');
+    const data = await res.json();
+    if (!data.ok) return;
+
+    const badge = document.getElementById('claims-badge');
+    const list = document.getElementById('claims-list');
+
+    if (data.claims.length === 0) {
+      badge.style.display = 'none';
+      list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem;text-align:center;padding:1rem;">No pending claims ✓</p>';
+      return;
+    }
+
+    badge.textContent = data.claims.length;
+    badge.style.display = '';
+
+    list.innerHTML = data.claims.map(c => `
+      <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border:1px solid #e2e5ea;border-radius:8px;margin-bottom:0.5rem;background:#fff;">
+        <div style="flex:1;">
+          <strong>${esc(c.locationName)}</strong>
+          <span style="display:inline-block;padding:0.1rem 0.4rem;border-radius:12px;font-size:0.7rem;font-weight:700;color:#fff;background:${c.type === 'create' ? '#3b82f6' : '#8b5cf6'};margin-left:0.5rem;">${c.type === 'create' ? 'NEW' : 'CLAIM'}</span>
+          <div style="font-size:0.8rem;color:#6b7280;margin-top:0.2rem;">by ${esc(c.userName)} (${esc(c.userEmail)}) · ${c.tier || 'basic'} · ${new Date(c.submittedAt).toLocaleDateString()}</div>
+          <div style="font-size:0.82rem;margin-top:0.3rem;padding:0.4rem;background:#f9fafb;border-radius:6px;">"${esc(c.businessVerification)}"</div>
+        </div>
+        <button class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.8rem;" onclick="openClaimReview('${c.id}')">Review</button>
+      </div>
+    `).join('');
+  } catch (e) { console.error('loadClaims:', e); }
+}
+
+function openClaimReview(claimId) {
+  fetch('/api/admin/claims').then(r => r.json()).then(data => {
+    const c = data.claims.find(x => x.id === claimId);
+    if (!c) return alert('Not found');
+    reviewingType = 'claim';
+    reviewingId = claimId;
+
+    let html = '<div style="font-size:0.88rem;">';
+    html += `<p><strong>Type:</strong> ${c.type === 'create' ? 'New Location' : 'Claim Existing'}</p>`;
+    html += `<p><strong>Location:</strong> ${esc(c.locationName)}</p>`;
+    html += `<p><strong>Claimed by:</strong> ${esc(c.userName)} (${esc(c.userEmail)})</p>`;
+    html += `<p><strong>Tier:</strong> ${c.tier || 'basic'} · ${c.billingPeriod || 'monthly'}</p>`;
+    html += `<p><strong>Submitted:</strong> ${new Date(c.submittedAt).toLocaleString()}</p>`;
+    html += `<p style="margin-top:0.75rem;"><strong>Verification:</strong></p>`;
+    html += `<div style="padding:0.75rem;background:#f9fafb;border-radius:8px;border:1px solid #e2e5ea;">${esc(c.businessVerification)}</div>`;
+    if (c.newLocationData) {
+      html += '<p style="margin-top:0.75rem;"><strong>New Location Data:</strong></p>';
+      html += `<div style="padding:0.75rem;background:#f0fdf4;border-radius:8px;border:1px solid #86efac;font-size:0.82rem;">`;
+      html += `Name: ${esc(c.newLocationData.name || '')}<br>`;
+      html += `Address: ${esc(c.newLocationData.address || '')}<br>`;
+      html += `Description: ${esc(c.newLocationData.description || '')}`;
+      html += '</div>';
+    }
+    html += '</div>';
+
+    document.getElementById('review-modal-title').textContent = c.type === 'create' ? 'Review New Location' : 'Review Claim';
+    document.getElementById('review-modal-body').innerHTML = html;
+    document.getElementById('review-modal').classList.add('visible');
+  });
+}
+
+function closeReviewModal() {
+  document.getElementById('review-modal').classList.remove('visible');
+  reviewingType = '';
+  reviewingId = '';
+}
+
+async function reviewAction(action) {
+  const note = document.getElementById('review-note').value.trim();
+  let url;
+  if (reviewingType === 'approval') {
+    url = `/api/admin/${action}/${reviewingId}`;
+  } else {
+    url = `/api/admin/claims/${reviewingId}/${action}`;
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      closeReviewModal();
+      if (typeof showToast === 'function') showToast(data.message || 'Done!');
+      loadApprovals();
+      loadClaims();
+    } else {
+      alert(data.error || 'Action failed');
+    }
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+function tierColor(tier) {
+  const colors = { basic: '#3b82f6', standout: '#8b5cf6', showoff: '#f59e0b', unclaimed: '#9ca3af' };
+  return colors[tier] || colors.unclaimed;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
 }
 
 document.addEventListener('DOMContentLoaded', init);

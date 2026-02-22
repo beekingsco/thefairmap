@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Listings — First Monday Finder</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+  <nav class="portal-nav">
+    <a href="/portal" class="nav-logo">🗺️ FairMap</a>
+    <div class="nav-links">
+      <a href="/portal" class="active">My Listings</a>
+      <a href="/portal/claim">Claim / Add</a>
+    </div>
+    <span class="nav-user" id="nav-user"></span>
+    <button class="btn-nav" id="btn-billing" onclick="openBilling()" style="display:none">Manage Billing</button>
+    <button class="btn-nav" onclick="logout()">Sign Out</button>
+  </nav>
+
+  <div class="portal-container">
+    <!-- Welcome banner for new signups -->
+    <div id="welcome-banner" class="alert alert-success" style="display:none">
+      🎉 Welcome to First Monday Finder! Start by claiming your booth or creating a new listing.
+    </div>
+    <div id="stripe-pending-banner" class="alert alert-warning" style="display:none">
+      💳 Payments are being set up. You can still claim your listing — billing will be activated shortly.
+    </div>
+
+    <div class="portal-header">
+      <div>
+        <h1>My Listings</h1>
+        <p style="color:var(--text-muted);font-size:0.88rem;margin-top:0.25rem" id="sub-status"></p>
+      </div>
+      <div style="display:flex;gap:0.5rem">
+        <a href="/portal/claim" class="btn btn-primary">+ Claim a Location</a>
+      </div>
+    </div>
+
+    <div id="listings-container"></div>
+  </div>
+
+  <script>
+    let currentUser = null;
+
+    async function init() {
+      const params = new URLSearchParams(location.search);
+      if (params.get('welcome') === '1') document.getElementById('welcome-banner').style.display = 'block';
+      if (params.get('stripe') === 'pending') document.getElementById('stripe-pending-banner').style.display = 'block';
+      if (params.get('checkout') === 'success') {
+        document.getElementById('welcome-banner').innerHTML = '✅ Payment successful! Your subscription is active.';
+        document.getElementById('welcome-banner').style.display = 'block';
+      }
+
+      try {
+        const res = await fetch('/api/me');
+        const data = await res.json();
+        if (!data.ok) return window.location.href = '/login';
+        currentUser = data.user;
+        document.getElementById('nav-user').textContent = currentUser.displayName;
+
+        if (currentUser.subscription) {
+          const tier = currentUser.subscription.tier || 'none';
+          const status = currentUser.subscription.status || 'none';
+          document.getElementById('sub-status').innerHTML = `Plan: <span class="tier-badge ${tier}">${tier}</span> · Status: <span class="status-badge ${status === 'active' ? 'active' : 'pending'}">${status}</span>`;
+          document.getElementById('btn-billing').style.display = '';
+        } else {
+          document.getElementById('sub-status').textContent = 'No active subscription';
+        }
+
+        await loadListings();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadListings() {
+      const container = document.getElementById('listings-container');
+      try {
+        const res = await fetch('/api/portal/listings');
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+
+        if (data.listings.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">📍</div>
+              <h3>No listings yet</h3>
+              <p>Claim your existing booth on the map or create a new listing.</p>
+              <a href="/portal/claim" class="btn btn-primary">Find My Booth</a>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = data.listings.map(l => `
+          <div class="card listing-card">
+            <div class="listing-info">
+              <div class="listing-name">${escHtml(l.name)}</div>
+              <div class="listing-meta">
+                <span class="tier-badge ${l.listingTier || 'unclaimed'}">${l.listingTier || 'unclaimed'}</span>
+                ${l.status === 'pending_approval' ? '<span class="status-badge pending" style="margin-left:0.5rem">Pending Review</span>' : '<span class="status-badge active" style="margin-left:0.5rem">Active</span>'}
+                ${l.categoryName ? ` · ${escHtml(l.categoryName)}` : ''}
+                ${l.address ? ` · ${escHtml(l.address)}` : ''}
+              </div>
+            </div>
+            <div class="listing-actions">
+              <a href="/portal/edit/${l.id}" class="btn btn-secondary btn-sm">Edit</a>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="alert alert-error">${escHtml(err.message)}</div>`;
+      }
+    }
+
+    async function openBilling() {
+      try {
+        const res = await fetch('/api/stripe/portal');
+        const data = await res.json();
+        if (data.ok && data.url) window.location.href = data.url;
+        else alert(data.error || 'Could not open billing portal');
+      } catch { alert('Billing portal unavailable'); }
+    }
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/login';
+    }
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    init();
+  </script>
+</body>
+</html>

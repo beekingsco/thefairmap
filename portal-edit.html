@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Listing — First Monday Finder</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+  <nav class="portal-nav">
+    <a href="/portal" class="nav-logo">🗺️ FairMap</a>
+    <div class="nav-links">
+      <a href="/portal">My Listings</a>
+      <a href="/portal/claim">Claim / Add</a>
+    </div>
+    <span class="nav-user" id="nav-user"></span>
+    <button class="btn-nav" onclick="logout()">Sign Out</button>
+  </nav>
+
+  <div class="portal-container" style="max-width:700px">
+    <button class="btn btn-secondary btn-sm" onclick="location.href='/portal'" style="margin-bottom:1rem">← Back to listings</button>
+
+    <div class="portal-header">
+      <div>
+        <h1 id="edit-title">Edit Listing</h1>
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.25rem" id="edit-tier-info"></p>
+      </div>
+    </div>
+
+    <div id="pending-banner" class="alert alert-warning" style="display:none">
+      ⚠️ You have changes pending admin review. Submitting new changes will replace your pending submission.
+    </div>
+
+    <div id="edit-error" class="alert alert-error" style="display:none"></div>
+    <div id="edit-success" class="alert alert-success" style="display:none"></div>
+
+    <form id="edit-form" onsubmit="return handleSave(event)">
+      <!-- All tiers: basic text fields -->
+      <div class="form-group">
+        <label for="f-name">Business / Booth Name</label>
+        <input type="text" id="f-name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="f-short-desc">Short Description <span style="font-weight:400;color:var(--text-muted)">(max 280 chars)</span></label>
+        <input type="text" id="f-short-desc" maxlength="280">
+      </div>
+
+      <div class="form-group">
+        <label for="f-description">Full Description</label>
+        <textarea id="f-description" rows="5"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="f-address">Address / Booth Number</label>
+        <input type="text" id="f-address">
+      </div>
+
+      <div class="form-group">
+        <label>Category</label>
+        <div id="category-selectors"></div>
+        <p class="help-text" id="category-limit-text"></p>
+      </div>
+
+      <!-- Stand Out+ : Photos -->
+      <div id="section-photos">
+        <h3 style="margin:1.5rem 0 0.75rem">📸 Photos</h3>
+        <div id="photos-locked" class="locked-feature" style="display:none">
+          <div class="lock-icon">🔒</div>
+          <p>Photo uploads are available on the <strong>Stand Out</strong> plan and above.</p>
+          <a href="/signup" class="btn btn-secondary btn-sm">Upgrade Plan</a>
+        </div>
+        <div id="photos-unlocked" style="display:none">
+          <div class="image-grid" id="image-grid"></div>
+          <input type="file" id="image-upload" accept="image/*" style="display:none" onchange="uploadImage(this)">
+          <p class="help-text" style="margin-top:0.5rem">Up to 3 images. Click a slot to upload.</p>
+        </div>
+      </div>
+
+      <!-- Show Off: Video + Social -->
+      <div id="section-video">
+        <h3 style="margin:1.5rem 0 0.75rem">🎬 Video & Links</h3>
+        <div id="video-locked" class="locked-feature" style="display:none">
+          <div class="lock-icon">🔒</div>
+          <p>Video listings, social links, and website buttons are available on the <strong>Show Off</strong> plan.</p>
+          <a href="/signup" class="btn btn-secondary btn-sm">Upgrade Plan</a>
+        </div>
+        <div id="video-unlocked" style="display:none">
+          <div class="form-group">
+            <label for="f-video">Video URL (YouTube or Vimeo)</label>
+            <input type="url" id="f-video" placeholder="https://youtube.com/watch?v=...">
+          </div>
+          <div class="form-group">
+            <label for="f-website">Website URL</label>
+            <input type="url" id="f-website" placeholder="https://yoursite.com">
+          </div>
+          <h4 style="margin:1rem 0 0.5rem;font-size:0.9rem">Social Media</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="f-facebook">Facebook</label>
+              <input type="url" id="f-facebook" placeholder="https://facebook.com/...">
+            </div>
+            <div class="form-group">
+              <label for="f-instagram">Instagram</label>
+              <input type="url" id="f-instagram" placeholder="https://instagram.com/...">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="f-twitter">Twitter / X</label>
+              <input type="url" id="f-twitter" placeholder="https://x.com/...">
+            </div>
+            <div class="form-group">
+              <label for="f-tiktok">TikTok</label>
+              <input type="url" id="f-tiktok" placeholder="https://tiktok.com/@...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info" style="margin-top:1.5rem">
+        ℹ️ Changes will be reviewed by our team before going live (usually within 24 hours).
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem" id="save-btn">
+        Submit for Review
+      </button>
+    </form>
+  </div>
+
+  <script>
+    let listing = null;
+    let userTier = 'basic';
+    let categories = [];
+    let images = [];
+    const locationId = location.pathname.split('/').pop();
+
+    async function init() {
+      try {
+        const meRes = await fetch('/api/me');
+        const me = await meRes.json();
+        if (!me.ok) return window.location.href = '/login';
+        document.getElementById('nav-user').textContent = me.user.displayName;
+        userTier = me.user.subscription?.tier || 'basic';
+
+        // Load categories
+        const catRes = await fetch('/api/categories');
+        const catData = await catRes.json();
+        categories = catData.categories || [];
+
+        // Load listing
+        const locRes = await fetch('/api/portal/listings/' + locationId);
+        const locData = await locRes.json();
+        if (!locData.ok) throw new Error(locData.error);
+        listing = locData.listing;
+
+        document.getElementById('edit-title').textContent = 'Edit: ' + (listing.name || 'Listing');
+        document.getElementById('edit-tier-info').innerHTML = `Tier: <span class="tier-badge ${listing.listingTier || 'unclaimed'}">${listing.listingTier || 'unclaimed'}</span>`;
+
+        // Populate form
+        document.getElementById('f-name').value = listing.name || '';
+        document.getElementById('f-short-desc').value = listing.shortDescription || '';
+        document.getElementById('f-description').value = listing.description || '';
+        document.getElementById('f-address').value = listing.address || '';
+
+        // Pending changes
+        if (listing.pendingChanges) {
+          document.getElementById('pending-banner').style.display = 'block';
+        }
+
+        // Category selectors
+        buildCategorySelectors();
+
+        // Tier-gated sections
+        setupTierGating();
+
+        // Load images
+        images = listing.images || [];
+        renderImageGrid();
+
+        // Social/video
+        if (listing.videoUrl) document.getElementById('f-video').value = listing.videoUrl;
+        if (listing.website) document.getElementById('f-website').value = listing.website;
+        if (listing.socialLinks) {
+          document.getElementById('f-facebook').value = listing.socialLinks.facebook || '';
+          document.getElementById('f-instagram').value = listing.socialLinks.instagram || '';
+          document.getElementById('f-twitter').value = listing.socialLinks.twitter || '';
+          document.getElementById('f-tiktok').value = listing.socialLinks.tiktok || '';
+        }
+      } catch (err) {
+        document.getElementById('edit-error').textContent = err.message;
+        document.getElementById('edit-error').style.display = 'block';
+      }
+    }
+
+    function buildCategorySelectors() {
+      const maxCats = userTier === 'basic' ? 1 : 3;
+      document.getElementById('category-limit-text').textContent = `Your plan allows up to ${maxCats} categor${maxCats === 1 ? 'y' : 'ies'}.`;
+
+      const currentCats = listing.categoryIds || (listing.categoryId ? [listing.categoryId] : []);
+      const container = document.getElementById('category-selectors');
+
+      for (let i = 0; i < maxCats; i++) {
+        const select = document.createElement('select');
+        select.className = 'cat-select';
+        select.style.marginBottom = '0.5rem';
+        select.innerHTML = '<option value="">Select category…</option>' +
+          categories.map(c => `<option value="${c.id}"${currentCats[i] === c.id ? ' selected' : ''}>${escHtml(c.name)}</option>`).join('');
+        container.appendChild(select);
+      }
+    }
+
+    function setupTierGating() {
+      const canPhotos = userTier === 'standout' || userTier === 'showoff';
+      const canVideo = userTier === 'showoff';
+
+      document.getElementById('photos-locked').style.display = canPhotos ? 'none' : '';
+      document.getElementById('photos-unlocked').style.display = canPhotos ? '' : 'none';
+      document.getElementById('video-locked').style.display = canVideo ? 'none' : '';
+      document.getElementById('video-unlocked').style.display = canVideo ? '' : 'none';
+    }
+
+    function renderImageGrid() {
+      const grid = document.getElementById('image-grid');
+      grid.innerHTML = '';
+      for (let i = 0; i < 3; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'image-slot';
+        if (images[i]) {
+          slot.innerHTML = `<img src="${images[i]}"><button type="button" class="remove-img" onclick="removeImage(${i})">×</button>`;
+        } else {
+          slot.innerHTML = '<span style="color:var(--text-muted);font-size:1.5rem">+</span>';
+          slot.onclick = () => document.getElementById('image-upload').click();
+        }
+        grid.appendChild(slot);
+      }
+    }
+
+    async function uploadImage(input) {
+      if (!input.files[0]) return;
+      if (images.length >= 3) { alert('Maximum 3 images'); return; }
+      const fd = new FormData();
+      fd.append('image', input.files[0]);
+      try {
+        const res = await fetch('/api/portal/listings/' + locationId + '/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        images.push(data.url);
+        renderImageGrid();
+      } catch (err) { alert(err.message); }
+      input.value = '';
+    }
+
+    function removeImage(idx) {
+      images.splice(idx, 1);
+      renderImageGrid();
+    }
+
+    async function handleSave(e) {
+      e.preventDefault();
+      const errEl = document.getElementById('edit-error');
+      const successEl = document.getElementById('edit-success');
+      errEl.style.display = 'none';
+      successEl.style.display = 'none';
+
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+
+      // Gather category IDs
+      const catSelects = document.querySelectorAll('.cat-select');
+      const categoryIds = [];
+      catSelects.forEach(s => { if (s.value) categoryIds.push(s.value); });
+
+      const body = {
+        name: document.getElementById('f-name').value.trim(),
+        shortDescription: document.getElementById('f-short-desc').value.trim(),
+        description: document.getElementById('f-description').value.trim(),
+        address: document.getElementById('f-address').value.trim(),
+        categoryId: categoryIds[0] || listing.categoryId || '',
+        categoryIds
+      };
+
+      // Add tier-gated fields
+      if (userTier === 'standout' || userTier === 'showoff') {
+        body.images = images;
+      }
+      if (userTier === 'showoff') {
+        body.videoUrl = document.getElementById('f-video').value.trim();
+        body.website = document.getElementById('f-website').value.trim();
+        body.socialLinks = {
+          facebook: document.getElementById('f-facebook').value.trim(),
+          instagram: document.getElementById('f-instagram').value.trim(),
+          twitter: document.getElementById('f-twitter').value.trim(),
+          tiktok: document.getElementById('f-tiktok').value.trim()
+        };
+      }
+
+      try {
+        const res = await fetch('/api/portal/listings/' + locationId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        successEl.textContent = '✅ ' + data.message;
+        successEl.style.display = 'block';
+        document.getElementById('pending-banner').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Submit for Review';
+    }
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/login';
+    }
+
+    function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    init();
+  </script>
+</body>
+</html>

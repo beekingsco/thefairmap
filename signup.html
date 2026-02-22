@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>List Your Booth — First Monday Finder</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+  <!-- Hero -->
+  <div class="signup-hero">
+    <h1>🗺️ Get on the Map</h1>
+    <p>Claim your booth on the First Monday Finder and connect with thousands of monthly visitors.</p>
+  </div>
+
+  <!-- Billing Toggle -->
+  <div class="billing-toggle">
+    <span id="label-monthly" style="opacity:1">Monthly</span>
+    <div id="billing-toggle" class="toggle-track" onclick="toggleBilling()">
+      <div class="toggle-thumb"></div>
+    </div>
+    <span id="label-annual" style="opacity:0.5">Annual</span>
+    <span class="save-badge">Save 17%</span>
+  </div>
+
+  <!-- Pricing Cards -->
+  <div class="pricing-grid">
+    <!-- Basic -->
+    <div class="pricing-card" data-tier="basic">
+      <div class="tier-name" style="color:var(--tier-basic)">Basic Listing</div>
+      <div class="tier-price">
+        <span class="price-monthly">$4.99</span>
+        <span class="price-annual" style="display:none">$49.99</span>
+        <span class="period price-period-monthly">/mo</span>
+        <span class="period price-period-annual" style="display:none">/yr</span>
+      </div>
+      <ul class="tier-features">
+        <li>Business name & description</li>
+        <li>Address / booth number</li>
+        <li>1 category listing</li>
+        <li>Visible on the map</li>
+        <li class="disabled">Photos</li>
+        <li class="disabled">Video listing</li>
+        <li class="disabled">Social links & website</li>
+      </ul>
+      <button class="btn btn-secondary" style="width:100%" onclick="selectTier('basic')">Get Started</button>
+    </div>
+
+    <!-- Stand Out -->
+    <div class="pricing-card popular" data-tier="standout">
+      <div class="tier-name" style="color:var(--tier-standout)">Stand Out</div>
+      <div class="tier-price">
+        <span class="price-monthly">$14.99</span>
+        <span class="price-annual" style="display:none">$149.99</span>
+        <span class="period price-period-monthly">/mo</span>
+        <span class="period price-period-annual" style="display:none">/yr</span>
+      </div>
+      <ul class="tier-features">
+        <li>Everything in Basic</li>
+        <li>Up to 3 photos</li>
+        <li>3 category listings</li>
+        <li>Stand out in search results</li>
+        <li class="disabled">Video listing</li>
+        <li class="disabled">Social links & website</li>
+      </ul>
+      <button class="btn btn-primary" style="width:100%" onclick="selectTier('standout')">Get Started</button>
+    </div>
+
+    <!-- Show Off -->
+    <div class="pricing-card" data-tier="showoff">
+      <div class="tier-name" style="color:var(--tier-showoff)">Show Off</div>
+      <div class="tier-price">
+        <span class="price-monthly">$24.99</span>
+        <span class="price-annual" style="display:none">$249.99</span>
+        <span class="period price-period-monthly">/mo</span>
+        <span class="period price-period-annual" style="display:none">/yr</span>
+      </div>
+      <ul class="tier-features">
+        <li>Everything in Stand Out</li>
+        <li>YouTube / Vimeo video</li>
+        <li>Website link button</li>
+        <li>Facebook, Instagram links</li>
+        <li>Twitter/X, TikTok links</li>
+        <li>Maximum visibility</li>
+      </ul>
+      <button class="btn btn-primary" style="width:100%;background:var(--tier-showoff)" onclick="selectTier('showoff')">Get Started</button>
+    </div>
+  </div>
+
+  <!-- Registration Form (hidden until tier selected) -->
+  <div id="signup-form" class="signup-form-container">
+    <h2>Create Your Account</h2>
+    <div id="signup-error" class="alert alert-error" style="display:none"></div>
+    <form onsubmit="return handleSignup(event)">
+      <input type="hidden" id="selected-tier" value="">
+      <div class="form-group">
+        <label for="displayName">Business / Display Name</label>
+        <input type="text" id="displayName" placeholder="e.g. Mary's Candles" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="you@example.com" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Choose a username" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Min 6 characters" required minlength="6">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%" id="signup-btn">
+        Create Account & Continue to Payment
+      </button>
+    </form>
+    <p style="text-align:center;margin-top:1rem;font-size:0.82rem;color:var(--text-muted)">
+      Already have an account? <a href="/login" style="color:var(--brand-green);font-weight:600">Sign in</a>
+    </p>
+  </div>
+
+  <div style="text-align:center;padding:2rem 1rem;font-size:0.82rem;color:var(--text-muted)">
+    <p>Already have an account? <a href="/login" style="color:var(--brand-green);font-weight:600">Sign in here</a></p>
+  </div>
+
+  <script>
+    let isAnnual = false;
+    let selectedTier = null;
+
+    function toggleBilling() {
+      isAnnual = !isAnnual;
+      const track = document.getElementById('billing-toggle');
+      track.classList.toggle('annual', isAnnual);
+      document.getElementById('label-monthly').style.opacity = isAnnual ? '0.5' : '1';
+      document.getElementById('label-annual').style.opacity = isAnnual ? '1' : '0.5';
+      document.querySelectorAll('.price-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
+      document.querySelectorAll('.price-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
+      document.querySelectorAll('.price-period-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
+      document.querySelectorAll('.price-period-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
+    }
+
+    function selectTier(tier) {
+      selectedTier = tier;
+      document.getElementById('selected-tier').value = tier;
+      const form = document.getElementById('signup-form');
+      form.classList.add('visible');
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function handleSignup(e) {
+      e.preventDefault();
+      const btn = document.getElementById('signup-btn');
+      const errEl = document.getElementById('signup-error');
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value,
+            email: document.getElementById('email').value.trim(),
+            displayName: document.getElementById('displayName').value.trim()
+          })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+
+        // Try Stripe checkout
+        btn.textContent = 'Redirecting to payment…';
+        const billingPeriod = isAnnual ? 'annual' : 'monthly';
+        const checkoutRes = await fetch('/api/stripe/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier: selectedTier, billingPeriod })
+        });
+        const checkoutData = await checkoutRes.json();
+        if (checkoutData.ok && checkoutData.url) {
+          window.location.href = checkoutData.url;
+        } else {
+          // Stripe not configured — go to portal with message
+          window.location.href = '/portal?welcome=1&stripe=pending';
+        }
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Create Account & Continue to Payment';
+      }
+    }
+  </script>
+</body>
+</html>

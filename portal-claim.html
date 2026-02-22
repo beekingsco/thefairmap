@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claim Your Booth — First Monday Finder</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+  <nav class="portal-nav">
+    <a href="/portal" class="nav-logo">🗺️ FairMap</a>
+    <div class="nav-links">
+      <a href="/portal">My Listings</a>
+      <a href="/portal/claim" class="active">Claim / Add</a>
+    </div>
+    <span class="nav-user" id="nav-user"></span>
+    <button class="btn-nav" onclick="logout()">Sign Out</button>
+  </nav>
+
+  <div class="portal-container">
+    <!-- Step 1: Search -->
+    <div id="step-search">
+      <div class="portal-header">
+        <div>
+          <h1>Find Your Location</h1>
+          <p style="color:var(--text-muted);font-size:0.88rem;margin-top:0.25rem">
+            Search for your booth on the map. Can't find it? Create a new listing.
+          </p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input type="search" id="search-input" placeholder="Search by business name, booth number, or keyword…" oninput="doSearch(this.value)">
+      </div>
+
+      <div id="search-results" class="search-results"></div>
+
+      <div style="text-align:center;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border)">
+        <p style="color:var(--text-muted);margin-bottom:0.75rem">My location isn't listed</p>
+        <button class="btn btn-secondary" onclick="showCreateForm()">+ Create New Location</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Claim existing or Create new -->
+    <div id="step-claim" style="display:none">
+      <button class="btn btn-secondary btn-sm" onclick="backToSearch()" style="margin-bottom:1rem">← Back to search</button>
+
+      <div class="card" style="margin-bottom:1.5rem">
+        <h2 id="claim-title" style="margin-bottom:0.5rem"></h2>
+        <p id="claim-subtitle" style="color:var(--text-muted);font-size:0.88rem"></p>
+      </div>
+
+      <!-- New location fields (only for create) -->
+      <div id="create-fields" style="display:none">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new-name">Business Name *</label>
+            <input type="text" id="new-name" required>
+          </div>
+          <div class="form-group">
+            <label for="new-address">Address / Booth Number</label>
+            <input type="text" id="new-address" placeholder="e.g. Arbor 1, Booth 65">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="new-description">Description</label>
+          <textarea id="new-description" placeholder="Tell visitors what you sell…"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="new-category">Category</label>
+          <select id="new-category"><option value="">Select…</option></select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="verification">How can you verify you own this location? *</label>
+        <textarea id="verification" placeholder="e.g. My business name is ____, booth number is ____, I've been a vendor since ____"></textarea>
+        <p class="help-text">This helps our team verify ownership. We'll review and approve within 24 hours.</p>
+      </div>
+
+      <h3 style="margin-bottom:1rem">Choose Your Plan</h3>
+
+      <div class="pricing-grid" style="margin-bottom:1.5rem">
+        <label class="pricing-card" style="cursor:pointer;padding:1.25rem" onclick="pickTier('basic')">
+          <input type="radio" name="tier" value="basic" style="position:absolute;opacity:0" id="tier-basic">
+          <div class="tier-name" style="color:var(--tier-basic);font-size:1rem">Basic</div>
+          <div class="tier-price" style="font-size:1.6rem">
+            <span class="claim-price-monthly">$4.99</span>
+            <span class="claim-price-annual" style="display:none">$49.99</span>
+            <span class="period claim-period-monthly">/mo</span>
+            <span class="period claim-period-annual" style="display:none">/yr</span>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-muted)">Text only · 1 category</p>
+        </label>
+
+        <label class="pricing-card" style="cursor:pointer;padding:1.25rem;border-color:var(--tier-standout)" onclick="pickTier('standout')">
+          <input type="radio" name="tier" value="standout" style="position:absolute;opacity:0" id="tier-standout">
+          <div class="tier-name" style="color:var(--tier-standout);font-size:1rem">Stand Out</div>
+          <div class="tier-price" style="font-size:1.6rem">
+            <span class="claim-price-monthly">$14.99</span>
+            <span class="claim-price-annual" style="display:none">$149.99</span>
+            <span class="period claim-period-monthly">/mo</span>
+            <span class="period claim-period-annual" style="display:none">/yr</span>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-muted)">Photos · 3 categories</p>
+        </label>
+
+        <label class="pricing-card" style="cursor:pointer;padding:1.25rem" onclick="pickTier('showoff')">
+          <input type="radio" name="tier" value="showoff" style="position:absolute;opacity:0" id="tier-showoff">
+          <div class="tier-name" style="color:var(--tier-showoff);font-size:1rem">Show Off</div>
+          <div class="tier-price" style="font-size:1.6rem">
+            <span class="claim-price-monthly">$24.99</span>
+            <span class="claim-price-annual" style="display:none">$249.99</span>
+            <span class="period claim-period-monthly">/mo</span>
+            <span class="period claim-period-annual" style="display:none">/yr</span>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-muted)">Video · Social · Website</p>
+        </label>
+      </div>
+
+      <div class="billing-toggle" style="margin:1rem 0 1.5rem">
+        <span id="claim-label-monthly">Monthly</span>
+        <div id="claim-billing-toggle" class="toggle-track" onclick="toggleClaimBilling()">
+          <div class="toggle-thumb"></div>
+        </div>
+        <span id="claim-label-annual" style="opacity:0.5">Annual</span>
+        <span class="save-badge">Save 17%</span>
+      </div>
+
+      <div id="claim-error" class="alert alert-error" style="display:none"></div>
+
+      <button class="btn btn-primary" style="width:100%" id="submit-claim-btn" onclick="submitClaim()">
+        Submit Claim for Review
+      </button>
+    </div>
+
+    <!-- Step 3: Confirmation -->
+    <div id="step-confirm" style="display:none">
+      <div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <h3>Claim Submitted!</h3>
+        <p>Our team will review your claim and approve it within 24 hours. You'll see it in your portal once approved.</p>
+        <a href="/portal" class="btn btn-primary">Back to My Listings</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allLocations = [];
+    let categories = [];
+    let claimType = 'claim'; // 'claim' or 'create'
+    let claimLocationId = null;
+    let selectedTier = null;
+    let isAnnual = false;
+
+    async function init() {
+      try {
+        const meRes = await fetch('/api/me');
+        const me = await meRes.json();
+        if (!me.ok) return window.location.href = '/login';
+        document.getElementById('nav-user').textContent = me.user.displayName;
+
+        const locRes = await fetch('/api/locations');
+        const locData = await locRes.json();
+        allLocations = locData.locations || [];
+        categories = locData.categories || [];
+
+        // Populate category dropdown
+        const catSelect = document.getElementById('new-category');
+        categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name;
+          catSelect.appendChild(opt);
+        });
+
+        doSearch('');
+      } catch (err) { console.error(err); }
+    }
+
+    function doSearch(query) {
+      const container = document.getElementById('search-results');
+      const q = query.toLowerCase().trim();
+      let results = allLocations;
+      if (q) {
+        results = allLocations.filter(l =>
+          (l.name || '').toLowerCase().includes(q) ||
+          (l.address || '').toLowerCase().includes(q) ||
+          (l.description || '').toLowerCase().includes(q) ||
+          (l.categoryName || '').toLowerCase().includes(q)
+        );
+      }
+      results = results.slice(0, 50);
+
+      if (results.length === 0 && q) {
+        container.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-muted)">No results for "${escHtml(q)}"</div>`;
+        return;
+      }
+      if (!q) {
+        container.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-muted)">Type to search ${allLocations.length} locations…</div>`;
+        return;
+      }
+
+      container.innerHTML = results.map(l => `
+        <div class="search-result-item">
+          <div>
+            <div class="result-name">${escHtml(l.name)}</div>
+            <div class="result-category">${escHtml(l.categoryName || 'Uncategorized')}${l.address ? ' · ' + escHtml(l.address) : ''}${l.ownerId ? ' · <span style="color:#ef4444">Already claimed</span>' : ''}</div>
+          </div>
+          ${l.ownerId ? '' : `<button class="btn btn-primary btn-sm" onclick="claimLocation('${l.id}', '${escAttr(l.name)}')">Claim</button>`}
+        </div>
+      `).join('');
+    }
+
+    function claimLocation(id, name) {
+      claimType = 'claim';
+      claimLocationId = id;
+      document.getElementById('step-search').style.display = 'none';
+      document.getElementById('step-claim').style.display = '';
+      document.getElementById('claim-title').textContent = 'Claim: ' + name;
+      document.getElementById('claim-subtitle').textContent = 'Verify you own this location to manage its listing.';
+      document.getElementById('create-fields').style.display = 'none';
+    }
+
+    function showCreateForm() {
+      claimType = 'create';
+      claimLocationId = null;
+      document.getElementById('step-search').style.display = 'none';
+      document.getElementById('step-claim').style.display = '';
+      document.getElementById('claim-title').textContent = 'Create New Location';
+      document.getElementById('claim-subtitle').textContent = 'Add your booth to the First Monday map.';
+      document.getElementById('create-fields').style.display = '';
+    }
+
+    function backToSearch() {
+      document.getElementById('step-search').style.display = '';
+      document.getElementById('step-claim').style.display = 'none';
+    }
+
+    function pickTier(tier) {
+      selectedTier = tier;
+      document.querySelectorAll('.pricing-card').forEach(c => c.style.outline = 'none');
+      const radio = document.getElementById('tier-' + tier);
+      if (radio) {
+        radio.checked = true;
+        radio.closest('.pricing-card').style.outline = '3px solid var(--brand-green)';
+      }
+    }
+
+    function toggleClaimBilling() {
+      isAnnual = !isAnnual;
+      const track = document.getElementById('claim-billing-toggle');
+      track.classList.toggle('annual', isAnnual);
+      document.getElementById('claim-label-monthly').style.opacity = isAnnual ? '0.5' : '1';
+      document.getElementById('claim-label-annual').style.opacity = isAnnual ? '1' : '0.5';
+      document.querySelectorAll('.claim-price-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
+      document.querySelectorAll('.claim-price-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
+      document.querySelectorAll('.claim-period-monthly').forEach(el => el.style.display = isAnnual ? 'none' : '');
+      document.querySelectorAll('.claim-period-annual').forEach(el => el.style.display = isAnnual ? '' : 'none');
+    }
+
+    async function submitClaim() {
+      const errEl = document.getElementById('claim-error');
+      errEl.style.display = 'none';
+
+      if (!selectedTier) { errEl.textContent = 'Please select a plan'; errEl.style.display = 'block'; return; }
+      const verification = document.getElementById('verification').value.trim();
+      if (!verification) { errEl.textContent = 'Please provide verification details'; errEl.style.display = 'block'; return; }
+
+      const btn = document.getElementById('submit-claim-btn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting…';
+
+      try {
+        let body, url;
+        if (claimType === 'create') {
+          const name = document.getElementById('new-name').value.trim();
+          if (!name) throw new Error('Business name is required');
+          url = '/api/portal/create-listing';
+          body = {
+            name,
+            description: document.getElementById('new-description').value.trim(),
+            address: document.getElementById('new-address').value.trim(),
+            categoryId: document.getElementById('new-category').value,
+            businessVerification: verification,
+            tier: selectedTier,
+            billingPeriod: isAnnual ? 'annual' : 'monthly'
+          };
+        } else {
+          url = '/api/portal/claim';
+          body = {
+            locationId: claimLocationId,
+            businessVerification: verification,
+            tier: selectedTier,
+            billingPeriod: isAnnual ? 'annual' : 'monthly'
+          };
+        }
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+
+        // Try Stripe checkout
+        const checkoutRes = await fetch('/api/stripe/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tier: selectedTier, billingPeriod: isAnnual ? 'annual' : 'monthly' })
+        });
+        const checkoutData = await checkoutRes.json();
+        if (checkoutData.ok && checkoutData.url) {
+          window.location.href = checkoutData.url;
+          return;
+        }
+
+        // Stripe not configured — show confirmation
+        document.getElementById('step-claim').style.display = 'none';
+        document.getElementById('step-confirm').style.display = '';
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Submit Claim for Review';
+      }
+    }
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/login';
+    }
+
+    function escHtml(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+    function escAttr(s) { return (s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+    init();
+  </script>
+</body>
+</html>

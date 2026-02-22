@@ -126,6 +126,7 @@
     </form>
 
     <div class="footer">
+      <a href="/signup" style="display:block;margin-bottom:0.5rem;font-weight:600">Sign up as a listing owner →</a>
       <a href="/">← Back to Map</a>
     </div>
   </div>
@@ -150,7 +151,7 @@
         });
         const data = await res.json();
         if (data.ok) {
-          window.location.href = '/admin';
+          window.location.href = data.redirect || '/admin';
         } else {
           errEl.classList.add('visible');
           btn.disabled = false;

@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="portal.css">
   <style>
     /* Admin-specific overrides */
     .admin-topbar {
@@ -207,6 +208,26 @@
       </div>
     </section>
 
+    <!-- Approvals Queue -->
+    <section class="admin-section" id="approvals-section">
+      <h2 style="display:flex;align-items:center;gap:0.5rem;">
+        Pending Approvals
+        <span id="approvals-badge" style="background:#f59e0b;color:#fff;font-size:0.72rem;padding:0.15rem 0.5rem;border-radius:12px;font-weight:700;display:none;">0</span>
+      </h2>
+      <p class="subtitle" style="margin:0.3rem 0 1rem;">Review and approve listing changes submitted by booth owners.</p>
+      <div id="approvals-list"></div>
+    </section>
+
+    <!-- Claims Queue -->
+    <section class="admin-section" id="claims-section">
+      <h2 style="display:flex;align-items:center;gap:0.5rem;">
+        Pending Claims
+        <span id="claims-badge" style="background:#8b5cf6;color:#fff;font-size:0.72rem;padding:0.15rem 0.5rem;border-radius:12px;font-weight:700;display:none;">0</span>
+      </h2>
+      <p class="subtitle" style="margin:0.3rem 0 1rem;">Review booth ownership claims and new listing requests.</p>
+      <div id="claims-list"></div>
+    </section>
+
     <!-- User Management -->
     <section class="admin-section" id="user-section" style="display:none;">
       <h2>Team Members</h2>
@@ -259,6 +280,23 @@
   <!-- Auth wall (shown while checking) -->
   <div id="auth-wall" style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:inherit;">
     <p style="color:#86868b;">Checking authentication…</p>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal-backdrop" id="review-modal">
+    <div class="modal">
+      <h2 id="review-modal-title">Review Changes</h2>
+      <div id="review-modal-body"></div>
+      <div class="form-group" style="margin-top:1rem;">
+        <label for="review-note">Note (optional)</label>
+        <textarea id="review-note" rows="2" placeholder="Reason for rejection (if rejecting)"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeReviewModal()">Cancel</button>
+        <button class="btn btn-danger" id="btn-review-reject" onclick="reviewAction('reject')">Reject</button>
+        <button class="btn btn-primary" id="btn-review-approve" onclick="reviewAction('approve')">Approve</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
