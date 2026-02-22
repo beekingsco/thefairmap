@@ -28,12 +28,35 @@ const LAYER_SELECTED = 'location-selected';
 const LAYER_HOVER = 'location-hover';
 const MAP_BRAND_OVERLAY_ID = 'map-brand-overlay';
 
+// Group icon: colored circle + white SVG illustration (matches MapMe style)
+function makeGroupIcon(bgColor, svgPath) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="36" height="36">
+    <circle cx="20" cy="20" r="20" fill="${bgColor}"/>
+    <g transform="translate(8,8)">${svgPath}</g>
+  </svg>`;
+}
+
 const CATEGORY_GROUP_DEFINITIONS = [
-  { id: 'favorites', label: 'My Favorites', icon: '\u2605' },
-  { id: 'amenities', label: 'Market Amenities', icon: 'A' },
-  { id: 'food-drink', label: 'Food & Drink', icon: 'F' },
-  { id: 'shop-by-type', label: 'Shop by Product Type', icon: 'S' },
-  { id: 'entertainment-rentals', label: 'Entertainment & Rentals', icon: 'E' }
+  {
+    id: 'favorites', label: 'My Favorites',
+    icon: makeGroupIcon('#f5a623', '<path fill="#fff" d="m12 2 2.9 6.1L22 9.2l-5 4.8 1.2 7-6.2-3.4L5.8 21 7 14 2 9.2l7.1-1.1L12 2Z"/>')
+  },
+  {
+    id: 'amenities', label: 'Market Amenities',
+    icon: makeGroupIcon('#4a90d9', '<path fill="#fff" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm1 15h-2v-6h2v6Zm0-8h-2V7h2v2Z"/>')
+  },
+  {
+    id: 'food-drink', label: 'Food & Drink',
+    icon: makeGroupIcon('#e8702a', '<path fill="#fff" d="M7 2a1 1 0 0 1 1 1v5a3 3 0 0 1-2 2.83V22H4V10.83A3 3 0 0 1 2 8V3a1 1 0 1 1 2 0v5a1 1 0 1 0 2 0V3a1 1 0 0 1 1-1Zm9 0a4 4 0 0 1 4 4v16h-2v-6h-4v6h-2V6a4 4 0 0 1 4-4Zm0 2a2 2 0 0 0-2 2v8h4V6a2 2 0 0 0-2-2Z"/>')
+  },
+  {
+    id: 'shop-by-type', label: 'Shop by Product Type',
+    icon: makeGroupIcon('#d0021b', '<path fill="#fff" d="M6 2h12l2 3H4L6 2ZM2 7h20l-2 14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L2 7Zm10 3a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4Zm0 2a2 2 0 0 1 2 2 2 2 0 0 1-2 2 2 2 0 0 1-2-2 2 2 0 0 1 2-2Z"/>')
+  },
+  {
+    id: 'entertainment-rentals', label: 'Entertainment & Rentals',
+    icon: makeGroupIcon('#9b59b6', '<path fill="#fff" d="M20 6H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Zm-9 7.5v-5l5 2.5-5 2.5Z"/>')
+  }
 ];
 
 const HIDDEN_CATEGORY_NAMES = new Set([
@@ -875,10 +898,12 @@ function renderOverview(query) {
     groupHeader.setAttribute('aria-expanded', String(expanded));
     groupHeader.innerHTML = `
       <span class="category-group-arrow">${expanded ? '&#9660;' : '&#9654;'}</span>
-      <span class="category-group-icon">${escapeHtml(group.icon)}</span>
+      <span class="category-group-icon"></span>
       <span class="category-group-name">${escapeHtml(group.label)}</span>
       <span class="category-group-count">${groupVisible}/${groupTotal}</span>
     `;
+    // Set SVG icon HTML (safe — icons are internal definitions, not user content)
+    groupHeader.querySelector('.category-group-icon').innerHTML = group.icon;
     groupHeader.addEventListener('click', () => {
       appState.groupExpanded.set(group.id, !expanded);
       renderOverview(query);
