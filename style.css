@@ -457,16 +457,18 @@ body {
 .map-brand-overlay {
   position: fixed;
   top: 0;
-  left: 50vw;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  transform: none;
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  border-radius: 0 0 6px 6px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(7, 29, 12, 0.3);
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
 }
 
 .map-brand-img {
@@ -1031,8 +1033,9 @@ body {
     border-radius: 0;
     z-index: 6050;
     box-shadow: none;
-    background: #2a5e12;
+    background: transparent;
     justify-content: center;
+    align-items: center;
     padding: 0;
   }
 
