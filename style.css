@@ -1025,12 +1025,15 @@ body {
   .map-brand-overlay {
     display: flex;
     top: calc(52px + env(safe-area-inset-top));
-    left: 50%;
-    transform: translateX(-50%);
-    border-radius: 0 0 6px 6px;
+    left: 0;
+    right: 0;
+    transform: none;
+    border-radius: 0;
     z-index: 6050;
     box-shadow: none;
-    background: transparent;
+    background: #2a5e12;
+    justify-content: center;
+    padding: 0;
   }
 
   .map-brand-script {
@@ -1174,8 +1177,10 @@ body {
   }
 
   .maplibregl-ctrl-top-right {
-    top: calc(60px + env(safe-area-inset-top));
-    right: 12px;
+    /* Just below the full-width logo banner (52px search + 52px logo = 104px) */
+    top: calc(108px + env(safe-area-inset-top));
+    right: 8px;
+    z-index: 7000;
   }
 
   /* Hide zoom buttons on mobile — pinch to zoom instead */

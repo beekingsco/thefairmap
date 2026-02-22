@@ -156,7 +156,10 @@ async function init() {
     antialias: true
   });
 
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  // Only show zoom/compass on desktop — mobile uses pinch-to-zoom
+  if (window.innerWidth > 960) {
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  }
 
   geolocateControl = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
