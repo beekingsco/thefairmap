@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/embed", "destination": "/embed.html" },
     { "source": "/api/locations", "destination": "/data/locations.json" }
   ],
   "headers": [

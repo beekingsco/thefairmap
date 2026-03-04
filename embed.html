@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>First Monday Finder Map</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #2f3d4d; }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!--
+    TheFairMap — Embeddable Map
+    Use this page in a WKWebView / WebView.
+    Or embed directly with:
+      <iframe src="https://thefairmap.com/embed.html" ...></iframe>
+
+    Embed URL options:
+      ?tenant=firstmonday     (default, can be changed for other fairs)
+      ?category=food          (pre-filter by category slug)
+      ?q=honey                (pre-fill search)
+
+    iOS WKWebView example:
+      let url = URL(string: "https://thefairmap.com/embed.html?tenant=firstmonday")!
+      webView.load(URLRequest(url: url))
+  -->
+  <iframe
+    id="mapFrame"
+    src="about:blank"
+    allow="geolocation"
+    allowfullscreen
+  ></iframe>
+  <script>
+    // Build the map URL with embed=1 so Login button stays hidden
+    const params = new URLSearchParams(location.search);
+    const tenant   = params.get('tenant')   || 'firstmonday';
+    const category = params.get('category') || '';
+    const q        = params.get('q')        || '';
+
+    const mapParams = new URLSearchParams({ embed: '1', tenant });
+    if (category) mapParams.set('category', category);
+    if (q)        mapParams.set('q', q);
+
+    document.getElementById('mapFrame').src = `/index.html?${mapParams}`;
+  </script>
+</body>
+</html>

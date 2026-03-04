@@ -96,8 +96,16 @@
   <script src="config.js"></script>
   <script src="map.js"></script>
 
-  <!-- Login Button -->
+  <!-- Login Button + Embed mode -->
+  <script>
+    // Hide login button when embedded (?embed=1 or loaded in iframe)
+    const _isEmbed = new URLSearchParams(location.search).get('embed') === '1'
+      || (function() { try { return window.self !== window.top; } catch(e) { return true; } })();
+    if (_isEmbed) document.documentElement.classList.add('embed-mode');
+  </script>
   <style>
+    .embed-mode .login-btn-wrap { display: none !important; }
+
     .login-btn-wrap {
       position: fixed;
       bottom: 18px;
