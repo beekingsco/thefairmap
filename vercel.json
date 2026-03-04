@@ -2,7 +2,14 @@
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/embed", "destination": "/embed.html" },
-    { "source": "/api/locations", "destination": "/data/locations.json" }
+    { "source": "/api/locations", "destination": "/data/locations.json" },
+    { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/map", "destination": "/map.html" },
+    { "source": "/platform/login", "destination": "/vendor-login.html" },
+    { "source": "/vendors/login", "destination": "/vendor-login.html" },
+    { "source": "/vendors/dashboard", "destination": "/vendor-dash.html" },
+    { "source": "/vendors/claim", "destination": "/vendor-claim.html" },
+    { "source": "/platform", "destination": "/platform.html" }
   ],
   "headers": [
     {
