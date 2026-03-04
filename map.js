@@ -1033,8 +1033,49 @@ function renderDetail(location) {
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
   const metaLine = [sanitizeMetaAddress(location.address), categoryName].filter(Boolean).join(' | ');
 
+  // Photo gallery (multiple images)
+  let mediaHtml = '';
+  if (location.photos.length > 1) {
+    const thumbs = location.photos.slice(0, 5).map((p, i) =>
+      `<button class="detail-thumb${i === 0 ? ' active' : ''}" onclick="switchDetailPhoto('${escapeAttr(p)}')" style="background-image:url('${escapeAttr(p)}')"></button>`
+    ).join('');
+    mediaHtml = `<div class="detail-media">
+      <img class="detail-hero" id="detail-hero-img" src="${escapeAttr(location.photos[0])}" alt="${escapeAttr(location.name)}" loading="lazy">
+      <div class="detail-thumbs">${thumbs}</div>
+    </div>`;
+  } else if (hero) {
+    mediaHtml = `<div class="detail-media">${hero}</div>`;
+  }
+
+  // Video embed
+  let videoHtml = '';
+  if (location.videoUrl) {
+    const embedUrl = buildVideoEmbedUrl(location.videoUrl);
+    if (embedUrl) {
+      videoHtml = `<div class="detail-video-wrap">
+        <iframe src="${escapeAttr(embedUrl)}" frameborder="0" allowfullscreen loading="lazy" title="Video"></iframe>
+      </div>`;
+    }
+  }
+
+  // Website + social links
+  let linksHtml = '';
+  const linkBtns = [];
+  if (location.website) {
+    linkBtns.push(`<a class="detail-btn secondary" href="${escapeAttr(location.website)}" target="_blank" rel="noopener noreferrer">🌐 Website</a>`);
+  }
+  if (location.socialLinks) {
+    const nets = { facebook: '📘 Facebook', instagram: '📸 Instagram', twitter: '𝕏 X/Twitter', tiktok: '🎵 TikTok' };
+    for (const [key, label] of Object.entries(nets)) {
+      if (location.socialLinks[key]) {
+        linkBtns.push(`<a class="detail-btn social-btn" href="${escapeAttr(location.socialLinks[key])}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+      }
+    }
+  }
+  if (linkBtns.length) linksHtml = `<div class="detail-social-links">${linkBtns.join('')}</div>`;
+
   content.innerHTML = `
-    <div class="detail-media">${hero}</div>
+    ${mediaHtml}
     <header class="detail-header mapme-detail-header">
       <h2 class="detail-title">${escapeHtml(location.name)}</h2>
       ${metaLine ? `<p class="detail-meta">${escapeHtml(metaLine)}</p>` : ''}
@@ -1042,7 +1083,9 @@ function renderDetail(location) {
     </header>
     <section class="detail-body">
       <div class="detail-description">${description}</div>
+      ${videoHtml}
     </section>
+    ${linksHtml}
     <div class="detail-actions">
       <a class="detail-btn primary" href="${directionsUrl}" target="_blank" rel="noreferrer noopener">Directions</a>
     </div>
@@ -1700,6 +1743,27 @@ function truncateDescriptionToText(rawDescription) {
   const text = document.createElement('div');
   text.innerHTML = stripped;
   return (text.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function switchDetailPhoto(url) {
+  const img = document.getElementById('detail-hero-img');
+  if (img) {
+    img.src = url;
+    document.querySelectorAll('.detail-thumb').forEach(t => {
+      t.classList.toggle('active', t.style.backgroundImage.includes(url));
+    });
+  }
+}
+
+function buildVideoEmbedUrl(url) {
+  if (!url) return null;
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return null;
 }
 
 function extractLocationPhotos(location) {

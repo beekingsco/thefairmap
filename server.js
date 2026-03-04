@@ -198,13 +198,32 @@ function writeLocations(data) {
 // AUTH API
 // ══════════════════════════════════════════════════════════════════════════
 
+// Login rate limiting
+const loginAttempts = new Map();
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const key = ip;
+  const rec = loginAttempts.get(key) || { count: 0, resetAt: now + 15 * 60 * 1000 };
+  if (now > rec.resetAt) { rec.count = 0; rec.resetAt = now + 15 * 60 * 1000; }
+  rec.count++;
+  loginAttempts.set(key, rec);
+  return rec.count > 10;
+}
+
 app.post('/api/login', (req, res) => {
+  if (checkRateLimit(req.ip || req.connection.remoteAddress)) {
+    return res.status(429).json({ ok: false, error: 'Too many login attempts. Please wait 15 minutes.' });
+  }
   const { username, password } = req.body;
   const users = readUsers();
   const user = users.find(u => u.username === username);
   if (!user) return res.status(401).json({ ok: false, error: 'Invalid credentials' });
   const valid = bcrypt.compareSync(password, user.password);
   if (!valid) return res.status(401).json({ ok: false, error: 'Invalid credentials' });
+  // Track last login time
+  const users2 = readUsers();
+  const ux = users2.find(u => u.username === username);
+  if (ux) { ux.lastLoginAt = new Date().toISOString(); writeUsers(users2); }
   req.session.user = { id: user.id, username: user.username, displayName: user.displayName, role: user.role };
   // Redirect booth owners to portal, admins to admin
   const redirect = user.role === 'booth_owner' ? '/portal' : '/admin';

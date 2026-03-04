@@ -1,68 +1,72 @@
 'use strict';
 
+// ══════════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════════
+
 let adminMap;
-let mapData;
-let dropPin;
-let editingId = null;  // null = add mode, string = edit mode
+let mapData = { map: {}, categories: [], locations: [] };
+let currentUser = null;
+let currentSection = 'locations';
+let editingId = null;       // null = list view, string = editing that location
+let isNewLocation = false;  // true when "+ New Location" clicked
+let clickToSetActive = false;
+let dropPin = null;
+let pulseMarker = null;
+let mapMarkers = [];
+
+// Pagination & filters
 const PAGE_SIZE = 50;
 let currentPage = 1;
-let currentFilter = '';
+let searchFilter = '';
+let categoryFilter = '';
+let statusFilter = '';
 
-// ── Auth check ──────────────────────────────────────────────────────────────
+// Review modal state
+let reviewingType = '';
+let reviewingId = '';
+
+// ══════════════════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════════════════
+
 async function checkAuth() {
-  const res = await fetch('/api/me');
-  if (!res.ok) {
+  try {
+    const res = await fetch('/api/me');
+    if (!res.ok) { window.location.href = '/login'; return false; }
+    const data = await res.json();
+    currentUser = data.user;
+    document.getElementById('topbar-user').textContent = currentUser.username;
+    document.getElementById('auth-wall').style.display = 'none';
+    document.getElementById('app-layout').style.display = 'flex';
+    return true;
+  } catch {
     window.location.href = '/login';
     return false;
   }
-  const { user } = await res.json();
-  document.getElementById('topbar').style.display = 'flex';
-  document.getElementById('topbar-user').textContent = `Logged in as ${user.username}`;
-  document.getElementById('auth-wall').style.display = 'none';
-  document.getElementById('admin-content').style.display = 'block';
-  return true;
 }
 
-// Sign out
-document.getElementById('btn-signout').addEventListener('click', async () => {
-  await fetch('/api/logout', { method: 'POST' });
-  window.location.href = '/login';
-});
+// ══════════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════════
 
-// ── Init ────────────────────────────────────────────────────────────────────
 async function init() {
-  const authed = await checkAuth();
-  if (!authed) return;
-
+  if (!(await checkAuth())) return;
   await loadData();
-  normalizeData();
   initMap();
-  bindUI();
-  bindUserUI();
-  populateCategorySelect();
-  renderTable();
-  updateStats();
-  loadUsers();
-  loadApprovals();
-  loadClaims();
+  bindGlobalUI();
+  renderSection(currentSection);
 }
 
 async function loadData() {
   const res = await fetch('/api/locations');
   mapData = await res.json();
-}
-
-function normalizeData() {
-  mapData.categories = (mapData.categories || []).map((cat) => ({
-    ...cat,
-    color: normalizeColor(cat.color)
-  }));
-
-  mapData.locations = (mapData.locations || []).map((loc, idx) => {
-    const category = mapData.categories.find((c) => c.id === loc.categoryId || c.id === loc.category);
-    const categoryId = loc.categoryId || loc.category || category?.id || '';
+  mapData.categories = (mapData.categories || []).map(c => ({ ...c, color: normalizeColor(c.color) }));
+  mapData.locations = (mapData.locations || []).map((loc, i) => {
+    const cat = mapData.categories.find(c => c.id === loc.categoryId || c.id === loc.category);
     return {
-      id: String(loc.id || `loc-${Date.now()}-${idx}`),
+      ...loc,
+      id: String(loc.id || `loc-${Date.now()}-${i}`),
       name: loc.name || 'Untitled',
       description: loc.description || '',
       address: loc.address || loc.booth || '',
@@ -70,270 +74,179 @@ function normalizeData() {
       lng: Number(loc.lng),
       featured: Boolean(loc.featured),
       image: loc.image || '',
-      categoryId,
-      categoryName: loc.categoryName || category?.name || ''
+      website: loc.website || '',
+      categoryId: loc.categoryId || loc.category || cat?.id || '',
+      categoryName: loc.categoryName || cat?.name || ''
     };
-  }).filter((loc) => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
+  }).filter(loc => Number.isFinite(loc.lat) && Number.isFinite(loc.lng));
 }
 
-// ── Map ─────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════════════════════════════════════
+
 function initMap() {
+  const styleUrl = mapData.map?.style || 'https://tiles.openfreemap.org/styles/bright';
+  const resolvedStyle = (window.MAPTILER_KEY && styleUrl.includes('YOUR_MAPTILER_KEY'))
+    ? styleUrl.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY) : styleUrl;
+
   adminMap = new maplibregl.Map({
     container: 'admin-map',
-    style: resolveMapStyleUrl(mapData.map?.style),
+    style: resolvedStyle,
     center: mapData.map?.center || [-95.8624, 32.5585],
     zoom: Math.max((mapData.map?.zoom || 17) - 1, 12),
-    pitch: 0,
-    bearing: 0
+    pitch: 0, bearing: 0
   });
 
   adminMap.addControl(new maplibregl.NavigationControl(), 'top-right');
 
-  adminMap.on('click', (event) => {
-    document.getElementById('loc-lat').value = event.lngLat.lat.toFixed(7);
-    document.getElementById('loc-lng').value = event.lngLat.lng.toFixed(7);
-    if (dropPin) dropPin.remove();
-    dropPin = new maplibregl.Marker({ color: '#bb3e2f' })
-      .setLngLat([event.lngLat.lng, event.lngLat.lat])
+  // Map click handler for click-to-set mode
+  adminMap.on('click', (e) => {
+    if (!clickToSetActive) return;
+    const lat = e.lngLat.lat.toFixed(7);
+    const lng = e.lngLat.lng.toFixed(7);
+    const latInput = document.getElementById('ed-lat');
+    const lngInput = document.getElementById('ed-lng');
+    if (latInput) latInput.value = lat;
+    if (lngInput) lngInput.value = lng;
+    placeDropPin(Number(lng), Number(lat));
+  });
+
+  adminMap.on('load', () => renderMapMarkers());
+}
+
+function renderMapMarkers() {
+  // Clear existing
+  mapMarkers.forEach(m => m.remove());
+  mapMarkers = [];
+
+  mapData.locations.forEach(loc => {
+    const cat = mapData.categories.find(c => c.id === loc.categoryId) || { color: '#707070' };
+    const el = document.createElement('div');
+    el.style.cssText = `width:12px;height:12px;border-radius:50%;background:${cat.color};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);cursor:pointer;`;
+    el.title = loc.name;
+
+    const marker = new maplibregl.Marker({ element: el })
+      .setLngLat([loc.lng, loc.lat])
       .addTo(adminMap);
+
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentSection === 'locations') {
+        editingId = loc.id;
+        isNewLocation = false;
+        renderSection('locations');
+      }
+    });
+
+    marker._locId = loc.id;
+    mapMarkers.push(marker);
   });
 }
 
-function resolveMapStyleUrl(styleUrl) {
-  const url = styleUrl || 'https://tiles.openfreemap.org/styles/bright';
-  if (window.MAPTILER_KEY && url.includes('YOUR_MAPTILER_KEY')) {
-    return url.replace('YOUR_MAPTILER_KEY', window.MAPTILER_KEY);
+function highlightMarker(locId) {
+  // Remove existing pulse
+  if (pulseMarker) { pulseMarker.remove(); pulseMarker = null; }
+  if (!locId) return;
+
+  const loc = mapData.locations.find(l => l.id === locId);
+  if (!loc) return;
+
+  const cat = mapData.categories.find(c => c.id === loc.categoryId) || { color: '#707070' };
+  const el = document.createElement('div');
+  el.className = 'pulse-marker';
+  el.style.background = cat.color;
+
+  pulseMarker = new maplibregl.Marker({ element: el })
+    .setLngLat([loc.lng, loc.lat])
+    .addTo(adminMap);
+
+  adminMap.flyTo({ center: [loc.lng, loc.lat], zoom: Math.max(adminMap.getZoom(), 16) });
+}
+
+function placeDropPin(lng, lat) {
+  if (dropPin) dropPin.remove();
+  dropPin = new maplibregl.Marker({ color: '#ef4444' })
+    .setLngLat([lng, lat])
+    .addTo(adminMap);
+}
+
+function clearDropPin() {
+  if (dropPin) { dropPin.remove(); dropPin = null; }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// GLOBAL UI BINDINGS
+// ══════════════════════════════════════════════════════════════════════════
+
+function bindGlobalUI() {
+  // Sign out
+  document.getElementById('btn-signout').addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+  });
+
+  // Sidebar nav
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const section = item.dataset.section;
+      currentSection = section;
+      editingId = null;
+      isNewLocation = false;
+      clickToSetActive = false;
+      clearDropPin();
+      if (pulseMarker) { pulseMarker.remove(); pulseMarker = null; }
+
+      document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+      item.classList.add('active');
+
+      const labels = { home: 'Home', locations: 'Locations', categories: 'Categories', import: 'Import', settings: 'Settings', admin: 'Admin' };
+      document.getElementById('topbar-section').textContent = labels[section] || section;
+
+      renderSection(section);
+    });
+  });
+
+  // Review modal buttons
+  document.getElementById('btn-review-cancel').addEventListener('click', closeReviewModal);
+  document.getElementById('btn-review-approve').addEventListener('click', () => reviewAction('approve'));
+  document.getElementById('btn-review-reject').addEventListener('click', () => reviewAction('reject'));
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SECTION ROUTER
+// ══════════════════════════════════════════════════════════════════════════
+
+function renderSection(section) {
+  const panel = document.getElementById('center-panel');
+  switch (section) {
+    case 'home':     renderSettings(panel); break;
+    case 'locations':
+      if (editingId || isNewLocation) renderEditor(panel);
+      else renderLocationList(panel);
+      break;
+    case 'categories': renderCategories(panel); break;
+    case 'import':     renderImport(panel); break;
+    case 'settings':   renderSettings(panel); break;
+    case 'admin':      renderAdmin(panel); break;
+    default:           renderLocationList(panel); break;
   }
-  return url;
 }
 
-// ── UI bindings ─────────────────────────────────────────────────────────────
-function bindUI() {
-  document.getElementById('add-form').addEventListener('submit', upsertLocation);
-  document.getElementById('btn-cancel-edit').addEventListener('click', cancelEdit);
+// ══════════════════════════════════════════════════════════════════════════
+// LOCATIONS LIST
+// ══════════════════════════════════════════════════════════════════════════
 
-  document.getElementById('add-form').addEventListener('reset', () => {
-    cancelEdit();
-    clearDropPin();
-    document.getElementById('img-preview').classList.remove('visible');
-    document.getElementById('img-preview').src = '';
-  });
-
-  document.getElementById('btn-export').addEventListener('click', exportJSON);
-  document.getElementById('btn-import-json').addEventListener('click', () => document.getElementById('json-file').click());
-  document.getElementById('json-file').addEventListener('change', importJSON);
-  document.getElementById('btn-csv-import').addEventListener('click', importCSV);
-  document.getElementById('csv-file').addEventListener('change', handleCSVFile);
-
-  // Image upload
-  document.getElementById('btn-upload-img').addEventListener('click', () => document.getElementById('img-file-input').click());
-  document.getElementById('img-file-input').addEventListener('change', handleImageUpload);
-
-  // Show preview when URL typed
-  document.getElementById('loc-image').addEventListener('input', (e) => {
-    updateImagePreview(e.target.value);
-  });
-
-  // Table search/filter
-  document.getElementById('table-search').addEventListener('input', (e) => {
-    currentFilter = e.target.value.trim().toLowerCase();
-    currentPage = 1;
-    renderTable(currentFilter);
-  });
-
-  // Bulk select all
-  document.getElementById('bulk-select-all')?.addEventListener('change', (e) => {
-    document.querySelectorAll('.bulk-check').forEach(cb => cb.checked = e.target.checked);
-    updateBulkBar();
-  });
-}
-
-function updateImagePreview(url) {
-  const preview = document.getElementById('img-preview');
-  if (url) {
-    preview.src = url;
-    preview.classList.add('visible');
-    preview.onerror = () => { preview.classList.remove('visible'); };
-  } else {
-    preview.classList.remove('visible');
-    preview.src = '';
-  }
-}
-
-async function handleImageUpload(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-
-  const btn = document.getElementById('btn-upload-img');
-  btn.textContent = 'Uploading…';
-  btn.disabled = true;
-
-  const form = new FormData();
-  form.append('image', file);
-
-  try {
-    const res = await fetch('/api/upload-image', { method: 'POST', body: form });
-    const data = await res.json();
-    if (data.ok) {
-      document.getElementById('loc-image').value = data.url;
-      updateImagePreview(data.url);
-    } else {
-      alert('Upload failed: ' + data.error);
-    }
-  } catch (e) {
-    alert('Upload error: ' + e.message);
-  } finally {
-    btn.textContent = '📷 Upload';
-    btn.disabled = false;
-    event.target.value = '';
-  }
-}
-
-function populateCategorySelect() {
-  const select = document.getElementById('loc-category');
-  select.innerHTML = '';
-  mapData.categories
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .forEach((cat) => {
-      const option = document.createElement('option');
-      option.value = cat.id;
-      option.textContent = cat.name;
-      select.appendChild(option);
-    });
-}
-
-function updateStats() {
-  document.getElementById('stat-total').textContent = String(mapData.locations.length);
-  const used = new Set(mapData.locations.map((l) => l.categoryId).filter(Boolean));
-  document.getElementById('stat-cats').textContent = String(used.size);
-  const featured = mapData.locations.filter(l => l.featured).length;
-  document.getElementById('stat-featured').textContent = String(featured);
-  const withImages = mapData.locations.filter(l => l.image).length;
-  document.getElementById('stat-images').textContent = String(withImages);
-  renderCategoryGrid();
-}
-
-function renderCategoryGrid() {
-  const grid = document.getElementById('category-grid');
-  if (!grid) return;
-
-  const countMap = new Map();
-  mapData.locations.forEach(l => countMap.set(l.categoryId, (countMap.get(l.categoryId) || 0) + 1));
-
-  const cats = mapData.categories.slice().sort((a, b) => (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0));
-  document.getElementById('cat-count-badge').textContent = `(${cats.length})`;
-
-  grid.innerHTML = cats.map(cat => {
-    const count = countMap.get(cat.id) || 0;
-    return `<div class="cat-grid-item" data-cat-id="${escapeHtml(cat.id)}" style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.6rem;background:#f9fafb;border-radius:8px;border:1px solid #e5ebf1;">
-      <input type="color" value="${cat.color}" data-cat-color="${escapeHtml(cat.id)}" style="width:24px;height:24px;border:none;border-radius:4px;cursor:pointer;padding:0;background:transparent;flex-shrink:0;" title="Change color">
-      <input type="text" value="${escapeHtml(cat.name)}" data-cat-name="${escapeHtml(cat.id)}" style="flex:1;font-size:0.82rem;font-weight:600;border:1px solid transparent;border-radius:4px;padding:2px 4px;background:transparent;font-family:inherit;" title="Edit name">
-      <span style="font-size:0.72rem;color:#9aa5b1;flex-shrink:0;">${count}</span>
-      <button class="btn btn-sm" data-cat-save="${escapeHtml(cat.id)}" style="display:none;font-size:0.7rem;padding:2px 6px;" title="Save">✓</button>
-      ${count === 0 ? `<button class="btn btn-sm btn-danger" data-cat-delete="${escapeHtml(cat.id)}" style="font-size:0.7rem;padding:2px 6px;" title="Delete">✕</button>` : ''}
-    </div>`;
-  }).join('');
-
-  // Add "new category" row
-  grid.innerHTML += `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.6rem;background:#f0fdf4;border-radius:8px;border:1px dashed #86efac;">
-    <input type="color" id="new-cat-color" value="#7a7a7a" style="width:24px;height:24px;border:none;border-radius:4px;cursor:pointer;padding:0;background:transparent;flex-shrink:0;">
-    <input type="text" id="new-cat-name" placeholder="New category name" style="flex:1;font-size:0.82rem;font-weight:600;border:1px solid #d1d5db;border-radius:4px;padding:3px 6px;font-family:inherit;">
-    <button class="btn btn-sm btn-primary" id="btn-add-cat" style="font-size:0.72rem;padding:3px 8px;">+ Add</button>
-  </div>`;
-
-  // Bind category inline edit (show save button on change)
-  grid.querySelectorAll('[data-cat-name]').forEach(input => {
-    input.addEventListener('input', () => {
-      const id = input.dataset.catName;
-      const saveBtn = grid.querySelector(`[data-cat-save="${id}"]`);
-      if (saveBtn) saveBtn.style.display = '';
-    });
-  });
-  grid.querySelectorAll('[data-cat-color]').forEach(input => {
-    input.addEventListener('input', () => {
-      const id = input.dataset.catColor;
-      const saveBtn = grid.querySelector(`[data-cat-save="${id}"]`);
-      if (saveBtn) saveBtn.style.display = '';
-    });
-  });
-
-  // Save category
-  grid.querySelectorAll('[data-cat-save]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.catSave;
-      const name = grid.querySelector(`[data-cat-name="${id}"]`)?.value.trim();
-      const color = grid.querySelector(`[data-cat-color="${id}"]`)?.value;
-      if (!name) return;
-      try {
-        const res = await fetch(`/api/categories/${encodeURIComponent(id)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, color })
-        });
-        if (!res.ok) throw new Error('Failed');
-        // Update local
-        const cat = mapData.categories.find(c => c.id === id);
-        if (cat) { cat.name = name; cat.color = color; }
-        btn.style.display = 'none';
-        populateCategorySelect();
-        showToast('Category updated!');
-      } catch (e) { alert('Error: ' + e.message); }
-    });
-  });
-
-  // Delete category
-  grid.querySelectorAll('[data-cat-delete]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.catDelete;
-      const cat = mapData.categories.find(c => c.id === id);
-      if (!confirm(`Delete category "${cat?.name || id}"?`)) return;
-      try {
-        const res = await fetch(`/api/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Failed');
-        mapData.categories = mapData.categories.filter(c => c.id !== id);
-        renderCategoryGrid();
-        populateCategorySelect();
-        showToast('Category deleted.');
-      } catch (e) { alert('Error: ' + e.message); }
-    });
-  });
-
-  // Add new category
-  document.getElementById('btn-add-cat')?.addEventListener('click', async () => {
-    const name = document.getElementById('new-cat-name')?.value.trim();
-    const color = document.getElementById('new-cat-color')?.value || '#7a7a7a';
-    if (!name) { alert('Enter a category name.'); return; }
-    try {
-      const res = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, color })
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Failed');
-      mapData.categories.push(data.category);
-      renderCategoryGrid();
-      populateCategorySelect();
-      showToast('Category added!');
-    } catch (e) { alert('Error: ' + e.message); }
-  });
-}
-
-function renderTable(filter = '') {
-  currentFilter = filter;
-  const tbody = document.getElementById('location-tbody');
-  tbody.innerHTML = '';
-
+function renderLocationList(panel) {
+  // Build filtered list
   let list = mapData.locations.slice().sort((a, b) => a.name.localeCompare(b.name));
-  if (filter) {
-    list = list.filter(loc =>
-      loc.name.toLowerCase().includes(filter) ||
-      (loc.address || '').toLowerCase().includes(filter) ||
-      (loc.categoryName || '').toLowerCase().includes(filter)
-    );
+  if (searchFilter) {
+    const q = searchFilter.toLowerCase();
+    list = list.filter(l => l.name.toLowerCase().includes(q) || (l.address || '').toLowerCase().includes(q));
   }
+  if (categoryFilter) list = list.filter(l => l.categoryId === categoryFilter);
+  if (statusFilter === 'featured') list = list.filter(l => l.featured);
+  if (statusFilter === 'active') list = list.filter(l => !l.featured);
 
   const total = list.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -341,78 +254,125 @@ function renderTable(filter = '') {
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageList = list.slice(start, start + PAGE_SIZE);
 
-  if (!total) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="7" style="text-align:center;color:#9aa5b1;padding:2rem;">No locations found.</td>`;
-    tbody.appendChild(tr);
-    renderPagination(0, 0, 0);
-    updateBulkBar();
-    return;
+  // Category options for filter
+  const catOpts = mapData.categories.slice().sort((a, b) => a.name.localeCompare(b.name))
+    .map(c => `<option value="${esc(c.id)}" ${categoryFilter === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+
+  let html = `
+    <div class="action-bar">
+      <button class="btn-new" id="btn-new-loc">+ New Location</button>
+      <div class="filter-row">
+        <input type="search" id="loc-search" placeholder="Search locations..." value="${esc(searchFilter)}">
+      </div>
+      <div class="filter-row" style="margin-top:6px;">
+        <select id="loc-cat-filter"><option value="">All Categories</option>${catOpts}</select>
+        <select id="loc-status-filter">
+          <option value="" ${!statusFilter ? 'selected' : ''}>All</option>
+          <option value="active" ${statusFilter === 'active' ? 'selected' : ''}>Active</option>
+          <option value="featured" ${statusFilter === 'featured' ? 'selected' : ''}>Featured</option>
+        </select>
+      </div>
+    </div>
+    <div class="bulk-bar" id="bulk-bar">
+      <strong id="bulk-count">0 selected</strong>
+      <button class="btn-sm danger" id="bulk-delete-btn">Delete Selected</button>
+      <button class="btn-sm" id="bulk-clear-btn">Clear</button>
+    </div>
+    <div class="loc-list" id="loc-list">`;
+
+  if (pageList.length === 0) {
+    html += `<div style="text-align:center;color:#6b7280;padding:40px 16px;">No locations found.</div>`;
+  } else {
+    pageList.forEach(loc => {
+      const cat = mapData.categories.find(c => c.id === loc.categoryId) || { color: '#707070' };
+      html += `
+        <div class="loc-row" data-loc-id="${esc(loc.id)}">
+          <input type="checkbox" class="bulk-check" data-bulk-id="${esc(loc.id)}">
+          <div class="loc-info">
+            <div class="loc-name">${esc(loc.name)}${loc.featured ? ' &#x2b50;' : ''}</div>
+            <div class="loc-addr">${esc(loc.address || 'No address')}</div>
+          </div>
+          <div class="cat-dot" style="background:${cat.color};" title="${esc(cat.name || 'Uncategorized')}"></div>
+        </div>`;
+    });
   }
 
-  pageList.forEach((loc) => {
-    const category = getCategory(loc.categoryId, loc.categoryName);
-    const hasCoords = Number.isFinite(loc.lat) && Number.isFinite(loc.lng);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="width:32px;"><input type="checkbox" class="bulk-check" data-bulk-id="${escapeHtml(loc.id)}"></td>
-      <td><strong>${escapeHtml(loc.name)}</strong>${loc.featured ? ' ⭐' : ''}${!hasCoords ? ' <span style="color:#c53030;" title="Missing coordinates">⚠️</span>' : ''}</td>
-      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(loc.address || '—')}</td>
-      <td><span class="badge" style="background:${category.color};">${escapeHtml(category.name)}</span></td>
-      <td style="font-size:0.78rem;white-space:nowrap;"><code>${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</code></td>
-      <td>${loc.image ? `<img src="${escapeHtml(loc.image)}" style="width:48px;height:34px;object-fit:cover;border-radius:5px;" loading="lazy">` : '—'}</td>
-      <td style="white-space:nowrap;">
-        <button class="btn btn-sm btn-secondary" data-action="edit" data-id="${escapeHtml(loc.id)}">Edit</button>
-        <a class="btn btn-sm btn-secondary" href="/?loc=${encodeURIComponent(loc.id)}" target="_blank" title="View on map">🗺️</a>
-        <button class="btn btn-sm btn-danger" data-action="delete" data-id="${escapeHtml(loc.id)}">✕</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
+  html += `</div>
+    <div class="pagination" id="pagination">
+      <button id="pg-prev" ${currentPage <= 1 ? 'disabled' : ''}>Prev</button>
+      <span>Page ${currentPage} of ${totalPages}</span>
+      <button id="pg-next" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+    </div>`;
+
+  panel.innerHTML = html;
+
+  // Bind events
+  document.getElementById('btn-new-loc').addEventListener('click', () => {
+    editingId = null;
+    isNewLocation = true;
+    clickToSetActive = true;
+    renderSection('locations');
   });
 
-  tbody.querySelectorAll('[data-action="edit"]').forEach((btn) => {
-    btn.addEventListener('click', () => editLocation(btn.dataset.id));
+  document.getElementById('loc-search').addEventListener('input', (e) => {
+    searchFilter = e.target.value.trim();
+    currentPage = 1;
+    renderLocationList(panel);
   });
-  tbody.querySelectorAll('[data-action="delete"]').forEach((btn) => {
-    btn.addEventListener('click', () => deleteLocation(btn.dataset.id));
+  document.getElementById('loc-cat-filter').addEventListener('change', (e) => {
+    categoryFilter = e.target.value;
+    currentPage = 1;
+    renderLocationList(panel);
   });
-  tbody.querySelectorAll('.bulk-check').forEach((cb) => {
+  document.getElementById('loc-status-filter').addEventListener('change', (e) => {
+    statusFilter = e.target.value;
+    currentPage = 1;
+    renderLocationList(panel);
+  });
+
+  // Location row clicks
+  document.querySelectorAll('.loc-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.type === 'checkbox') return;
+      editingId = row.dataset.locId;
+      isNewLocation = false;
+      renderSection('locations');
+    });
+  });
+
+  // Checkbox bulk
+  document.querySelectorAll('.bulk-check').forEach(cb => {
     cb.addEventListener('change', updateBulkBar);
   });
-
-  renderPagination(currentPage, totalPages, total);
-  updateBulkBar();
-}
-
-function updateBulkBar() {
-  let bar = document.getElementById('bulk-bar');
-  const checked = document.querySelectorAll('.bulk-check:checked');
-
-  if (!bar) {
-    bar = document.createElement('div');
-    bar.id = 'bulk-bar';
-    bar.style.cssText = 'display:none;align-items:center;gap:0.75rem;padding:0.6rem 1rem;background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;margin-top:0.75rem;font-size:0.85rem;';
-    const tableWrap = document.querySelector('.admin-table-wrap');
-    if (tableWrap) tableWrap.before(bar);
-  }
-
-  if (checked.length === 0) {
-    bar.style.display = 'none';
-    return;
-  }
-
-  bar.style.display = 'flex';
-  bar.innerHTML = `
-    <strong>${checked.length} selected</strong>
-    <button class="btn btn-sm btn-danger" id="bulk-delete-btn">🗑 Delete Selected</button>
-    <button class="btn btn-sm btn-secondary" id="bulk-clear-btn">Clear</button>
-  `;
-
-  bar.querySelector('#bulk-delete-btn')?.addEventListener('click', bulkDeleteSelected);
-  bar.querySelector('#bulk-clear-btn')?.addEventListener('click', () => {
+  document.getElementById('bulk-delete-btn')?.addEventListener('click', bulkDeleteSelected);
+  document.getElementById('bulk-clear-btn')?.addEventListener('click', () => {
     document.querySelectorAll('.bulk-check:checked').forEach(cb => cb.checked = false);
     updateBulkBar();
   });
+
+  // Pagination
+  document.getElementById('pg-prev')?.addEventListener('click', () => {
+    if (currentPage > 1) { currentPage--; renderLocationList(panel); }
+  });
+  document.getElementById('pg-next')?.addEventListener('click', () => {
+    const tp = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (currentPage < tp) { currentPage++; renderLocationList(panel); }
+  });
+
+  // Clear any highlight
+  if (pulseMarker) { pulseMarker.remove(); pulseMarker = null; }
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  const checked = document.querySelectorAll('.bulk-check:checked');
+  if (!bar) return;
+  if (checked.length > 0) {
+    bar.classList.add('visible');
+    document.getElementById('bulk-count').textContent = `${checked.length} selected`;
+  } else {
+    bar.classList.remove('visible');
+  }
 }
 
 async function bulkDeleteSelected() {
@@ -429,69 +389,262 @@ async function bulkDeleteSelected() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
     mapData.locations = mapData.locations.filter(l => !ids.includes(l.id));
-    renderTable(currentFilter);
-    updateStats();
+    renderMapMarkers();
+    renderLocationList(document.getElementById('center-panel'));
     showToast(`Deleted ${data.deleted} location(s).`);
   } catch (e) { alert('Bulk delete error: ' + e.message); }
 }
 
-function renderPagination(page, totalPages, total) {
-  let el = document.getElementById('table-pagination');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'table-pagination';
-    el.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;font-size:0.85rem;color:#5f6770;';
-    document.querySelector('.admin-table-wrap').after(el);
+// ══════════════════════════════════════════════════════════════════════════
+// LOCATION EDITOR
+// ══════════════════════════════════════════════════════════════════════════
+
+function renderEditor(panel) {
+  const loc = editingId ? mapData.locations.find(l => l.id === editingId) : null;
+  const isEdit = !!loc;
+  const title = isEdit ? 'Edit Location' : 'New Location';
+
+  // Category select options
+  const catOpts = mapData.categories.slice().sort((a, b) => a.name.localeCompare(b.name))
+    .map(c => `<option value="${esc(c.id)}" ${loc && loc.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+
+  const html = `
+    <div class="editor">
+      <div class="editor-scroll">
+        <a class="back-link" id="btn-back">&larr; Back to Locations</a>
+
+        <label style="margin-top:0;">Name</label>
+        <input type="text" class="editor-name-input" id="ed-name" value="${esc(loc?.name || '')}" placeholder="Location name">
+
+        <label>Address</label>
+        <input type="text" id="ed-address" value="${esc(loc?.address || '')}" placeholder="Address or booth number">
+
+        <label>Description</label>
+        <div class="rt-toolbar">
+          <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+          <button type="button" data-cmd="createLink" title="Link">&#x1f517;</button>
+          <button type="button" data-cmd="insertUnorderedList" title="Bullet list">&#x2022; List</button>
+          <button type="button" data-cmd="insertOrderedList" title="Numbered list">1. List</button>
+          <button type="button" data-cmd="undo" title="Undo">&#x21a9;</button>
+        </div>
+        <div class="rt-editable" id="ed-desc" contenteditable="true">${loc?.description || ''}</div>
+
+        <!-- Category accordion -->
+        <div class="accordion open" id="acc-category">
+          <div class="accordion-header">Category <span class="chevron">&#x25b6;</span></div>
+          <div class="accordion-body">
+            <select id="ed-category">${catOpts}</select>
+          </div>
+        </div>
+
+        <!-- Image accordion -->
+        <div class="accordion" id="acc-image">
+          <div class="accordion-header">Image <span class="chevron">&#x25b6;</span></div>
+          <div class="accordion-body">
+            <div class="drop-zone" id="drop-zone">
+              <div>Drag & drop an image here, or click to browse</div>
+              <input type="file" id="ed-image-file" accept="image/*" style="display:none;">
+              ${loc?.image ? `<img src="${esc(loc.image)}" id="img-thumb">` : ''}
+            </div>
+            <div style="margin-top:8px;">
+              <label style="margin-top:0;">Or enter URL</label>
+              <input type="url" id="ed-image-url" value="${esc(loc?.image || '')}" placeholder="https://example.com/image.jpg">
+            </div>
+          </div>
+        </div>
+
+        <!-- Position accordion -->
+        <div class="accordion ${isEdit ? '' : 'open'}" id="acc-position">
+          <div class="accordion-header">Position <span class="chevron">&#x25b6;</span></div>
+          <div class="accordion-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>
+                <label style="margin-top:0;">Latitude</label>
+                <input type="number" step="any" id="ed-lat" value="${loc?.lat || ''}" placeholder="32.5585">
+              </div>
+              <div>
+                <label style="margin-top:0;">Longitude</label>
+                <input type="number" step="any" id="ed-lng" value="${loc?.lng || ''}" placeholder="-95.8624">
+              </div>
+            </div>
+            <button type="button" class="btn-click-map ${clickToSetActive ? 'active' : ''}" id="btn-click-map">
+              ${clickToSetActive ? 'Click map mode ON' : 'Click map to set'}
+            </button>
+          </div>
+        </div>
+
+        <!-- Featured accordion -->
+        <div class="accordion" id="acc-featured">
+          <div class="accordion-header">Featured <span class="chevron">&#x25b6;</span></div>
+          <div class="accordion-body">
+            <label style="display:flex;align-items:center;gap:8px;margin-top:0;font-weight:400;">
+              <input type="checkbox" id="ed-featured" ${loc?.featured ? 'checked' : ''}> Mark as featured location
+            </label>
+          </div>
+        </div>
+
+        <!-- Website accordion -->
+        <div class="accordion" id="acc-website">
+          <div class="accordion-header">Website / Action <span class="chevron">&#x25b6;</span></div>
+          <div class="accordion-body">
+            <input type="url" id="ed-website" value="${esc(loc?.website || '')}" placeholder="https://example.com">
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom bar -->
+      <div class="editor-bottom">
+        ${isEdit ? '<button class="btn-delete" id="btn-editor-delete">Delete</button>' : '<div></div>'}
+        <button class="btn-save" id="btn-editor-save">${isEdit ? 'Save Changes' : 'Add Location'}</button>
+      </div>
+    </div>`;
+
+  panel.innerHTML = html;
+
+  // Highlight marker on map
+  if (isEdit) {
+    highlightMarker(editingId);
+    placeDropPin(loc.lng, loc.lat);
   }
 
-  if (totalPages <= 1) {
-    el.innerHTML = total > 0 ? `<span>${total} location${total === 1 ? '' : 's'}</span>` : '';
-    return;
+  // Bind events
+  document.getElementById('btn-back').addEventListener('click', () => {
+    editingId = null;
+    isNewLocation = false;
+    clickToSetActive = false;
+    clearDropPin();
+    if (pulseMarker) { pulseMarker.remove(); pulseMarker = null; }
+    renderSection('locations');
+  });
+
+  // Accordion toggles
+  document.querySelectorAll('.accordion-header').forEach(header => {
+    header.addEventListener('click', () => {
+      header.parentElement.classList.toggle('open');
+    });
+  });
+
+  // Rich text toolbar
+  document.querySelectorAll('.rt-toolbar button').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const cmd = btn.dataset.cmd;
+      if (cmd === 'createLink') {
+        const url = prompt('Enter URL:');
+        if (url) document.execCommand(cmd, false, url);
+      } else {
+        document.execCommand(cmd, false, null);
+      }
+    });
+  });
+
+  // Click-to-set toggle
+  document.getElementById('btn-click-map').addEventListener('click', () => {
+    clickToSetActive = !clickToSetActive;
+    const btn = document.getElementById('btn-click-map');
+    btn.classList.toggle('active', clickToSetActive);
+    btn.textContent = clickToSetActive ? 'Click map mode ON' : 'Click map to set';
+  });
+
+  // Image drop zone
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('ed-image-file');
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) uploadImage(file);
+  });
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) uploadImage(e.target.files[0]);
+  });
+
+  // Image URL input
+  document.getElementById('ed-image-url').addEventListener('input', (e) => {
+    const thumb = document.getElementById('img-thumb');
+    if (thumb) thumb.src = e.target.value;
+    else if (e.target.value) {
+      const img = document.createElement('img');
+      img.id = 'img-thumb';
+      img.src = e.target.value;
+      img.style.cssText = 'max-width:100%;max-height:120px;border-radius:6px;margin-top:8px;';
+      img.onerror = () => img.remove();
+      dropZone.appendChild(img);
+    }
+  });
+
+  // Save
+  document.getElementById('btn-editor-save').addEventListener('click', saveLocation);
+
+  // Delete
+  if (isEdit) {
+    document.getElementById('btn-editor-delete').addEventListener('click', async () => {
+      if (!confirm(`Delete "${loc.name}"?`)) return;
+      try {
+        const res = await fetch(`/api/locations/${encodeURIComponent(editingId)}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Server error');
+        mapData.locations = mapData.locations.filter(l => l.id !== editingId);
+        editingId = null;
+        isNewLocation = false;
+        renderMapMarkers();
+        renderSection('locations');
+        showToast('Location deleted.');
+      } catch (e) { alert('Error: ' + e.message); }
+    });
   }
-
-  const start = (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, total);
-  el.innerHTML = `
-    <button class="btn btn-sm btn-secondary" id="pg-prev" ${page <= 1 ? 'disabled' : ''}>‹ Prev</button>
-    <span>Page <strong>${page}</strong> of ${totalPages} · ${start}–${end} of ${total}</span>
-    <button class="btn btn-sm btn-secondary" id="pg-next" ${page >= totalPages ? 'disabled' : ''}>Next ›</button>
-  `;
-
-  el.querySelector('#pg-prev')?.addEventListener('click', () => {
-    if (currentPage > 1) { currentPage--; renderTable(currentFilter); }
-  });
-  el.querySelector('#pg-next')?.addEventListener('click', () => {
-    if (currentPage < totalPages) { currentPage++; renderTable(currentFilter); }
-  });
 }
 
-// ── CRUD ─────────────────────────────────────────────────────────────────────
-async function upsertLocation(event) {
-  event.preventDefault();
+async function uploadImage(file) {
+  const form = new FormData();
+  form.append('image', file);
+  try {
+    const res = await fetch('/api/upload-image', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('ed-image-url').value = data.url;
+      const dropZone = document.getElementById('drop-zone');
+      let thumb = document.getElementById('img-thumb');
+      if (!thumb) {
+        thumb = document.createElement('img');
+        thumb.id = 'img-thumb';
+        thumb.style.cssText = 'max-width:100%;max-height:120px;border-radius:6px;margin-top:8px;';
+        dropZone.appendChild(thumb);
+      }
+      thumb.src = data.url;
+      showToast('Image uploaded!');
+    } else {
+      alert('Upload failed: ' + data.error);
+    }
+  } catch (e) { alert('Upload error: ' + e.message); }
+}
 
-  const categoryId = document.getElementById('loc-category').value;
-  const category = getCategory(categoryId);
+async function saveLocation() {
+  const name = document.getElementById('ed-name').value.trim();
+  const address = document.getElementById('ed-address').value.trim();
+  const description = document.getElementById('ed-desc').innerHTML;
+  const categoryId = document.getElementById('ed-category').value;
+  const lat = Number(document.getElementById('ed-lat').value);
+  const lng = Number(document.getElementById('ed-lng').value);
+  const featured = document.getElementById('ed-featured').checked;
+  const image = document.getElementById('ed-image-url').value.trim();
+  const website = document.getElementById('ed-website').value.trim();
 
+  if (!name) { alert('Name is required.'); return; }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) { alert('Valid coordinates are required.'); return; }
+
+  const cat = mapData.categories.find(c => c.id === categoryId);
   const payload = {
-    id: editingId || document.getElementById('loc-id').value.trim() || `loc-${Date.now()}`,
-    name: document.getElementById('loc-name').value.trim(),
-    description: document.getElementById('loc-desc').value,
-    address: document.getElementById('loc-address').value.trim(),
-    lat: Number(document.getElementById('loc-lat').value),
-    lng: Number(document.getElementById('loc-lng').value),
-    featured: document.getElementById('loc-featured').checked,
-    image: document.getElementById('loc-image').value.trim(),
-    categoryId,
-    categoryName: category.name
+    name, address, description, categoryId,
+    categoryName: cat?.name || '',
+    lat, lng, featured, image, website
   };
 
-  if (!payload.name || !Number.isFinite(payload.lat) || !Number.isFinite(payload.lng) || !payload.categoryId) {
-    alert('Name, category, latitude, and longitude are required.');
-    return;
-  }
-
-  const btn = document.getElementById('btn-submit');
+  const btn = document.getElementById('btn-editor-save');
   btn.disabled = true;
+  btn.textContent = 'Saving...';
 
   try {
     let res;
@@ -502,6 +655,7 @@ async function upsertLocation(event) {
         body: JSON.stringify(payload)
       });
     } else {
+      payload.id = `loc-${Date.now()}`;
       res = await fetch('/api/locations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -512,134 +666,234 @@ async function upsertLocation(event) {
     if (!res.ok) throw new Error('Server error ' + res.status);
     const data = await res.json();
 
-    // Update local state
     if (editingId) {
       const idx = mapData.locations.findIndex(l => l.id === editingId);
-      if (idx !== -1) mapData.locations[idx] = data.location;
+      if (idx !== -1) mapData.locations[idx] = { ...mapData.locations[idx], ...payload };
     } else {
-      mapData.locations.push(data.location);
+      mapData.locations.push(data.location || { ...payload, id: payload.id });
     }
 
-    cancelEdit();
-    document.getElementById('add-form').reset();
+    editingId = null;
+    isNewLocation = false;
+    clickToSetActive = false;
     clearDropPin();
-    renderTable(document.getElementById('table-search').value.trim().toLowerCase());
-    updateStats();
+    if (pulseMarker) { pulseMarker.remove(); pulseMarker = null; }
+    renderMapMarkers();
+    renderSection('locations');
     showToast(editingId ? 'Location updated!' : 'Location added!');
   } catch (e) {
-    alert('Error saving location: ' + e.message);
+    alert('Error saving: ' + e.message);
   } finally {
     btn.disabled = false;
+    btn.textContent = editingId ? 'Save Changes' : 'Add Location';
   }
 }
 
-function editLocation(id) {
-  const loc = mapData.locations.find(l => l.id === id);
-  if (!loc) return;
+// ══════════════════════════════════════════════════════════════════════════
+// CATEGORIES PANEL
+// ══════════════════════════════════════════════════════════════════════════
 
-  editingId = loc.id;
-  document.getElementById('loc-id').value = loc.id;
-  document.getElementById('loc-name').value = loc.name;
-  document.getElementById('loc-category').value = loc.categoryId;
-  document.getElementById('loc-address').value = loc.address || '';
-  document.getElementById('loc-lat').value = String(loc.lat);
-  document.getElementById('loc-lng').value = String(loc.lng);
-  document.getElementById('loc-desc').value = loc.description || '';
-  document.getElementById('loc-featured').checked = Boolean(loc.featured);
-  document.getElementById('loc-image').value = loc.image || '';
-  updateImagePreview(loc.image || '');
+function renderCategories(panel) {
+  const countMap = new Map();
+  mapData.locations.forEach(l => countMap.set(l.categoryId, (countMap.get(l.categoryId) || 0) + 1));
+  const cats = mapData.categories.slice().sort((a, b) => a.name.localeCompare(b.name));
 
-  document.getElementById('form-heading').textContent = `Edit: ${loc.name}`;
-  document.getElementById('btn-submit').textContent = 'Update Location';
-  document.getElementById('btn-cancel-edit').style.display = '';
+  let html = '<div class="panel-content"><h2 style="font-size:16px;margin-bottom:12px;">Categories</h2>';
 
-  clearDropPin();
-  dropPin = new maplibregl.Marker({ color: '#bb3e2f' }).setLngLat([loc.lng, loc.lat]).addTo(adminMap);
-  adminMap.flyTo({ center: [loc.lng, loc.lat], zoom: Math.max(adminMap.getZoom(), 17) });
-  document.getElementById('add-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  cats.forEach(cat => {
+    const count = countMap.get(cat.id) || 0;
+    html += `
+      <div class="cat-row" data-cat-id="${esc(cat.id)}">
+        <div class="cat-swatch" style="background:${cat.color};"></div>
+        <div class="cat-name">${esc(cat.name)}</div>
+        <span class="cat-count">${count}</span>
+        <div class="cat-actions">
+          <button class="btn-sm" data-cat-edit="${esc(cat.id)}">Edit</button>
+          ${count === 0 ? `<button class="btn-sm danger" data-cat-del="${esc(cat.id)}">Delete</button>` : ''}
+        </div>
+      </div>
+      <div class="cat-edit-row" id="cat-edit-${esc(cat.id)}" style="display:none;">
+        <input type="text" value="${esc(cat.name)}" data-edit-name="${esc(cat.id)}">
+        <input type="color" value="${cat.color}" data-edit-color="${esc(cat.id)}">
+        <button class="btn-primary-sm" data-cat-save="${esc(cat.id)}">Save</button>
+        <button class="btn-sm" data-cat-cancel="${esc(cat.id)}">Cancel</button>
+      </div>`;
+  });
+
+  html += `
+    <div class="add-cat-form">
+      <input type="color" id="new-cat-color" value="#7a7a7a">
+      <input type="text" id="new-cat-name" placeholder="New category name">
+      <button class="btn-primary-sm" id="btn-add-cat">+ Add</button>
+    </div>
+  </div>`;
+
+  panel.innerHTML = html;
+
+  // Bind edit toggles
+  panel.querySelectorAll('[data-cat-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.catEdit;
+      document.getElementById(`cat-edit-${id}`).style.display = 'flex';
+    });
+  });
+  panel.querySelectorAll('[data-cat-cancel]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.catCancel;
+      document.getElementById(`cat-edit-${id}`).style.display = 'none';
+    });
+  });
+
+  // Save category edit
+  panel.querySelectorAll('[data-cat-save]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.catSave;
+      const name = panel.querySelector(`[data-edit-name="${id}"]`)?.value.trim();
+      const color = panel.querySelector(`[data-edit-color="${id}"]`)?.value;
+      if (!name) return;
+      try {
+        const res = await fetch(`/api/categories/${encodeURIComponent(id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, color })
+        });
+        if (!res.ok) throw new Error('Failed');
+        const cat = mapData.categories.find(c => c.id === id);
+        if (cat) { cat.name = name; cat.color = color; }
+        renderCategories(panel);
+        renderMapMarkers();
+        showToast('Category updated!');
+      } catch (e) { alert('Error: ' + e.message); }
+    });
+  });
+
+  // Delete category
+  panel.querySelectorAll('[data-cat-del]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.catDel;
+      const cat = mapData.categories.find(c => c.id === id);
+      if (!confirm(`Delete category "${cat?.name}"?`)) return;
+      try {
+        const res = await fetch(`/api/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Failed');
+        mapData.categories = mapData.categories.filter(c => c.id !== id);
+        renderCategories(panel);
+        showToast('Category deleted.');
+      } catch (e) { alert('Error: ' + e.message); }
+    });
+  });
+
+  // Add new category
+  document.getElementById('btn-add-cat')?.addEventListener('click', async () => {
+    const name = document.getElementById('new-cat-name')?.value.trim();
+    const color = document.getElementById('new-cat-color')?.value || '#7a7a7a';
+    if (!name) { alert('Enter a name.'); return; }
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Failed');
+      mapData.categories.push(data.category);
+      renderCategories(panel);
+      showToast('Category added!');
+    } catch (e) { alert('Error: ' + e.message); }
+  });
 }
 
-async function deleteLocation(id) {
-  const loc = mapData.locations.find(l => l.id === id);
-  if (!loc) return;
-  if (!confirm(`Delete "${loc.name}"? This cannot be undone.`)) return;
+// ══════════════════════════════════════════════════════════════════════════
+// IMPORT PANEL
+// ══════════════════════════════════════════════════════════════════════════
 
-  try {
-    const res = await fetch(`/api/locations/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (!res.ok) throw new Error('Server error ' + res.status);
-    mapData.locations = mapData.locations.filter(l => l.id !== id);
-    renderTable(document.getElementById('table-search').value.trim().toLowerCase());
-    updateStats();
-    showToast('Location deleted.');
-  } catch (e) {
-    alert('Error deleting: ' + e.message);
-  }
+function renderImport(panel) {
+  panel.innerHTML = `
+    <div class="panel-content">
+      <h2 style="font-size:16px;margin-bottom:16px;">Import / Export</h2>
+
+      <div class="import-section">
+        <h3>Export JSON</h3>
+        <p>Download all locations and categories as a JSON file.</p>
+        <button class="btn-export" id="btn-export">&#x2b07; Export JSON</button>
+      </div>
+
+      <div class="import-section">
+        <h3>Import JSON</h3>
+        <p>Upload a JSON file with locations and categories.</p>
+        <input type="file" class="import-file" id="json-file" accept="application/json,.json">
+        <div class="merge-row">
+          <input type="checkbox" id="json-merge" checked> <label for="json-merge">Merge with existing data</label>
+        </div>
+        <button class="btn-primary-sm" id="btn-import-json">Import</button>
+      </div>
+
+      <div class="import-section">
+        <h3>CSV Import</h3>
+        <p>Paste CSV data or upload a file.</p>
+        <textarea class="csv-area" id="csv-textarea" placeholder="name,categoryName,address,lat,lng,description"></textarea>
+        <input type="file" class="import-file" id="csv-file" accept=".csv,.txt" style="margin-top:6px;">
+        <button class="btn-primary-sm" id="btn-csv-import" style="margin-top:8px;">Import CSV</button>
+        <div class="csv-help">Headers: name, categoryId/categoryName/category, address, lat, lng, description, image, featured</div>
+      </div>
+    </div>`;
+
+  document.getElementById('btn-export').addEventListener('click', exportJSON);
+  document.getElementById('btn-import-json').addEventListener('click', importJSONFile);
+  document.getElementById('btn-csv-import').addEventListener('click', importCSV);
+  document.getElementById('csv-file').addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { document.getElementById('csv-textarea').value = ev.target.result; };
+    reader.readAsText(file);
+  });
 }
 
-function cancelEdit() {
-  editingId = null;
-  document.getElementById('loc-id').value = '';
-  document.getElementById('form-heading').textContent = 'Add Location';
-  document.getElementById('btn-submit').textContent = 'Add Location';
-  document.getElementById('btn-cancel-edit').style.display = 'none';
-}
-
-// ── Import / Export ──────────────────────────────────────────────────────────
 function exportJSON() {
   const output = {
     ...mapData,
     locations: mapData.locations.map(loc => ({
       id: loc.id, name: loc.name, description: loc.description,
       address: loc.address, lat: loc.lat, lng: loc.lng,
-      image: loc.image || '',
-      categoryId: loc.categoryId, categoryName: loc.categoryName,
-      featured: Boolean(loc.featured)
+      image: loc.image || '', categoryId: loc.categoryId,
+      categoryName: loc.categoryName, featured: Boolean(loc.featured)
     }))
   };
   const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `locations-${new Date().toISOString().slice(0,10)}.json`;
-  link.click();
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `locations-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
   URL.revokeObjectURL(url);
 }
 
-function importJSON(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
+function importJSONFile() {
+  const fileInput = document.getElementById('json-file');
+  const file = fileInput.files?.[0];
+  if (!file) { alert('Select a JSON file first.'); return; }
+  const merge = document.getElementById('json-merge').checked;
 
   const reader = new FileReader();
-  reader.onload = async (loadEvent) => {
+  reader.onload = async (e) => {
     try {
-      const parsed = JSON.parse(loadEvent.target.result);
+      const parsed = JSON.parse(e.target.result);
       if (!parsed.locations || !Array.isArray(parsed.locations)) throw new Error('JSON must include a locations array.');
-
-      const mode = confirm('Replace ALL locations? (OK = replace, Cancel = merge)');
-
       const res = await fetch('/api/import-locations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          locations: parsed.locations,
-          categories: parsed.categories,
-          merge: !mode
-        })
+        body: JSON.stringify({ locations: parsed.locations, categories: parsed.categories, merge })
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
-
-      // Reload
       await loadData();
-      normalizeData();
-      populateCategorySelect();
-      renderTable();
-      updateStats();
+      renderMapMarkers();
+      renderSection(currentSection);
       showToast(`Imported — ${data.count} locations total.`);
-    } catch (error) {
-      alert(`Import failed: ${error.message}`);
-    }
-    event.target.value = '';
+    } catch (err) { alert('Import failed: ' + err.message); }
+    fileInput.value = '';
   };
   reader.readAsText(file);
 }
@@ -649,35 +903,30 @@ function importCSV() {
   if (!raw) { alert('Paste CSV data first.'); return; }
 
   const rows = parseCSV(raw);
-  if (rows.length < 2) { alert('CSV must include a header row and one data row.'); return; }
+  if (rows.length < 2) { alert('CSV must include header + data rows.'); return; }
 
   const headers = rows[0].map(h => h.trim().toLowerCase());
   const col = name => headers.indexOf(name);
-  const idxName = col('name'), idxLat = col('lat'), idxLng = col('lng');
-
-  if (idxName === -1 || idxLat === -1 || idxLng === -1) {
-    alert('CSV requires name, lat, and lng columns.'); return;
-  }
+  const iName = col('name'), iLat = col('lat'), iLng = col('lng');
+  if (iName === -1 || iLat === -1 || iLng === -1) { alert('CSV requires name, lat, lng columns.'); return; }
 
   const newLocs = [];
   for (let i = 1; i < rows.length; i++) {
     const c = rows[i];
-    const name = (c[idxName] || '').trim();
-    const lat = Number(c[idxLat]);
-    const lng = Number(c[idxLng]);
+    const name = (c[iName] || '').trim();
+    const lat = Number(c[iLat]);
+    const lng = Number(c[iLng]);
     if (!name || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
-    const catId = resolveCategoryId(
-      c[col('categoryid')] || '', c[col('categoryname')] || '', c[col('category')] || ''
-    );
-    const category = getCategory(catId);
+    const catId = resolveCategoryId(c[col('categoryid')] || '', c[col('categoryname')] || '', c[col('category')] || '');
+    const cat = mapData.categories.find(cc => cc.id === catId);
     newLocs.push({
-      id: `csv-${Date.now()}-${i}`,
-      name, description: c[col('description')] || '',
+      id: `csv-${Date.now()}-${i}`, name,
+      description: c[col('description')] || '',
       address: c[col('address')] || '',
       image: c[col('image')] || '',
-      lat, lng,
-      categoryId: category.id, categoryName: category.name,
+      lat, lng, categoryId: catId,
+      categoryName: cat?.name || '',
       featured: normalizeBoolean(c[col('featured')])
     });
   }
@@ -689,54 +938,284 @@ function importCSV() {
   }).then(r => r.json()).then(async (data) => {
     if (!data.ok) throw new Error(data.error);
     await loadData();
-    normalizeData();
-    renderTable();
-    updateStats();
+    renderMapMarkers();
     document.getElementById('csv-textarea').value = '';
     showToast(`Imported ${newLocs.length} locations from CSV.`);
   }).catch(e => alert('CSV import failed: ' + e.message));
 }
 
-function handleCSVFile(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => { document.getElementById('csv-textarea').value = e.target.result; };
-  reader.readAsText(file);
+// ══════════════════════════════════════════════════════════════════════════
+// SETTINGS PANEL (Map Home)
+// ══════════════════════════════════════════════════════════════════════════
+
+function renderSettings(panel) {
+  const totalLocs = mapData.locations.length;
+  const totalCats = mapData.categories.length;
+  const featured = mapData.locations.filter(l => l.featured).length;
+  const withImages = mapData.locations.filter(l => l.image).length;
+  const mapName = mapData.map?.name || 'TheFairMap';
+
+  panel.innerHTML = `
+    <div class="panel-content">
+      <h2 style="font-size:16px;margin-bottom:16px;">Map Overview</h2>
+      <div class="stat-cards">
+        <div class="stat-card"><div class="stat-number">${totalLocs}</div><div class="stat-label">Total Locations</div></div>
+        <div class="stat-card"><div class="stat-number">${totalCats}</div><div class="stat-label">Categories</div></div>
+        <div class="stat-card"><div class="stat-number">${featured}</div><div class="stat-label">Featured</div></div>
+        <div class="stat-card"><div class="stat-number">${withImages}</div><div class="stat-label">With Images</div></div>
+      </div>
+      <div style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
+        <label style="font-size:12px;font-weight:600;color:#6b7280;">Map Name</label>
+        <div style="font-size:15px;font-weight:600;margin-top:4px;">${esc(mapName)}</div>
+      </div>
+    </div>`;
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function showToast(message, color = '#1e2328') {
+// ══════════════════════════════════════════════════════════════════════════
+// ADMIN PANEL
+// ══════════════════════════════════════════════════════════════════════════
+
+async function renderAdmin(panel) {
+  panel.innerHTML = '<div class="panel-content"><p style="color:#6b7280;">Loading...</p></div>';
+
+  // Load approvals, claims, users in parallel
+  const [approvalsData, claimsData, usersData] = await Promise.all([
+    fetch('/api/admin/pending').then(r => r.json()).catch(() => ({ ok: false })),
+    fetch('/api/admin/claims').then(r => r.json()).catch(() => ({ ok: false })),
+    fetch('/api/users').then(r => r.json()).catch(() => ({ ok: false }))
+  ]);
+
+  let html = '<div class="panel-content">';
+
+  // ── Pending Approvals ──
+  html += '<div class="admin-card"><h3>Pending Approvals</h3>';
+  if (approvalsData.ok && approvalsData.pending?.length > 0) {
+    approvalsData.pending.forEach(p => {
+      html += `
+        <div class="approval-row">
+          <div class="approval-info">
+            <div class="approval-name">${esc(p.name)}</div>
+            <div class="approval-meta">by ${esc(p.ownerName)} &middot; ${p.listingTier || 'unclaimed'}</div>
+          </div>
+          <button class="btn-approve" data-approval-id="${esc(p.id)}">Approve</button>
+          <button class="btn-reject" data-approval-rej="${esc(p.id)}">Reject</button>
+        </div>`;
+    });
+  } else {
+    html += '<p style="color:#6b7280;font-size:13px;">No pending approvals.</p>';
+  }
+  html += '</div>';
+
+  // ── Pending Claims ──
+  html += '<div class="admin-card"><h3>Pending Claims</h3>';
+  if (claimsData.ok && claimsData.claims?.length > 0) {
+    claimsData.claims.forEach(c => {
+      html += `
+        <div class="claim-row">
+          <div class="claim-info">
+            <div class="claim-name">${esc(c.locationName)}</div>
+            <div class="claim-meta">${c.type === 'create' ? 'NEW' : 'CLAIM'} &middot; by ${esc(c.userName)} &middot; ${c.tier || 'basic'}</div>
+          </div>
+          <button class="btn-approve" data-claim-approve="${esc(c.id)}">Approve</button>
+          <button class="btn-reject" data-claim-reject="${esc(c.id)}">Reject</button>
+        </div>`;
+    });
+  } else {
+    html += '<p style="color:#6b7280;font-size:13px;">No pending claims.</p>';
+  }
+  html += '</div>';
+
+  // ── Team Members ──
+  html += '<div class="admin-card"><h3>Team Members</h3>';
+  if (usersData.ok && usersData.users?.length > 0) {
+    usersData.users.forEach(u => {
+      html += `
+        <div class="user-row">
+          <div class="user-avatar" style="background:${u.role === 'admin' ? '#00b8a9' : '#6b7280'};">${esc((u.displayName || u.username).charAt(0).toUpperCase())}</div>
+          <div class="user-info">
+            <div class="user-name">${esc(u.displayName || u.username)}</div>
+            <div class="user-meta">@${esc(u.username)} &middot; ${u.role}</div>
+          </div>
+          ${u.id !== 'admin' ? `<button class="btn-sm danger" data-remove-user="${esc(u.id)}" data-user-name="${esc(u.displayName || u.username)}">Remove</button>` : '<span style="font-size:11px;color:#00b8a9;font-weight:600;">Owner</span>'}
+        </div>`;
+    });
+  }
+  html += `
+    <h4 style="font-size:13px;margin-top:16px;margin-bottom:8px;">Add User</h4>
+    <div class="add-user-form">
+      <input type="text" id="new-username" placeholder="Username">
+      <input type="text" id="new-password" placeholder="Password (min 6)">
+      <input type="text" id="new-display" placeholder="Display Name">
+      <select id="new-role"><option value="editor">Editor</option><option value="admin">Admin</option></select>
+    </div>
+    <button class="btn-primary-sm" id="btn-add-user" style="margin-top:8px;">Add User</button>
+  </div>`;
+
+  // ── Change Password ──
+  html += `
+    <div class="admin-card">
+      <h3>Change My Password</h3>
+      <div class="change-pw-form">
+        <input type="password" id="old-pw" placeholder="Current password">
+        <input type="password" id="new-pw" placeholder="New password (min 6)">
+      </div>
+      <button class="btn-primary-sm" id="btn-change-pw" style="margin-top:8px;">Update Password</button>
+    </div>`;
+
+  html += '</div>';
+  panel.innerHTML = html;
+
+  // ── Bind approval buttons ──
+  panel.querySelectorAll('[data-approval-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.approvalId;
+      try {
+        const res = await fetch(`/api/admin/approve/${encodeURIComponent(id)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        if (data.ok) { showToast('Approved!'); renderAdmin(panel); } else alert(data.error);
+      } catch (e) { alert(e.message); }
+    });
+  });
+  panel.querySelectorAll('[data-approval-rej]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      reviewingType = 'approval';
+      reviewingId = btn.dataset.approvalRej;
+      document.getElementById('review-modal-title').textContent = 'Reject Approval';
+      document.getElementById('review-modal-body').innerHTML = '<p style="font-size:13px;">Provide a reason for rejection (optional).</p>';
+      document.getElementById('review-modal').classList.add('visible');
+    });
+  });
+
+  // ── Bind claim buttons ──
+  panel.querySelectorAll('[data-claim-approve]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.claimApprove;
+      try {
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        if (data.ok) { showToast('Claim approved!'); await loadData(); renderMapMarkers(); renderAdmin(panel); } else alert(data.error);
+      } catch (e) { alert(e.message); }
+    });
+  });
+  panel.querySelectorAll('[data-claim-reject]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      reviewingType = 'claim';
+      reviewingId = btn.dataset.claimReject;
+      document.getElementById('review-modal-title').textContent = 'Reject Claim';
+      document.getElementById('review-modal-body').innerHTML = '<p style="font-size:13px;">Provide a reason for rejection (optional).</p>';
+      document.getElementById('review-modal').classList.add('visible');
+    });
+  });
+
+  // ── Bind remove user ──
+  panel.querySelectorAll('[data-remove-user]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.removeUser;
+      const name = btn.dataset.userName;
+      if (!confirm(`Remove "${name}" from the team?`)) return;
+      try {
+        const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (res.ok) { showToast('User removed.'); renderAdmin(panel); }
+        else { const d = await res.json(); alert(d.error || 'Failed'); }
+      } catch (e) { alert(e.message); }
+    });
+  });
+
+  // ── Add user ──
+  document.getElementById('btn-add-user')?.addEventListener('click', async () => {
+    const username = document.getElementById('new-username')?.value.trim();
+    const password = document.getElementById('new-password')?.value.trim();
+    const displayName = document.getElementById('new-display')?.value.trim() || username;
+    const role = document.getElementById('new-role')?.value || 'editor';
+    if (!username || !password) { alert('Username and password required.'); return; }
+    if (password.length < 6) { alert('Min 6 characters.'); return; }
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, displayName, role })
+      });
+      const data = await res.json();
+      if (data.ok) { showToast(`${displayName} added!`); renderAdmin(panel); }
+      else alert(data.error);
+    } catch (e) { alert(e.message); }
+  });
+
+  // ── Change password ──
+  document.getElementById('btn-change-pw')?.addEventListener('click', async () => {
+    const oldPw = document.getElementById('old-pw')?.value;
+    const newPw = document.getElementById('new-pw')?.value;
+    if (!oldPw || !newPw) { alert('Both fields required.'); return; }
+    if (newPw.length < 6) { alert('Min 6 characters.'); return; }
+    try {
+      const res = await fetch('/api/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword: oldPw, newPassword: newPw })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('old-pw').value = '';
+        document.getElementById('new-pw').value = '';
+        showToast('Password changed!');
+      } else alert(data.error);
+    } catch (e) { alert(e.message); }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// REVIEW MODAL
+// ══════════════════════════════════════════════════════════════════════════
+
+function closeReviewModal() {
+  document.getElementById('review-modal').classList.remove('visible');
+  document.getElementById('review-note').value = '';
+  reviewingType = '';
+  reviewingId = '';
+}
+
+async function reviewAction(action) {
+  const note = document.getElementById('review-note').value.trim();
+  let url;
+  if (reviewingType === 'approval') {
+    url = `/api/admin/${action}/${encodeURIComponent(reviewingId)}`;
+  } else {
+    url = `/api/admin/claims/${encodeURIComponent(reviewingId)}/${action}`;
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      closeReviewModal();
+      showToast(data.message || 'Done!');
+      await loadData();
+      renderMapMarkers();
+      renderAdmin(document.getElementById('center-panel'));
+    } else {
+      alert(data.error || 'Action failed');
+    }
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════════════════════
+
+function showToast(message) {
   const el = document.createElement('div');
+  el.className = 'toast';
   el.textContent = message;
-  el.style.cssText = `position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
-    background:${color};color:#fff;padding:0.65rem 1.25rem;border-radius:12px;
-    font-size:0.9rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);
-    animation:fadeIn 0.2s ease;font-family:inherit;`;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2800);
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-function resolveCategoryId(catId, catName, fallback) {
-  const id = String(catId || '').trim();
-  if (mapData.categories.some(c => c.id === id)) return id;
-  const needle = String(catName || fallback || '').trim().toLowerCase();
-  if (needle) {
-    const byName = mapData.categories.find(c => c.name.toLowerCase() === needle);
-    if (byName) return byName.id;
-  }
-  return mapData.categories[0]?.id || '';
-}
-
-function getCategory(id, fallbackName = '') {
-  return mapData.categories.find(c => c.id === id) || { id, name: fallbackName || 'Uncategorized', color: '#707070' };
-}
-
-function clearDropPin() {
-  if (!dropPin) return;
-  dropPin.remove();
-  dropPin = null;
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
 }
 
 function normalizeColor(input) {
@@ -748,6 +1227,17 @@ function normalizeColor(input) {
 function normalizeBoolean(value) {
   const v = String(value || '').trim().toLowerCase();
   return v === 'true' || v === '1' || v === 'yes';
+}
+
+function resolveCategoryId(catId, catName, fallback) {
+  const id = String(catId || '').trim();
+  if (mapData.categories.some(c => c.id === id)) return id;
+  const needle = String(catName || fallback || '').trim().toLowerCase();
+  if (needle) {
+    const byName = mapData.categories.find(c => c.name.toLowerCase() === needle);
+    if (byName) return byName.id;
+  }
+  return mapData.categories[0]?.id || '';
 }
 
 function parseCSV(text) {
@@ -769,274 +1259,5 @@ function parseCSV(text) {
   return rows;
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-// ── User Management ──────────────────────────────────────────────────────────
-async function loadUsers() {
-  try {
-    const res = await fetch('/api/users');
-    if (!res.ok) return; // not admin
-    const { users } = await res.json();
-    document.getElementById('user-section').style.display = '';
-    renderUserList(users);
-  } catch {}
-}
-
-function renderUserList(users) {
-  const list = document.getElementById('user-list');
-  if (!list) return;
-  list.innerHTML = users.map(u => `
-    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid #edf0f3;">
-      <span style="width:34px;height:34px;border-radius:50%;background:${u.role === 'admin' ? '#8f5a2f' : '#6b7280'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;flex-shrink:0;">
-        ${escapeHtml(u.displayName.charAt(0).toUpperCase())}
-      </span>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:0.88rem;">${escapeHtml(u.displayName)}</div>
-        <div style="font-size:0.75rem;color:#6a7784;">@${escapeHtml(u.username)} · ${u.role}</div>
-      </div>
-      ${u.id !== 'admin' ? `<button class="btn btn-sm btn-danger" onclick="removeUser('${escapeHtml(u.id)}','${escapeHtml(u.displayName)}')">Remove</button>` : '<span style="font-size:0.72rem;color:#8f5a2f;font-weight:600;">Owner</span>'}
-    </div>
-  `).join('');
-}
-
-async function removeUser(id, name) {
-  if (!confirm(`Remove "${name}" from the team?`)) return;
-  const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  if (res.ok) { loadUsers(); showToast('User removed.'); }
-  else { const d = await res.json(); alert(d.error || 'Failed'); }
-}
-
-function bindUserUI() {
-  // Add user button
-  document.getElementById('btn-add-user')?.addEventListener('click', async () => {
-    const username = document.getElementById('new-user-name')?.value.trim();
-    const password = document.getElementById('new-user-pass')?.value.trim();
-    const displayName = document.getElementById('new-user-display')?.value.trim() || username;
-    const role = document.getElementById('new-user-role')?.value || 'editor';
-    if (!username || !password) { alert('Username and password required.'); return; }
-    if (password.length < 6) { alert('Password must be at least 6 characters.'); return; }
-    try {
-      const res = await fetch('/api/users', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, displayName, role })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        document.getElementById('new-user-name').value = '';
-        document.getElementById('new-user-pass').value = '';
-        document.getElementById('new-user-display').value = '';
-        loadUsers();
-        showToast(`${displayName} added to the team!`);
-      } else {
-        alert(data.error || 'Failed to add user.');
-      }
-    } catch (e) { alert('Error: ' + e.message); }
-  });
-
-  // Change password button
-  document.getElementById('btn-change-password')?.addEventListener('click', async () => {
-    const oldPass = document.getElementById('current-password')?.value;
-    const newPass = document.getElementById('new-password')?.value;
-    if (!oldPass || !newPass) { alert('Both fields required.'); return; }
-    if (newPass.length < 6) { alert('New password must be at least 6 characters.'); return; }
-    try {
-      const res = await fetch('/api/change-password', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
-      });
-      const data = await res.json();
-      if (data.ok) {
-        document.getElementById('current-password').value = '';
-        document.getElementById('new-password').value = '';
-        showToast('Password changed successfully!');
-      } else {
-        alert(data.error || 'Failed to change password.');
-      }
-    } catch (e) { alert('Error: ' + e.message); }
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// APPROVALS QUEUE
-// ══════════════════════════════════════════════════════════════════════════
-
-let reviewingType = ''; // 'approval' or 'claim'
-let reviewingId = '';
-
-async function loadApprovals() {
-  try {
-    const res = await fetch('/api/admin/pending');
-    const data = await res.json();
-    if (!data.ok) return;
-
-    const badge = document.getElementById('approvals-badge');
-    const list = document.getElementById('approvals-list');
-
-    if (data.pending.length === 0) {
-      badge.style.display = 'none';
-      list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem;text-align:center;padding:1rem;">No pending approvals ✓</p>';
-      return;
-    }
-
-    badge.textContent = data.pending.length;
-    badge.style.display = '';
-
-    list.innerHTML = data.pending.map(p => `
-      <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border:1px solid #e2e5ea;border-radius:8px;margin-bottom:0.5rem;background:#fff;">
-        <div style="flex:1;">
-          <strong>${esc(p.name)}</strong>
-          <span style="display:inline-block;padding:0.1rem 0.4rem;border-radius:12px;font-size:0.7rem;font-weight:700;color:#fff;background:${tierColor(p.listingTier)};margin-left:0.5rem;">${p.listingTier || 'unclaimed'}</span>
-          <div style="font-size:0.8rem;color:#6b7280;margin-top:0.2rem;">by ${esc(p.ownerName)}</div>
-        </div>
-        <button class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.8rem;" onclick="openApprovalReview('${p.id}')">Review</button>
-      </div>
-    `).join('');
-  } catch (e) { console.error('loadApprovals:', e); }
-}
-
-function openApprovalReview(locationId) {
-  fetch('/api/admin/pending').then(r => r.json()).then(data => {
-    const p = data.pending.find(x => x.id === locationId);
-    if (!p) return alert('Not found');
-    reviewingType = 'approval';
-    reviewingId = locationId;
-
-    const fields = ['name', 'description', 'shortDescription', 'address', 'categoryId', 'images', 'videoUrl', 'website', 'socialLinks'];
-    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">';
-    html += '<div><h4 style="font-size:0.8rem;text-transform:uppercase;color:#6b7280;margin-bottom:0.5rem;">Current (Live)</h4>';
-    fields.forEach(f => {
-      const val = p.currentData[f];
-      const disp = typeof val === 'object' ? JSON.stringify(val) : (val || '—');
-      const changed = p.pendingChanges[f] !== undefined;
-      html += `<div style="padding:0.4rem;border-radius:6px;font-size:0.82rem;margin-bottom:0.4rem;${changed ? 'background:#fef9c3;' : ''}"><span style="font-weight:600;font-size:0.72rem;color:#6b7280;">${f}</span><br>${esc(String(disp))}</div>`;
-    });
-    html += '</div><div><h4 style="font-size:0.8rem;text-transform:uppercase;color:#6b7280;margin-bottom:0.5rem;">Proposed Changes</h4>';
-    fields.forEach(f => {
-      if (p.pendingChanges[f] !== undefined) {
-        const val = p.pendingChanges[f];
-        const disp = typeof val === 'object' ? JSON.stringify(val) : (val || '—');
-        html += `<div style="padding:0.4rem;border-radius:6px;font-size:0.82rem;margin-bottom:0.4rem;background:#dcfce7;"><span style="font-weight:600;font-size:0.72rem;color:#6b7280;">${f}</span><br>${esc(String(disp))}</div>`;
-      }
-    });
-    html += '</div></div>';
-
-    document.getElementById('review-modal-title').textContent = 'Review: ' + esc(p.name);
-    document.getElementById('review-modal-body').innerHTML = html;
-    document.getElementById('review-modal').classList.add('visible');
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// CLAIMS QUEUE
-// ══════════════════════════════════════════════════════════════════════════
-
-async function loadClaims() {
-  try {
-    const res = await fetch('/api/admin/claims');
-    const data = await res.json();
-    if (!data.ok) return;
-
-    const badge = document.getElementById('claims-badge');
-    const list = document.getElementById('claims-list');
-
-    if (data.claims.length === 0) {
-      badge.style.display = 'none';
-      list.innerHTML = '<p style="color:#6b7280;font-size:0.88rem;text-align:center;padding:1rem;">No pending claims ✓</p>';
-      return;
-    }
-
-    badge.textContent = data.claims.length;
-    badge.style.display = '';
-
-    list.innerHTML = data.claims.map(c => `
-      <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;border:1px solid #e2e5ea;border-radius:8px;margin-bottom:0.5rem;background:#fff;">
-        <div style="flex:1;">
-          <strong>${esc(c.locationName)}</strong>
-          <span style="display:inline-block;padding:0.1rem 0.4rem;border-radius:12px;font-size:0.7rem;font-weight:700;color:#fff;background:${c.type === 'create' ? '#3b82f6' : '#8b5cf6'};margin-left:0.5rem;">${c.type === 'create' ? 'NEW' : 'CLAIM'}</span>
-          <div style="font-size:0.8rem;color:#6b7280;margin-top:0.2rem;">by ${esc(c.userName)} (${esc(c.userEmail)}) · ${c.tier || 'basic'} · ${new Date(c.submittedAt).toLocaleDateString()}</div>
-          <div style="font-size:0.82rem;margin-top:0.3rem;padding:0.4rem;background:#f9fafb;border-radius:6px;">"${esc(c.businessVerification)}"</div>
-        </div>
-        <button class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.8rem;" onclick="openClaimReview('${c.id}')">Review</button>
-      </div>
-    `).join('');
-  } catch (e) { console.error('loadClaims:', e); }
-}
-
-function openClaimReview(claimId) {
-  fetch('/api/admin/claims').then(r => r.json()).then(data => {
-    const c = data.claims.find(x => x.id === claimId);
-    if (!c) return alert('Not found');
-    reviewingType = 'claim';
-    reviewingId = claimId;
-
-    let html = '<div style="font-size:0.88rem;">';
-    html += `<p><strong>Type:</strong> ${c.type === 'create' ? 'New Location' : 'Claim Existing'}</p>`;
-    html += `<p><strong>Location:</strong> ${esc(c.locationName)}</p>`;
-    html += `<p><strong>Claimed by:</strong> ${esc(c.userName)} (${esc(c.userEmail)})</p>`;
-    html += `<p><strong>Tier:</strong> ${c.tier || 'basic'} · ${c.billingPeriod || 'monthly'}</p>`;
-    html += `<p><strong>Submitted:</strong> ${new Date(c.submittedAt).toLocaleString()}</p>`;
-    html += `<p style="margin-top:0.75rem;"><strong>Verification:</strong></p>`;
-    html += `<div style="padding:0.75rem;background:#f9fafb;border-radius:8px;border:1px solid #e2e5ea;">${esc(c.businessVerification)}</div>`;
-    if (c.newLocationData) {
-      html += '<p style="margin-top:0.75rem;"><strong>New Location Data:</strong></p>';
-      html += `<div style="padding:0.75rem;background:#f0fdf4;border-radius:8px;border:1px solid #86efac;font-size:0.82rem;">`;
-      html += `Name: ${esc(c.newLocationData.name || '')}<br>`;
-      html += `Address: ${esc(c.newLocationData.address || '')}<br>`;
-      html += `Description: ${esc(c.newLocationData.description || '')}`;
-      html += '</div>';
-    }
-    html += '</div>';
-
-    document.getElementById('review-modal-title').textContent = c.type === 'create' ? 'Review New Location' : 'Review Claim';
-    document.getElementById('review-modal-body').innerHTML = html;
-    document.getElementById('review-modal').classList.add('visible');
-  });
-}
-
-function closeReviewModal() {
-  document.getElementById('review-modal').classList.remove('visible');
-  reviewingType = '';
-  reviewingId = '';
-}
-
-async function reviewAction(action) {
-  const note = document.getElementById('review-note').value.trim();
-  let url;
-  if (reviewingType === 'approval') {
-    url = `/api/admin/${action}/${reviewingId}`;
-  } else {
-    url = `/api/admin/claims/${reviewingId}/${action}`;
-  }
-
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      closeReviewModal();
-      if (typeof showToast === 'function') showToast(data.message || 'Done!');
-      loadApprovals();
-      loadClaims();
-    } else {
-      alert(data.error || 'Action failed');
-    }
-  } catch (e) { alert('Error: ' + e.message); }
-}
-
-function tierColor(tier) {
-  const colors = { basic: '#3b82f6', standout: '#8b5cf6', showoff: '#f59e0b', unclaimed: '#9ca3af' };
-  return colors[tier] || colors.unclaimed;
-}
-
-function esc(s) {
-  const d = document.createElement('div');
-  d.textContent = s || '';
-  return d.innerHTML;
-}
-
+// ── Boot ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);
