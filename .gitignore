@@ -4,4 +4,9 @@ uploads/
 *.log
 .DS_Store
 data/users.json
+data/*.db
+data/*.db-shm
+data/*.db-wal
 .tmp/
+tmp-*.png
+shots-*.png

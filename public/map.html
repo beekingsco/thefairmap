@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheFairMap</title>
+  <meta name="description" content="Interactive vendor map">
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2f3d4d">
+  <script>
+    // Tenant-aware: pass tenant query param to API calls
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const tenant = params.get('tenant');
+      window.__TENANT_PARAM = tenant ? '?tenant=' + encodeURIComponent(tenant) : '';
+      window.__TENANT_SLUG = tenant || null;
+    })();
+  </script>
+</head>
+<body>
+  <!-- Style controls as direct child of body for position:fixed to work -->
+  <div class="style-controls" role="group" aria-label="Map style controls">
+    <button id="style-venue-btn" class="map-control-btn map-style-btn is-active" type="button" aria-pressed="true">
+      <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20V6.5Zm8 10.1 2 .8V7.4l-2-.8v10Zm-6 .8 2-.8V6.6l-2 .8v10Zm14-.8v-10l-2 .8v10l2-.8Z"/></svg>
+      <span>Venue Map</span>
+    </button>
+    <button id="style-satellite-btn" class="map-control-btn map-style-btn" type="button" aria-pressed="false">
+      <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 4.7-1.4-1.4-4.2 4.2-1.1-1.1-3.8 3.8 1.1 1.1-2.4 2.4-1.6-.5-3.1 3.1 1.4 1.4 3.1-3.1-.5-1.6 2.4-2.4 1.1 1.1 3.8-3.8-1.1-1.1 4.2-4.2ZM7 18h2v2H7v-2Zm8-14h2v2h-2V4Zm3 3h2v2h-2V7Z"/></svg>
+      <span>Satellite</span>
+    </button>
+  </div>
+
+  <header id="mobile-topbar" aria-label="Mobile search">
+    <div class="mobile-search-wrap">
+      <label for="mobile-search-input" class="sr-only">Search</label>
+      <input id="mobile-search-input" type="search" placeholder="Keyword" autocomplete="off">
+      <span class="mobile-search-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </span>
+    </div>
+  </header>
+
+  <div id="app" class="sidebar-collapsed">
+    <aside id="sidebar" aria-label="Overview">
+      <button id="mobile-sheet-collapse" type="button" aria-label="Collapse filters" hidden>v</button>
+      <div class="sheet-handle-wrap" data-sheet-handle="sidebar" aria-hidden="true">
+        <span class="sheet-handle"></span>
+      </div>
+      <div class="sidebar-search-wrap">
+        <label for="search-input" class="sr-only">Search</label>
+        <input id="search-input" type="search" placeholder="Search" autocomplete="off">
+      </div>
+      <button id="sidebar-filters-btn" class="sidebar-filters-btn" type="button">
+        <span class="filters-glyph" aria-hidden="true">&#9776;</span>
+        <span>Filters</span>
+        <span id="filters-count">(0)</span>
+      </button>
+
+      <button id="overview-toggle" type="button" class="overview-toggle" aria-expanded="true">Collapse Overview</button>
+
+      <div id="overview-list" class="overview-list" aria-live="polite"></div>
+      <button id="mobile-peek-bar" type="button" aria-label="Open filters">
+        <span class="mobile-peek-caret" aria-hidden="true">^</span>
+      </button>
+    </aside>
+
+    <main id="map-shell">
+      <div id="map-brand-overlay" class="map-brand-overlay" aria-hidden="true">
+        <img id="map-brand-img" src="/data/icons/first-monday-finder-logo.png" alt="Map" class="map-brand-img">
+      </div>
+      <div id="map" role="application" aria-label="Map"></div>
+      <div id="map-controls">
+        <button id="sidebar-toggle" class="map-control-btn chevron-btn" type="button" aria-label="Open filters" aria-expanded="false">
+          <span class="map-btn-glyph">&gt;</span>
+        </button>
+        <button id="mobile-categories-btn" class="map-control-btn mobile-categories-btn" type="button" aria-expanded="false" aria-label="Open filters">
+          <span class="filters-glyph" aria-hidden="true">&#9776;</span>
+          <span id="mobile-filters-label">Filters (0)</span>
+        </button>
+      </div>
+    </main>
+
+    <section id="detail-panel" aria-label="Location details" hidden>
+      <div class="sheet-handle-wrap" data-sheet-handle="detail" aria-hidden="true">
+        <span class="sheet-handle"></span>
+      </div>
+      <button id="detail-close" class="detail-close" type="button" aria-label="Close">&times;</button>
+      <div id="detail-content" class="detail-content"></div>
+    </section>
+
+    <div id="detail-scrim" hidden></div>
+    <div id="mobile-scrim" hidden></div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="/config.js"></script>
+  <script>
+    // Tenant-aware: update logo from tenant settings
+    (async function setTenantBranding() {
+      try {
+        const res = await fetch('/api/tenant-info' + window.__TENANT_PARAM);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.tenant) {
+            document.title = data.tenant.name + ' — TheFairMap';
+            if (data.tenant.logoUrl) {
+              document.getElementById('map-brand-img').src = data.tenant.logoUrl;
+            }
+          }
+        }
+      } catch(e) {}
+    })();
+  </script>
+  <script src="/map.js"></script>
+</body>
+</html>

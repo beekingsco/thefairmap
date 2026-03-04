@@ -1,6 +1,20 @@
 'use strict';
 
 // ══════════════════════════════════════════════════════════════════════════
+// TENANT AWARENESS
+// ══════════════════════════════════════════════════════════════════════════
+
+const _tp = (() => {
+  const p = new URLSearchParams(window.location.search);
+  const t = p.get('tenant');
+  return t ? '?tenant=' + encodeURIComponent(t) : '';
+})();
+function _api(path) {
+  if (!_tp) return path;
+  return path + (path.includes('?') ? '&' : '?') + _tp.slice(1);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -32,11 +46,11 @@ let reviewingId = '';
 
 async function checkAuth() {
   try {
-    const res = await fetch('/api/me');
-    if (!res.ok) { window.location.href = '/login'; return false; }
+    const res = await fetch(_api('/api/me'));
+    if (!res.ok) { window.location.href = '/login' + _tp; return false; }
     const data = await res.json();
     currentUser = data.user;
-    document.getElementById('topbar-user').textContent = currentUser.username;
+    document.getElementById('topbar-user').textContent = currentUser.username || currentUser.name || currentUser.email || 'Admin';
     document.getElementById('auth-wall').style.display = 'none';
     document.getElementById('app-layout').style.display = 'flex';
     return true;
@@ -56,10 +70,13 @@ async function init() {
   initMap();
   bindGlobalUI();
   renderSection(currentSection);
+  // Tenant-aware view map link
+  const vml = document.getElementById('view-map-link');
+  if (vml && _tp) vml.href = '/' + _tp;
 }
 
 async function loadData() {
-  const res = await fetch('/api/locations');
+  const res = await fetch(_api('/api/locations'));
   mapData = await res.json();
   mapData.categories = (mapData.categories || []).map(c => ({ ...c, color: normalizeColor(c.color) }));
   mapData.locations = (mapData.locations || []).map((loc, i) => {
@@ -182,7 +199,7 @@ function clearDropPin() {
 function bindGlobalUI() {
   // Sign out
   document.getElementById('btn-signout').addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
+    await fetch(_api('/api/logout'), { method: 'POST' });
     window.location.href = '/login';
   });
 
@@ -381,7 +398,7 @@ async function bulkDeleteSelected() {
   if (!confirm(`Delete ${ids.length} location(s)? This cannot be undone.`)) return;
 
   try {
-    const res = await fetch('/api/locations/bulk-delete', {
+    const res = await fetch(_api('/api/locations/bulk-delete'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids })
@@ -584,7 +601,7 @@ function renderEditor(panel) {
     document.getElementById('btn-editor-delete').addEventListener('click', async () => {
       if (!confirm(`Delete "${loc.name}"?`)) return;
       try {
-        const res = await fetch(`/api/locations/${encodeURIComponent(editingId)}`, { method: 'DELETE' });
+        const res = await fetch(_api(`/api/locations/${encodeURIComponent(editingId)}`), { method: 'DELETE' });
         if (!res.ok) throw new Error('Server error');
         mapData.locations = mapData.locations.filter(l => l.id !== editingId);
         editingId = null;
@@ -601,7 +618,7 @@ async function uploadImage(file) {
   const form = new FormData();
   form.append('image', file);
   try {
-    const res = await fetch('/api/upload-image', { method: 'POST', body: form });
+    const res = await fetch(_api('/api/upload-image'), { method: 'POST', body: form });
     const data = await res.json();
     if (data.ok) {
       document.getElementById('ed-image-url').value = data.url;
@@ -649,14 +666,14 @@ async function saveLocation() {
   try {
     let res;
     if (editingId) {
-      res = await fetch(`/api/locations/${encodeURIComponent(editingId)}`, {
+      res = await fetch(_api(`/api/locations/${encodeURIComponent(editingId)}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
     } else {
       payload.id = `loc-${Date.now()}`;
-      res = await fetch('/api/locations', {
+      res = await fetch(_api('/api/locations'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -752,7 +769,7 @@ function renderCategories(panel) {
       const color = panel.querySelector(`[data-edit-color="${id}"]`)?.value;
       if (!name) return;
       try {
-        const res = await fetch(`/api/categories/${encodeURIComponent(id)}`, {
+        const res = await fetch(_api(`/api/categories/${encodeURIComponent(id)}`), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, color })
@@ -774,7 +791,7 @@ function renderCategories(panel) {
       const cat = mapData.categories.find(c => c.id === id);
       if (!confirm(`Delete category "${cat?.name}"?`)) return;
       try {
-        const res = await fetch(`/api/categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const res = await fetch(_api(`/api/categories/${encodeURIComponent(id)}`), { method: 'DELETE' });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Failed');
         mapData.categories = mapData.categories.filter(c => c.id !== id);
@@ -790,7 +807,7 @@ function renderCategories(panel) {
     const color = document.getElementById('new-cat-color')?.value || '#7a7a7a';
     if (!name) { alert('Enter a name.'); return; }
     try {
-      const res = await fetch('/api/categories', {
+      const res = await fetch(_api('/api/categories'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, color })
@@ -881,7 +898,7 @@ function importJSONFile() {
     try {
       const parsed = JSON.parse(e.target.result);
       if (!parsed.locations || !Array.isArray(parsed.locations)) throw new Error('JSON must include a locations array.');
-      const res = await fetch('/api/import-locations', {
+      const res = await fetch(_api('/api/import-locations'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ locations: parsed.locations, categories: parsed.categories, merge })
@@ -931,7 +948,7 @@ function importCSV() {
     });
   }
 
-  fetch('/api/import-locations', {
+  fetch(_api('/api/import-locations'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ locations: newLocs, merge: true })
@@ -980,9 +997,9 @@ async function renderAdmin(panel) {
 
   // Load approvals, claims, users in parallel
   const [approvalsData, claimsData, usersData] = await Promise.all([
-    fetch('/api/admin/pending').then(r => r.json()).catch(() => ({ ok: false })),
-    fetch('/api/admin/claims').then(r => r.json()).catch(() => ({ ok: false })),
-    fetch('/api/users').then(r => r.json()).catch(() => ({ ok: false }))
+    fetch(_api('/api/admin/pending')).then(r => r.json()).catch(() => ({ ok: false })),
+    fetch(_api('/api/admin/claims')).then(r => r.json()).catch(() => ({ ok: false })),
+    fetch(_api('/api/users')).then(r => r.json()).catch(() => ({ ok: false }))
   ]);
 
   let html = '<div class="panel-content">';
@@ -1070,7 +1087,7 @@ async function renderAdmin(panel) {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.approvalId;
       try {
-        const res = await fetch(`/api/admin/approve/${encodeURIComponent(id)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const res = await fetch(_api(`/api/admin/pending/${encodeURIComponent(id)}/approve`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
         if (data.ok) { showToast('Approved!'); renderAdmin(panel); } else alert(data.error);
       } catch (e) { alert(e.message); }
@@ -1091,7 +1108,7 @@ async function renderAdmin(panel) {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.claimApprove;
       try {
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const res = await fetch(_api(`/api/admin/claims/${encodeURIComponent(id)}/approve`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
         if (data.ok) { showToast('Claim approved!'); await loadData(); renderMapMarkers(); renderAdmin(panel); } else alert(data.error);
       } catch (e) { alert(e.message); }
@@ -1114,7 +1131,7 @@ async function renderAdmin(panel) {
       const name = btn.dataset.userName;
       if (!confirm(`Remove "${name}" from the team?`)) return;
       try {
-        const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const res = await fetch(_api(`/api/users/${encodeURIComponent(id)}`), { method: 'DELETE' });
         if (res.ok) { showToast('User removed.'); renderAdmin(panel); }
         else { const d = await res.json(); alert(d.error || 'Failed'); }
       } catch (e) { alert(e.message); }
@@ -1130,7 +1147,7 @@ async function renderAdmin(panel) {
     if (!username || !password) { alert('Username and password required.'); return; }
     if (password.length < 6) { alert('Min 6 characters.'); return; }
     try {
-      const res = await fetch('/api/users', {
+      const res = await fetch(_api('/api/users'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password, displayName, role })
       });
@@ -1147,7 +1164,7 @@ async function renderAdmin(panel) {
     if (!oldPw || !newPw) { alert('Both fields required.'); return; }
     if (newPw.length < 6) { alert('Min 6 characters.'); return; }
     try {
-      const res = await fetch('/api/change-password', {
+      const res = await fetch(_api('/api/change-password'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oldPassword: oldPw, newPassword: newPw })
       });

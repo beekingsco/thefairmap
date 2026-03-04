@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Your Map — TheFairMap</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f0fdf4; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { background: #fff; border-radius: 16px; padding: 40px; width: 480px; max-width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+    .back { display: inline-flex; align-items: center; gap: 4px; color: #10b981; text-decoration: none; font-size: 13px; font-weight: 600; margin-bottom: 20px; }
+    .back:hover { text-decoration: underline; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+    .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+    input, textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; margin-bottom: 16px; font-family: inherit; }
+    input:focus, textarea:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+    textarea { resize: vertical; min-height: 80px; }
+    .slug-row { display: flex; align-items: center; gap: 0; margin-bottom: 16px; }
+    .slug-row input { border-radius: 8px 0 0 8px; margin-bottom: 0; }
+    .slug-suffix { padding: 10px 12px; border: 1px solid #d1d5db; border-left: 0; border-radius: 0 8px 8px 0; font-size: 13px; color: #6b7280; background: #f9fafb; white-space: nowrap; }
+    .btn { width: 100%; padding: 12px; background: #10b981; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn:hover { background: #059669; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .error { color: #ef4444; font-size: 13px; margin-bottom: 12px; display: none; }
+    .success { display: none; text-align: center; }
+    .success h2 { font-size: 20px; margin-bottom: 8px; color: #10b981; }
+    .success p { font-size: 14px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <a href="/" class="back">&larr; Back to home</a>
+
+    <div id="form-section">
+      <h1>Get your map</h1>
+      <p class="subtitle">Tell us about your fair, market, or trade show. We'll set you up within 24 hours.</p>
+      <div class="error" id="error"></div>
+      <form id="signup-form">
+        <label>Your Name</label>
+        <input type="text" id="name" required placeholder="Jane Smith">
+
+        <label>Email</label>
+        <input type="email" id="email" required placeholder="jane@yourfair.com">
+
+        <label>Organization / Event Name</label>
+        <input type="text" id="organization" required placeholder="Canton Fair Days">
+
+        <label>Desired Subdomain</label>
+        <div class="slug-row">
+          <input type="text" id="slug" required placeholder="cantonfair" pattern="[a-z0-9-]{3,30}">
+          <span class="slug-suffix">.thefairmap.com</span>
+        </div>
+
+        <label>Tell us about your event (optional)</label>
+        <textarea id="message" placeholder="How many vendors? Monthly or annual event? Anything else we should know?"></textarea>
+
+        <button type="submit" class="btn" id="submit-btn">Request My Map</button>
+      </form>
+    </div>
+
+    <div id="success-section" class="success">
+      <h2>Request received!</h2>
+      <p>We'll review your request and get back to you within 24 hours. Check your email for next steps.</p>
+      <br>
+      <a href="/" class="back">&larr; Back to home</a>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('signup-form');
+    const slugInput = document.getElementById('slug');
+
+    slugInput.addEventListener('input', () => {
+      slugInput.value = slugInput.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('error');
+      const btn = document.getElementById('submit-btn');
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            organization: document.getElementById('organization').value,
+            slug: slugInput.value,
+            message: document.getElementById('message').value
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById('form-section').style.display = 'none';
+          document.getElementById('success-section').style.display = 'block';
+        } else {
+          err.textContent = data.error;
+          err.style.display = 'block';
+        }
+      } catch (e) {
+        err.textContent = 'Network error. Please try again.';
+        err.style.display = 'block';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Request My Map';
+    });
+  </script>
+</body>
+</html>

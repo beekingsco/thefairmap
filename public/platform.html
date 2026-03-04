@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform Admin — TheFairMap</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; min-height: 100vh; color: #1e293b; }
+    .topbar { height: 56px; background: #0f172a; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+    .topbar-brand { font-weight: 800; font-size: 16px; }
+    .topbar-brand span { color: #10b981; }
+    .topbar-right { display: flex; gap: 12px; align-items: center; }
+    .topbar-right a { color: #94a3b8; font-size: 13px; text-decoration: none; font-weight: 600; }
+    .topbar-right a:hover { color: #fff; }
+    .btn-signout { background: rgba(255,255,255,0.08); border: none; color: #cbd5e1; padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 24px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #e2e8f0; }
+    .stat-val { font-size: 28px; font-weight: 800; color: #10b981; }
+    .stat-label { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-top: 2px; }
+    .card { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 16px; overflow: hidden; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
+    .card-header h2 { font-size: 16px; font-weight: 700; }
+    .card-body { padding: 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px 16px; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+    tr:last-child td { border-bottom: none; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .badge-green { background: #ecfdf5; color: #059669; }
+    .badge-yellow { background: #fef3c7; color: #d97706; }
+    .badge-red { background: #fef2f2; color: #ef4444; }
+    .btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; font-family: inherit; }
+    .btn-green { background: #10b981; color: #fff; }
+    .btn-green:hover { background: #059669; }
+    .btn-red { background: #ef4444; color: #fff; }
+    .btn-red:hover { background: #dc2626; }
+    .btn-outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+    .btn-outline:hover { background: #f9fafb; }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
+    .actions { display: flex; gap: 6px; }
+    .empty { padding: 24px; text-align: center; color: #94a3b8; font-size: 13px; }
+
+    /* Create tenant modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.visible { display: flex; }
+    .modal { background: #fff; border-radius: 16px; padding: 32px; width: 480px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+    .modal h3 { font-size: 18px; margin-bottom: 16px; }
+    .modal label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; margin-top: 12px; color: #374151; }
+    .modal input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; }
+    .modal input:focus { outline: none; border-color: #10b981; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-brand">&#x1f5fa;&#xfe0f; The<span>Fair</span>Map <span style="color:#64748b;font-weight:400;font-size:12px;margin-left:8px;">Platform Admin</span></div>
+    <div class="topbar-right">
+      <a href="/">Marketing Site</a>
+      <button class="btn-signout" id="btn-signout">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>Platform Dashboard</h1>
+
+    <div class="stat-grid" id="stats">
+      <div class="stat-card"><div class="stat-val" id="s-tenants">-</div><div class="stat-label">Total Maps</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-active">-</div><div class="stat-label">Active</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-vendors">-</div><div class="stat-label">Total Vendors</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-locations">-</div><div class="stat-label">Total Locations</div></div>
+      <div class="stat-card"><div class="stat-val" id="s-revenue">-</div><div class="stat-label">Monthly Revenue</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>All Maps</h2>
+        <button class="btn btn-green" id="btn-new-tenant">+ New Map</button>
+      </div>
+      <div class="card-body">
+        <table>
+          <thead>
+            <tr><th>Slug</th><th>Name</th><th>Owner</th><th>Locations</th><th>Vendors</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="tenant-rows">
+            <tr><td colspan="7" class="empty">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create tenant modal -->
+  <div class="modal-overlay" id="modal-create">
+    <div class="modal">
+      <h3>Create New Map</h3>
+      <label>Slug (subdomain)</label>
+      <input type="text" id="new-slug" placeholder="myfair">
+      <label>Map Name</label>
+      <input type="text" id="new-name" placeholder="My Fair Name">
+      <label>Owner Email</label>
+      <input type="email" id="new-email" placeholder="owner@fair.com">
+      <label>Owner Name</label>
+      <input type="text" id="new-owner-name" placeholder="Jane Smith">
+      <label>Owner Password</label>
+      <input type="password" id="new-password" placeholder="Min 6 characters">
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="document.getElementById('modal-create').classList.remove('visible')">Cancel</button>
+        <button class="btn btn-green" id="btn-create-tenant">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/platform/stats');
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById('s-tenants').textContent = data.stats.tenants;
+          document.getElementById('s-active').textContent = data.stats.active;
+          document.getElementById('s-vendors').textContent = data.stats.vendors;
+          document.getElementById('s-locations').textContent = data.stats.locations;
+          document.getElementById('s-revenue').textContent = '$' + data.stats.monthlyRevenue;
+        }
+      } catch (e) {}
+    }
+
+    async function loadTenants() {
+      try {
+        const res = await fetch('/api/platform/tenants');
+        if (res.status === 403) { window.location.href = '/platform/login'; return; }
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const tbody = document.getElementById('tenant-rows');
+        if (!data.tenants.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty">No maps yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.tenants.map(t => `
+          <tr>
+            <td><strong>${esc(t.slug)}</strong></td>
+            <td>${esc(t.name)}</td>
+            <td>${esc(t.ownerEmail)}</td>
+            <td>${t.locationCount}</td>
+            <td>${t.vendorCount}</td>
+            <td>
+              <span class="badge ${t.status === 'active' ? 'badge-green' : t.status === 'pending' ? 'badge-yellow' : 'badge-red'}">
+                ${t.status}
+              </span>
+            </td>
+            <td>
+              <div class="actions">
+                ${t.status === 'pending' ? `<button class="btn btn-green btn-sm" onclick="approveTenant('${t.id}')">Approve</button>` : ''}
+                ${t.status === 'active' ? `<button class="btn btn-red btn-sm" onclick="suspendTenant('${t.id}')">Suspend</button>` : ''}
+                <a class="btn btn-outline btn-sm" href="/?tenant=${t.slug}" target="_blank">View</a>
+                <a class="btn btn-outline btn-sm" href="/admin?tenant=${t.slug}" target="_blank">Admin</a>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function approveTenant(id) {
+      await fetch('/api/platform/tenants/' + id + '/approve', { method: 'POST' });
+      loadTenants();
+      loadStats();
+    }
+
+    async function suspendTenant(id) {
+      if (!confirm('Suspend this map?')) return;
+      await fetch('/api/platform/tenants/' + id + '/suspend', { method: 'POST' });
+      loadTenants();
+      loadStats();
+    }
+
+    document.getElementById('btn-new-tenant').addEventListener('click', () => {
+      document.getElementById('modal-create').classList.add('visible');
+    });
+
+    document.getElementById('btn-create-tenant').addEventListener('click', async () => {
+      const slug = document.getElementById('new-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+      const name = document.getElementById('new-name').value.trim();
+      const email = document.getElementById('new-email').value.trim();
+      const ownerName = document.getElementById('new-owner-name').value.trim();
+      const password = document.getElementById('new-password').value;
+
+      if (!slug || !name || !email) { alert('Slug, name, and email are required'); return; }
+
+      try {
+        const res = await fetch('/api/platform/tenants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug, name, ownerEmail: email, ownerName, ownerPassword: password })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById('modal-create').classList.remove('visible');
+          loadTenants();
+          loadStats();
+        } else {
+          alert(data.error);
+        }
+      } catch (e) {
+        alert('Network error');
+      }
+    });
+
+    document.getElementById('btn-signout').addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/platform/login';
+    });
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    loadStats();
+    loadTenants();
+  </script>
+</body>
+</html>

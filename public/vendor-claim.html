@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claim Your Listing — TheFairMap</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8f9fa; min-height: 100vh; }
+    .container { max-width: 600px; margin: 0 auto; padding: 24px; }
+    .back { display: inline-flex; align-items: center; gap: 4px; color: #10b981; text-decoration: none; font-size: 13px; font-weight: 600; margin-bottom: 20px; }
+    .back:hover { text-decoration: underline; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+    .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); margin-bottom: 16px; }
+    .step-indicator { display: flex; gap: 8px; margin-bottom: 24px; }
+    .step-dot { width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; color: #9ca3af; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+    .step-dot.active { background: #10b981; color: #fff; }
+    .step-dot.done { background: #059669; color: #fff; }
+    .step { display: none; }
+    .step.active { display: block; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; margin-bottom: 16px; font-family: inherit; }
+    input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+    .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; font-family: inherit; }
+    .btn-primary { background: #10b981; color: #fff; }
+    .btn-primary:hover { background: #059669; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+    .btn-outline:hover { background: #f9fafb; }
+    .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+    .error { color: #ef4444; font-size: 13px; margin-bottom: 12px; display: none; }
+
+    /* Location results */
+    .loc-results { max-height: 300px; overflow-y: auto; }
+    .loc-result { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    .loc-result:hover { border-color: #10b981; background: #f0fdf4; }
+    .loc-result.selected { border-color: #10b981; background: #ecfdf5; }
+    .loc-result.claimed { opacity: 0.5; pointer-events: none; }
+    .loc-result .dot { width: 10px; height: 10px; border-radius: 50%; background: #10b981; flex-shrink: 0; }
+    .loc-result .info { flex: 1; min-width: 0; }
+    .loc-result .name { font-weight: 600; font-size: 14px; }
+    .loc-result .desc { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .loc-result .badge { font-size: 11px; color: #ef4444; font-weight: 600; }
+
+    /* Plan cards */
+    .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .plan-card { padding: 16px; border: 2px solid #e5e7eb; border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.15s; }
+    .plan-card:hover { border-color: #10b981; }
+    .plan-card.selected { border-color: #10b981; background: #f0fdf4; }
+    .plan-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .plan-price { font-size: 22px; font-weight: 800; color: #10b981; }
+    .plan-price span { font-size: 12px; color: #9ca3af; font-weight: 400; }
+    .plan-features { font-size: 12px; color: #6b7280; margin-top: 8px; line-height: 1.6; }
+    .cycle-toggle { display: flex; gap: 8px; margin-bottom: 16px; justify-content: center; }
+    .cycle-btn { padding: 6px 16px; border: 1px solid #d1d5db; border-radius: 20px; font-size: 13px; cursor: pointer; background: #fff; font-family: inherit; font-weight: 600; }
+    .cycle-btn.active { background: #1a1f2e; color: #fff; border-color: #1a1f2e; }
+
+    .success-card { text-align: center; padding: 40px; }
+    .success-card h2 { font-size: 20px; color: #10b981; margin-bottom: 8px; }
+    .success-card p { font-size: 14px; color: #6b7280; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back">&larr; Back to map</a>
+    <h1>Claim Your Listing</h1>
+    <p class="subtitle">Find your booth, pick a plan, and manage your listing.</p>
+
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot-1">1</div>
+      <div class="step-dot" id="dot-2">2</div>
+      <div class="step-dot" id="dot-3">3</div>
+      <div class="step-dot" id="dot-4">4</div>
+    </div>
+
+    <div class="error" id="error"></div>
+
+    <!-- Step 1: Find your booth -->
+    <div class="card step active" id="step-1">
+      <h3 style="margin-bottom:12px;">Find your booth</h3>
+      <label>Search by business name</label>
+      <input type="text" id="search-q" placeholder="Type your business name...">
+      <div class="loc-results" id="loc-results"></div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-primary" id="btn-next-1" disabled>Next: Pick a Plan &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Pick a plan -->
+    <div class="card step" id="step-2">
+      <h3 style="margin-bottom:12px;">Choose your plan</h3>
+      <div class="cycle-toggle">
+        <button class="cycle-btn active" id="cycle-monthly" onclick="setCycle('monthly')">Monthly</button>
+        <button class="cycle-btn" id="cycle-annual" onclick="setCycle('annual')">Annual (save 17%)</button>
+      </div>
+      <div class="plan-grid" id="plan-grid"></div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-outline" onclick="goStep(1)">&larr; Back</button>
+        <button class="btn btn-primary" id="btn-next-2" disabled>Next: Create Account &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Create account -->
+    <div class="card step" id="step-3">
+      <h3 style="margin-bottom:12px;">Create your account</h3>
+      <label>Email</label>
+      <input type="email" id="claim-email" required placeholder="you@business.com">
+      <label>Business Name</label>
+      <input type="text" id="claim-name" placeholder="Your Business Name">
+      <label>Password</label>
+      <input type="password" id="claim-password" required placeholder="Min 6 characters">
+      <label>Confirm Password</label>
+      <input type="password" id="claim-password2" required placeholder="Confirm password">
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(2)">&larr; Back</button>
+        <button class="btn btn-primary" id="btn-claim">Claim My Listing &rarr;</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Success -->
+    <div class="card step" id="step-4">
+      <div class="success-card">
+        <h2>You're all set!</h2>
+        <p>Your listing has been claimed. <span id="checkout-msg"></span></p>
+        <a href="/vendors/dashboard" class="btn btn-primary" id="btn-go-dash">Go to Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const tp = params.get('tenant') ? '?tenant=' + encodeURIComponent(params.get('tenant')) : '';
+    const tpAmp = tp ? '&tenant=' + encodeURIComponent(params.get('tenant')) : '';
+
+    let selectedLocationId = null;
+    let selectedPlan = 'free';
+    let billingCycle = 'monthly';
+
+    const plans = {
+      monthly: [
+        { id: 'free', name: 'Free', price: '$0', period: '/mo', features: 'Name & description\nUp to 3 categories' },
+        { id: 'basic', name: 'Basic', price: '$4.99', period: '/mo', features: 'Priority support\nFuture features first' },
+        { id: 'showoff', name: 'Show Off', price: '$9.99', period: '/mo', features: 'Up to 10 photos\nCustom logo marker' },
+        { id: 'standout', name: 'Stand Out', price: '$19.99', period: '/mo', features: 'Video embed\nSocial links & website' }
+      ],
+      annual: [
+        { id: 'free', name: 'Free', price: '$0', period: '/yr', features: 'Name & description\nUp to 3 categories' },
+        { id: 'basic', name: 'Basic', price: '$49.99', period: '/yr', features: 'Priority support\nFuture features first' },
+        { id: 'showoff', name: 'Show Off', price: '$99', period: '/yr', features: 'Up to 10 photos\nCustom logo marker' },
+        { id: 'standout', name: 'Stand Out', price: '$199', period: '/yr', features: 'Video embed\nSocial links & website' }
+      ]
+    };
+
+    function renderPlans() {
+      const grid = document.getElementById('plan-grid');
+      grid.innerHTML = plans[billingCycle].map(p => `
+        <div class="plan-card ${p.id === selectedPlan ? 'selected' : ''}" onclick="selectPlan('${p.id}')">
+          <div class="plan-name">${p.name}</div>
+          <div class="plan-price">${p.price}<span>${p.period}</span></div>
+          <div class="plan-features">${p.features.replace(/\n/g, '<br>')}</div>
+        </div>
+      `).join('');
+      document.getElementById('btn-next-2').disabled = false;
+    }
+
+    function selectPlan(id) {
+      selectedPlan = id;
+      renderPlans();
+    }
+
+    function setCycle(c) {
+      billingCycle = c;
+      document.getElementById('cycle-monthly').classList.toggle('active', c === 'monthly');
+      document.getElementById('cycle-annual').classList.toggle('active', c === 'annual');
+      renderPlans();
+    }
+
+    function goStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step-' + n).classList.add('active');
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById('dot-' + i);
+        dot.classList.remove('active', 'done');
+        if (i < n) dot.classList.add('done');
+        if (i === n) dot.classList.add('active');
+      }
+    }
+
+    // Step 1: Search locations
+    let searchTimer = null;
+    document.getElementById('search-q').addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => searchLocations(e.target.value), 300);
+    });
+
+    async function searchLocations(q) {
+      if (q.length < 2) { document.getElementById('loc-results').innerHTML = ''; return; }
+      try {
+        const res = await fetch('/api/vendors/search-locations' + tp + (tp ? '&' : '?') + 'q=' + encodeURIComponent(q));
+        const data = await res.json();
+        const container = document.getElementById('loc-results');
+        if (!data.locations?.length) {
+          container.innerHTML = '<p style="padding:12px;color:#6b7280;font-size:13px;">No matching locations found.</p>';
+          return;
+        }
+        container.innerHTML = data.locations.map(l => `
+          <div class="loc-result ${l.claimed ? 'claimed' : ''} ${l.id === selectedLocationId ? 'selected' : ''}"
+               onclick="selectLocation('${l.id}')">
+            <div class="dot"></div>
+            <div class="info">
+              <div class="name">${esc(l.name)}</div>
+              <div class="desc">${esc(l.categoryName || '')}</div>
+              ${l.claimed ? '<div class="badge">Already claimed</div>' : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    function selectLocation(id) {
+      selectedLocationId = id;
+      document.querySelectorAll('.loc-result').forEach(el => el.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      document.getElementById('btn-next-1').disabled = false;
+    }
+
+    document.getElementById('btn-next-1').addEventListener('click', () => {
+      if (!selectedLocationId) return;
+      goStep(2);
+      renderPlans();
+    });
+
+    document.getElementById('btn-next-2').addEventListener('click', () => goStep(3));
+
+    // Step 3: Claim
+    document.getElementById('btn-claim').addEventListener('click', async () => {
+      const err = document.getElementById('error');
+      err.style.display = 'none';
+
+      const email = document.getElementById('claim-email').value.trim();
+      const name = document.getElementById('claim-name').value.trim();
+      const password = document.getElementById('claim-password').value;
+      const password2 = document.getElementById('claim-password2').value;
+
+      if (!email || !password) { showError('Email and password required'); return; }
+      if (password.length < 6) { showError('Password must be at least 6 characters'); return; }
+      if (password !== password2) { showError('Passwords do not match'); return; }
+
+      try {
+        const res = await fetch('/api/vendors/claim' + tp, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name, password, locationId: selectedLocationId, plan: selectedPlan, billingCycle })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          if (data.needsCheckout) {
+            document.getElementById('checkout-msg').textContent = 'Redirecting to payment...';
+            // Start Stripe checkout
+            const checkoutRes = await fetch('/api/vendors/create-checkout' + tp, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ plan: selectedPlan, billingCycle })
+            });
+            const checkoutData = await checkoutRes.json();
+            if (checkoutData.ok && checkoutData.url) {
+              window.location.href = checkoutData.url;
+              return;
+            }
+            document.getElementById('checkout-msg').textContent = 'Payment setup will be available in your dashboard.';
+          } else {
+            document.getElementById('checkout-msg').textContent = 'Your free listing is live!';
+          }
+          goStep(4);
+        } else {
+          showError(data.error);
+        }
+      } catch (e) {
+        showError('Network error. Please try again.');
+      }
+    });
+
+    function showError(msg) {
+      const err = document.getElementById('error');
+      err.textContent = msg;
+      err.style.display = 'block';
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

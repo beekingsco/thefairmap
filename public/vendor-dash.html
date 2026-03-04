@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Dashboard — TheFairMap</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8f9fa; min-height: 100vh; color: #1f2937; }
+    .topbar { height: 56px; background: #1a1f2e; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+    .topbar-brand { font-weight: 700; font-size: 15px; }
+    .topbar-brand span { color: #10b981; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-user { font-size: 13px; color: #9ca3af; }
+    .btn-signout { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .btn-signout:hover { background: rgba(255,255,255,0.2); }
+    .container { max-width: 800px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .sub { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #e5e7eb; margin-bottom: 16px; }
+    .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; margin-top: 12px; }
+    input, textarea, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; }
+    input:focus, textarea:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+    textarea { resize: vertical; min-height: 100px; }
+    .btn { padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; font-family: inherit; }
+    .btn-primary { background: #10b981; color: #fff; }
+    .btn-primary:hover { background: #059669; }
+    .btn-outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+    .btn-outline:hover { background: #f9fafb; }
+    .btn-row { display: flex; gap: 8px; margin-top: 16px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .badge-green { background: #ecfdf5; color: #059669; }
+    .badge-yellow { background: #fef3c7; color: #d97706; }
+    .badge-red { background: #fef2f2; color: #ef4444; }
+    .badge-gray { background: #f3f4f6; color: #6b7280; }
+    .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .stat { text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: #10b981; }
+    .stat-label { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+    .pending-list { margin-top: 12px; }
+    .pending-item { padding: 10px; border: 1px solid #fcd34d; background: #fffbeb; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+    .pending-item .note { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .upgrade-banner { padding: 16px; background: linear-gradient(135deg, #ecfdf5, #f0f9ff); border: 1px solid #10b981; border-radius: 12px; text-align: center; margin-bottom: 16px; }
+    .upgrade-banner h3 { font-size: 15px; margin-bottom: 4px; }
+    .upgrade-banner p { font-size: 13px; color: #6b7280; margin-bottom: 12px; }
+    .field-locked { position: relative; }
+    .field-locked::after { content: 'Upgrade to unlock'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(249,250,251,0.9); border-radius: 8px; font-size: 12px; color: #6b7280; font-weight: 600; }
+    .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 8px; }
+    .photo-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .msg { padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 16px; display: none; }
+    .msg-success { background: #ecfdf5; color: #059669; }
+    .msg-error { background: #fef2f2; color: #ef4444; }
+    .loading { text-align: center; padding: 40px; color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-brand">&#x1f5fa;&#xfe0f; The<span>Fair</span>Map</div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="user-name"></span>
+      <a href="/" style="color:#10b981;font-size:13px;font-weight:600;text-decoration:none;">View Map</a>
+      <button class="btn-signout" id="btn-signout">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="loading" id="loading">Loading your dashboard...</div>
+
+    <div id="dashboard" style="display:none;">
+      <h1 id="welcome-msg">Vendor Dashboard</h1>
+      <p class="sub" id="listing-name"></p>
+
+      <div class="msg msg-success" id="msg-success"></div>
+      <div class="msg msg-error" id="msg-error"></div>
+
+      <!-- Stats -->
+      <div class="stat-row">
+        <div class="stat"><div class="stat-val" id="stat-plan">-</div><div class="stat-label">Plan</div></div>
+        <div class="stat"><div class="stat-val" id="stat-status">-</div><div class="stat-label">Status</div></div>
+        <div class="stat"><div class="stat-val" id="stat-pending">0</div><div class="stat-label">Pending Edits</div></div>
+      </div>
+
+      <!-- Pending edits -->
+      <div class="pending-list" id="pending-edits"></div>
+
+      <!-- Upgrade banner -->
+      <div class="upgrade-banner" id="upgrade-banner" style="display:none;">
+        <h3>Upgrade your listing</h3>
+        <p>Get photos, video, social links, and more visibility.</p>
+        <button class="btn btn-primary" id="btn-upgrade">Upgrade Plan</button>
+      </div>
+
+      <!-- Edit listing -->
+      <div class="card" id="edit-card">
+        <h2>Edit Your Listing</h2>
+        <form id="edit-form">
+          <label>Business Name</label>
+          <input type="text" id="ed-name">
+
+          <label>Description</label>
+          <textarea id="ed-description"></textarea>
+
+          <div id="photos-section" style="display:none;">
+            <label>Photos (up to 10)</label>
+            <div class="photo-grid" id="photo-grid"></div>
+            <input type="file" id="photo-upload" accept="image/*" style="margin-top:8px;">
+          </div>
+
+          <div id="logo-section" style="display:none;">
+            <label>Logo URL</label>
+            <input type="url" id="ed-logo" placeholder="https://...">
+          </div>
+
+          <div id="video-section" style="display:none;">
+            <label>Video URL (YouTube or Vimeo)</label>
+            <input type="url" id="ed-video" placeholder="https://youtube.com/watch?v=...">
+          </div>
+
+          <div id="website-section" style="display:none;">
+            <label>Website</label>
+            <input type="url" id="ed-website" placeholder="https://yourbusiness.com">
+          </div>
+
+          <div id="social-section" style="display:none;">
+            <label>Facebook</label>
+            <input type="url" id="ed-facebook" placeholder="https://facebook.com/...">
+            <label>Instagram</label>
+            <input type="url" id="ed-instagram" placeholder="https://instagram.com/...">
+            <label>TikTok</label>
+            <input type="url" id="ed-tiktok" placeholder="https://tiktok.com/@...">
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Submit Changes for Review</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Billing -->
+      <div class="card">
+        <h2>Billing</h2>
+        <p style="font-size:13px;color:#6b7280;" id="billing-info">No active subscription.</p>
+        <div class="btn-row" id="billing-actions"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const tp = params.get('tenant') ? '?tenant=' + encodeURIComponent(params.get('tenant')) : '';
+
+    let vendorData = null;
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch('/api/vendors/me' + tp);
+        if (res.status === 401) { window.location.href = '/vendors/login' + tp; return; }
+        const data = await res.json();
+        if (!data.ok) { window.location.href = '/vendors/login' + tp; return; }
+
+        vendorData = data;
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+
+        const v = data.vendor;
+        const loc = data.location;
+
+        document.getElementById('user-name').textContent = v.email;
+        document.getElementById('welcome-msg').textContent = 'Welcome, ' + (v.name || v.email);
+        document.getElementById('listing-name').textContent = loc ? loc.name : 'No listing linked';
+
+        // Stats
+        const planNames = { free: 'Free', basic: 'Basic', showoff: 'Show Off', standout: 'Stand Out' };
+        document.getElementById('stat-plan').textContent = planNames[v.plan] || v.plan;
+        document.getElementById('stat-status').textContent = v.status;
+        document.getElementById('stat-pending').textContent = data.pendingEdits?.length || 0;
+
+        // Pending edits
+        if (data.pendingEdits?.length) {
+          document.getElementById('pending-edits').innerHTML = data.pendingEdits.map(e => `
+            <div class="pending-item">
+              <span class="badge badge-yellow">Awaiting approval</span>
+              <span style="margin-left:8px;">${Object.keys(e.changes).join(', ')} changed</span>
+              <div class="note">Submitted ${new Date(e.submittedAt).toLocaleDateString()}</div>
+              ${e.reviewNote ? '<div class="note">Note: ' + esc(e.reviewNote) + '</div>' : ''}
+            </div>
+          `).join('');
+        }
+
+        // Upgrade banner for free/basic
+        if (v.plan === 'free' || v.plan === 'basic') {
+          document.getElementById('upgrade-banner').style.display = 'block';
+        }
+
+        // Fill edit form
+        if (loc) {
+          document.getElementById('ed-name').value = loc.name || '';
+          document.getElementById('ed-description').value = loc.description || '';
+
+          // Show/hide fields based on plan
+          if (v.plan === 'showoff' || v.plan === 'standout') {
+            document.getElementById('photos-section').style.display = 'block';
+            document.getElementById('logo-section').style.display = 'block';
+            if (loc.photos?.length) {
+              document.getElementById('photo-grid').innerHTML = loc.photos.map(p =>
+                '<img class="photo-thumb" src="' + esc(p) + '">'
+              ).join('');
+            }
+            document.getElementById('ed-logo').value = loc.logoUrl || '';
+          }
+          if (v.plan === 'standout') {
+            document.getElementById('video-section').style.display = 'block';
+            document.getElementById('website-section').style.display = 'block';
+            document.getElementById('social-section').style.display = 'block';
+            document.getElementById('ed-video').value = loc.videoUrl || '';
+            document.getElementById('ed-website').value = loc.websiteUrl || '';
+            const social = loc.socialLinks || {};
+            document.getElementById('ed-facebook').value = social.facebook || '';
+            document.getElementById('ed-instagram').value = social.instagram || '';
+            document.getElementById('ed-tiktok').value = social.tiktok || '';
+          }
+        }
+
+        // Billing info
+        if (v.billingStatus === 'active' && v.plan !== 'free') {
+          document.getElementById('billing-info').innerHTML =
+            '<strong>' + (planNames[v.plan] || v.plan) + '</strong> — ' + v.billingCycle +
+            (v.renewalDate ? ' (renews ' + new Date(v.renewalDate).toLocaleDateString() + ')' : '');
+          document.getElementById('billing-actions').innerHTML =
+            '<button class="btn btn-outline" onclick="openBillingPortal()">Manage Billing</button>';
+        }
+
+      } catch (e) {
+        console.error(e);
+        document.getElementById('loading').textContent = 'Error loading dashboard.';
+      }
+    }
+
+    // Submit edits
+    document.getElementById('edit-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const changes = {
+        name: document.getElementById('ed-name').value,
+        description: document.getElementById('ed-description').value
+      };
+
+      const v = vendorData.vendor;
+      if (v.plan === 'showoff' || v.plan === 'standout') {
+        changes.logoUrl = document.getElementById('ed-logo').value;
+      }
+      if (v.plan === 'standout') {
+        changes.videoUrl = document.getElementById('ed-video').value;
+        changes.websiteUrl = document.getElementById('ed-website').value;
+        changes.socialLinks = {
+          facebook: document.getElementById('ed-facebook').value,
+          instagram: document.getElementById('ed-instagram').value,
+          tiktok: document.getElementById('ed-tiktok').value
+        };
+      }
+
+      try {
+        const res = await fetch('/api/vendors/submit-edit' + tp, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(changes)
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showMsg('success', 'Changes submitted! They will appear after admin approval.');
+          loadDashboard();
+        } else {
+          showMsg('error', data.error);
+        }
+      } catch (e) {
+        showMsg('error', 'Network error');
+      }
+    });
+
+    // Photo upload
+    document.getElementById('photo-upload').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append('image', file);
+      try {
+        const res = await fetch('/api/vendors/upload-image' + tp, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.ok) {
+          const grid = document.getElementById('photo-grid');
+          const img = document.createElement('img');
+          img.className = 'photo-thumb';
+          img.src = data.url;
+          grid.appendChild(img);
+        } else {
+          showMsg('error', data.error);
+        }
+      } catch (e) {
+        showMsg('error', 'Upload failed');
+      }
+    });
+
+    // Upgrade
+    document.getElementById('btn-upgrade')?.addEventListener('click', () => {
+      window.location.href = '/vendors/claim' + tp;
+    });
+
+    // Billing portal
+    async function openBillingPortal() {
+      try {
+        const res = await fetch('/api/vendors/billing-portal' + tp);
+        const data = await res.json();
+        if (data.ok) window.location.href = data.url;
+        else showMsg('error', data.error);
+      } catch (e) {
+        showMsg('error', 'Could not open billing portal');
+      }
+    }
+
+    // Sign out
+    document.getElementById('btn-signout').addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.href = '/vendors/login' + tp;
+    });
+
+    function showMsg(type, msg) {
+      const el = document.getElementById('msg-' + type);
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 5000);
+    }
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    // Check for checkout result
+    if (params.get('checkout') === 'success') {
+      setTimeout(() => showMsg('success', 'Payment successful! Your plan has been upgraded.'), 500);
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

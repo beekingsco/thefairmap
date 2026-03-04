@@ -190,7 +190,8 @@ async function loadIconManifest() {
 }
 
 async function fetchMapData() {
-  const sources = ['/api/locations', '/data/mapme-full-export.json'];
+  const tp = window.__TENANT_PARAM || '';
+  const sources = ['/api/locations' + tp, '/data/mapme-full-export.json'];
   for (const source of sources) {
     try {
       const res = await fetch(source);
