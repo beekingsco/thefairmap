@@ -198,7 +198,8 @@ function seedFirstMonday() {
   console.log('🌱 Seeding First Monday tenant...');
 
   const tenantId = uuid();
-  const hashedPw = bcrypt.hashSync('fairmap2026', 10);
+  const seedPw = process.env.OWNER_PASSWORD || 'fairmap2026';
+  const hashedPw = bcrypt.hashSync(seedPw, 10);
 
   stmts.insertTenant.run({
     id: tenantId,
