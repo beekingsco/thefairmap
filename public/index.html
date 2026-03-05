@@ -64,7 +64,8 @@
     .footer { padding: 32px 24px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 13px; color: #9ca3af; }
 
     @media (max-width: 640px) {
-      .nav-links a:not(.btn) { display: none; }
+      .nav-links a:not(.btn):not(.nav-login) { display: none; }
+      .nav-login { font-size: 13px !important; padding: 8px 14px; background: rgba(0,0,0,0.06); border-radius: 7px; }
       .hero { padding: 100px 20px 60px; }
       .tiers { grid-template-columns: 1fr 1fr; }
     }
@@ -78,7 +79,7 @@
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="#pricing">Pricing</a>
-        <a href="/vendors/login">Log In</a>
+        <a href="/vendors/login" class="nav-login">Log In</a>
         <a href="/platform/login">Admin</a>
         <a href="/signup" class="btn btn-primary">Get Your Map</a>
       </div>
