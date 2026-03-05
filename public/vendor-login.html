@@ -104,7 +104,7 @@
 
       try {
         // If no tenant in URL/subdomain, check the manual input field
-        const manualTenant = document.getElementById('tenant-input')?.value.trim();
+        const manualTenant = document.getElementById('tenant-input')?.value.trim().toLowerCase();
         const effectiveTp = tp || (manualTenant ? '?tenant=' + encodeURIComponent(manualTenant) : '');
 
         const res = await fetch('/api/login' + effectiveTp, {

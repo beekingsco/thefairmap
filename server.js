@@ -159,7 +159,7 @@ app.use((req, res, next) => {
   // 1. Check ?tenant= query param (local dev fallback)
   const qTenant = req.query.tenant;
   if (qTenant) {
-    req.tenant = stmts.getTenantBySlug.get(qTenant);
+    req.tenant = stmts.getTenantBySlug.get(qTenant.toLowerCase().trim());
     return next();
   }
 
