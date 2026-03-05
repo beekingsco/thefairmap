@@ -40,6 +40,10 @@
 
     <div class="error" id="error"></div>
     <form id="login-form">
+      <div id="tenant-field" style="display:none;">
+        <label>Your Event / Fair Slug</label>
+        <input type="text" id="tenant-input" placeholder="e.g. firstmonday" autocomplete="off">
+      </div>
       <label>Email</label>
       <input type="email" id="email" required placeholder="you@example.com">
       <label>Password</label>
@@ -57,7 +61,31 @@
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const tp = params.get('tenant') ? '?tenant=' + encodeURIComponent(params.get('tenant')) : '';
+
+    // Auto-detect tenant from subdomain (e.g. firstmonday.thefairmap.com)
+    // or fall back to ?tenant= query param
+    function detectTenant() {
+      const qTenant = params.get('tenant');
+      if (qTenant) return qTenant;
+      const host = window.location.hostname;
+      // If it's a subdomain of thefairmap.com that isn't 'map' or 'www'
+      const match = host.match(/^([^.]+)\.thefairmap\.com$/);
+      if (match && match[1] !== 'map' && match[1] !== 'www') return match[1];
+      return null;
+    }
+
+    const tenantSlug = detectTenant();
+    const tp = tenantSlug ? '?tenant=' + encodeURIComponent(tenantSlug) : '';
+
+    // Show tenant name in subtitle if we have one, or show the slug input
+    if (tenantSlug) {
+      document.getElementById('page-subtitle').textContent =
+        tenantSlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' — Vendor or Map Owner';
+    } else {
+      // No tenant in URL — show the slug field so they can enter it
+      document.getElementById('tenant-field').style.display = 'block';
+    }
+
     let mode = 'vendor';
 
     function switchTab(tab) {
@@ -75,14 +103,18 @@
       const password = document.getElementById('password').value;
 
       try {
-        const res = await fetch('/api/login' + tp, {
+        // If no tenant in URL/subdomain, check the manual input field
+        const manualTenant = document.getElementById('tenant-input')?.value.trim();
+        const effectiveTp = tp || (manualTenant ? '?tenant=' + encodeURIComponent(manualTenant) : '');
+
+        const res = await fetch('/api/login' + effectiveTp, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
         const data = await res.json();
         if (data.ok) {
-          window.location.href = data.redirect + (tp ? tp : '');
+          window.location.href = data.redirect + (effectiveTp ? effectiveTp : '');
         } else {
           err.textContent = data.error;
           err.style.display = 'block';
