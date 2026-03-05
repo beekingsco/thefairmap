@@ -3,170 +3,690 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TheFairMap — Interactive Maps for Fairs, Markets &amp; Trade Shows</title>
-  <meta name="description" content="Give your fair, market, or trade show an interactive vendor map. Vendor management, approval workflows, mobile-ready.">
+  <title>The Fair Map — Keyword-Searchable Maps for Events</title>
+  <meta name="description" content="Transform your fair, market, or trade show into a searchable map — a goldmine of data and revenue. All in less than 30 days.">
   <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a2e; line-height: 1.6; }
+    :root {
+      --pink: #e91e8c;
+      --pink-dark: #c0156f;
+      --pink-light: #ff4dac;
+      --navy: #1a1f3c;
+      --navy2: #2d3561;
+      --cream: #fdf8f0;
+      --white: #ffffff;
+      --gray: #6b7280;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Open Sans', system-ui, sans-serif;
+      color: var(--navy);
+      background: var(--white);
+      line-height: 1.6;
+    }
 
-    /* Nav */
-    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid #e5e7eb; }
-    .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
-    .nav-brand { font-size: 20px; font-weight: 800; color: #1a1a2e; text-decoration: none; display: flex; align-items: center; gap: 8px; }
-    .nav-brand span { color: #10b981; }
-    .nav-links { display: flex; align-items: center; gap: 24px; }
-    .nav-links a { text-decoration: none; font-size: 14px; font-weight: 600; color: #4b5563; }
-    .nav-links a:hover { color: #1a1a2e; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none; transition: all 0.2s; border: none; cursor: pointer; }
-    .btn-primary { background: #10b981; color: #fff; }
-    .btn-primary:hover { background: #059669; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
-    .btn-outline { background: transparent; border: 2px solid #d1d5db; color: #374151; }
-    .btn-outline:hover { border-color: #9ca3af; background: #f9fafb; }
-
-    /* Hero */
-    .hero { padding: 140px 24px 80px; text-align: center; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0f9ff 100%); }
-    .hero h1 { font-size: clamp(36px, 5vw, 56px); font-weight: 900; line-height: 1.1; margin-bottom: 20px; color: #1a1a2e; }
-    .hero h1 em { font-style: normal; color: #10b981; }
-    .hero p { font-size: 18px; color: #6b7280; max-width: 560px; margin: 0 auto 32px; }
-    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .hero-img { margin-top: 48px; max-width: 900px; width: 100%; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
-
-    /* Features */
-    .features { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
-    .features h2 { text-align: center; font-size: 32px; font-weight: 800; margin-bottom: 48px; }
-    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; }
-    .feature-card { padding: 28px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
-    .feature-icon { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 16px; }
-    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-    .feature-card p { font-size: 14px; color: #6b7280; }
-
-    /* Pricing teaser */
-    .pricing { padding: 80px 24px; background: #f9fafb; text-align: center; }
-    .pricing h2 { font-size: 32px; font-weight: 800; margin-bottom: 16px; }
-    .pricing p { font-size: 16px; color: #6b7280; max-width: 500px; margin: 0 auto 32px; }
-
-    /* Vendor tiers */
-    .tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto 40px; }
-    .tier-card { padding: 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; text-align: center; }
-    .tier-card.featured { border-color: #10b981; box-shadow: 0 0 0 1px #10b981; }
-    .tier-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-    .tier-price { font-size: 28px; font-weight: 800; color: #10b981; }
-    .tier-price span { font-size: 14px; font-weight: 400; color: #9ca3af; }
-    .tier-features { margin-top: 12px; font-size: 13px; color: #6b7280; line-height: 1.8; }
-
-    /* CTA */
-    .cta { padding: 80px 24px; text-align: center; }
-    .cta h2 { font-size: 32px; font-weight: 800; margin-bottom: 16px; }
-    .cta p { font-size: 16px; color: #6b7280; margin-bottom: 24px; }
-
-    /* Footer */
-    .footer { padding: 32px 24px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 13px; color: #9ca3af; }
+    /* ── NAV ─────────────────────────────────── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: var(--white);
+      border-bottom: 3px solid var(--pink);
+      box-shadow: 0 2px 12px rgba(233,30,140,0.1);
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 20px; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo img { height: 42px; }
+    .nav-logo-text {
+      font-family: 'Oswald', sans-serif;
+      font-size: 26px; font-weight: 700;
+      color: var(--navy); text-decoration: none; letter-spacing: 0.02em;
+    }
+    .nav-logo-text span { color: var(--pink); }
+    .nav-right { display: flex; align-items: center; gap: 20px; }
+    .nav-right a {
+      font-size: 14px; font-weight: 700; color: var(--navy);
+      text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .nav-right a:hover { color: var(--pink); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 24px; border-radius: 6px;
+      font-family: 'Open Sans', sans-serif;
+      font-size: 14px; font-weight: 800; text-decoration: none;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      transition: all 0.2s; border: none; cursor: pointer;
+    }
+    .btn-pink { background: var(--pink); color: #fff; }
+    .btn-pink:hover { background: var(--pink-dark); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(233,30,140,0.35); }
+    .btn-outline-pink { background: transparent; border: 2px solid var(--pink); color: var(--pink); }
+    .btn-outline-pink:hover { background: var(--pink); color: #fff; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
+    .hamburger span { width: 26px; height: 3px; background: var(--navy); border-radius: 2px; display: block; transition: 0.3s; }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0; z-index: 199;
+      background: var(--white); border-bottom: 3px solid var(--pink);
+      padding: 20px; flex-direction: column; gap: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      font-size: 16px; font-weight: 700; color: var(--navy);
+      text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 10px 0; border-bottom: 1px solid #f0e8e8;
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
 
     @media (max-width: 640px) {
-      .nav-links a:not(.btn):not(.nav-login) { display: none; }
-      .nav-login { font-size: 13px !important; padding: 8px 14px; background: rgba(0,0,0,0.06); border-radius: 7px; }
-      .hero { padding: 100px 20px 60px; }
-      .tiers { grid-template-columns: 1fr 1fr; }
+      .nav-right .hide-mobile { display: none; }
+      .hamburger { display: flex; }
+      .nav-login { font-size: 13px; padding: 8px 14px; }
+    }
+
+    /* ── WOW HERO ────────────────────────────── */
+    .hero {
+      background: var(--cream);
+      padding: 100px 20px 0;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero-wow {
+      font-family: 'Dancing Script', cursive, Georgia, serif;
+      font-size: clamp(80px, 18vw, 160px);
+      font-weight: 700;
+      color: var(--pink);
+      line-height: 0.9;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      /* fallback italic serif for cursive feel */
+      font-style: italic;
+    }
+    .hero-sub {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(14px, 3vw, 20px);
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    /* Video frame */
+    .video-wrap {
+      max-width: 600px; margin: 0 auto 0;
+      border: 5px solid var(--pink);
+      border-radius: 8px; overflow: hidden;
+      position: relative; background: #000;
+      box-shadow: 0 8px 40px rgba(233,30,140,0.25);
+    }
+    .video-wrap iframe, .video-wrap video {
+      width: 100%; display: block;
+      aspect-ratio: 16/9;
+    }
+    .video-placeholder {
+      width: 100%; aspect-ratio: 16/9;
+      background: linear-gradient(135deg, #1a1f3c 0%, #2d3561 50%, #1a1f3c 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; cursor: pointer;
+    }
+    .video-play { width: 72px; height: 72px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.4); }
+    .video-play svg { width: 32px; height: 32px; fill: white; margin-left: 4px; }
+    .video-label { color: #fff; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
+    .video-logo-badge {
+      position: absolute; bottom: 12px; left: 12px;
+      background: rgba(255,255,255,0.9); border-radius: 6px;
+      padding: 4px 10px;
+      font-family: 'Oswald', sans-serif; font-size: 13px; font-weight: 700; color: var(--navy);
+    }
+    .video-logo-badge span { color: var(--pink); }
+
+    /* Photo strip */
+    .photo-strip {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 0; max-width: 600px; margin: 0 auto;
+      overflow: hidden;
+    }
+    .photo-strip-item {
+      aspect-ratio: 4/3; overflow: hidden;
+      background: linear-gradient(135deg, #f0e0f0, #e0e8f8);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .photo-strip-item img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-strip-emoji { font-size: 40px; opacity: 0.4; }
+
+    /* ── TRANSFORM HEADLINE ──────────────────── */
+    .transform-section {
+      background: var(--cream);
+      padding: 48px 20px 56px;
+      text-align: center;
+    }
+    .transform-headline {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(28px, 6vw, 52px);
+      font-weight: 700;
+      line-height: 1.1;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: var(--navy);
+      max-width: 700px; margin: 0 auto 12px;
+    }
+    .transform-headline .pink { color: var(--pink); }
+    .transform-sub {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(16px, 3vw, 22px);
+      font-weight: 600;
+      color: var(--pink);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 32px;
+    }
+    .transform-body {
+      font-size: 16px; color: var(--gray);
+      max-width: 620px; margin: 0 auto 36px;
+      line-height: 1.8;
+    }
+    .transform-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── SNEAK PEEK ──────────────────────────── */
+    .sneak-peek {
+      background: var(--navy);
+      padding: 60px 20px;
+      text-align: center;
+    }
+    .sneak-label {
+      display: inline-block;
+      background: var(--pink);
+      color: #fff;
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      padding: 6px 16px; border-radius: 4px;
+      margin-bottom: 20px;
+    }
+    .sneak-peek h2 {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(24px, 5vw, 40px);
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .sneak-peek h2 span { color: var(--pink-light); }
+    .sneak-peek p { font-size: 15px; color: rgba(255,255,255,0.7); max-width: 540px; margin: 0 auto 36px; }
+    .map-demo-frame {
+      max-width: 700px; margin: 0 auto;
+      border: 4px solid var(--pink); border-radius: 12px;
+      overflow: hidden; box-shadow: 0 12px 50px rgba(233,30,140,0.3);
+      background: #fff;
+    }
+    .map-demo-frame iframe { width: 100%; height: 480px; border: none; display: block; }
+
+    /* ── FEATURES ────────────────────────────── */
+    .features {
+      padding: 72px 20px;
+      background: var(--white);
+    }
+    .features-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--pink); margin-bottom: 8px; text-align: center;
+    }
+    .section-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 700; text-transform: uppercase;
+      color: var(--navy); text-align: center;
+      letter-spacing: 0.04em; line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .section-title span { color: var(--pink); }
+    .section-subtitle {
+      text-align: center; font-size: 15px; color: var(--gray);
+      max-width: 560px; margin: 0 auto 48px;
+    }
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px; }
+    .feature-card {
+      padding: 28px; border: 2px solid #f0e8f0; border-radius: 12px;
+      background: #fff; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover { border-color: var(--pink); box-shadow: 0 4px 24px rgba(233,30,140,0.1); }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin-bottom: 16px;
+      background: linear-gradient(135deg, #fce4f3, #fdf0fa);
+    }
+    .feature-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 8px; color: var(--navy); }
+    .feature-card p { font-size: 14px; color: var(--gray); line-height: 1.7; }
+
+    /* ── ANALYTICS ───────────────────────────── */
+    .analytics-section {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+      padding: 72px 20px;
+    }
+    .analytics-inner { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .analytics-inner .section-label, .analytics-inner .section-title { text-align: left; }
+    .analytics-inner .section-title { color: #fff; }
+    .analytics-body { font-size: 15px; color: rgba(255,255,255,0.7); margin-bottom: 28px; line-height: 1.8; }
+    .analytics-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .analytics-list li {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 14px; color: rgba(255,255,255,0.85); line-height: 1.5;
+    }
+    .analytics-list li::before { content: "✦"; color: var(--pink); font-size: 12px; margin-top: 3px; flex-shrink: 0; }
+    .analytics-visual {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(233,30,140,0.3);
+      border-radius: 16px; padding: 28px;
+    }
+    .stat-row { display: flex; flex-direction: column; gap: 14px; }
+    .stat-item { }
+    .stat-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-bar-track { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .stat-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--pink), var(--pink-light)); }
+    @media (max-width: 700px) { .analytics-inner { grid-template-columns: 1fr; gap: 36px; } .analytics-inner .section-label, .analytics-inner .section-title { text-align: center; } }
+
+    /* ── TESTIMONIALS ────────────────────────── */
+    .testimonials { padding: 72px 20px; background: var(--cream); }
+    .testimonials-inner { max-width: 1000px; margin: 0 auto; }
+    .proof-badge {
+      display: inline-block; background: var(--pink); color: #fff;
+      font-family: 'Oswald', sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      padding: 5px 14px; border-radius: 4px; margin-bottom: 16px;
+    }
+    .testimonial-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 36px; }
+    .testimonial-card {
+      background: #fff; border: 2px solid #f0e0ec; border-radius: 14px; padding: 28px;
+      position: relative;
+    }
+    .testimonial-card::before {
+      content: "\201C"; font-size: 72px; line-height: 1; color: var(--pink);
+      position: absolute; top: 12px; left: 20px; opacity: 0.15;
+      font-family: Georgia, serif;
+    }
+    .testimonial-text { font-size: 14px; color: #374151; line-height: 1.8; margin-bottom: 20px; font-style: italic; }
+    .testimonial-author { display: flex; flex-direction: column; gap: 2px; }
+    .testimonial-name { font-size: 14px; font-weight: 800; color: var(--navy); text-transform: uppercase; letter-spacing: 0.05em; }
+    .testimonial-role { font-size: 12px; color: var(--pink); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+    @media (max-width: 640px) { .testimonial-grid { grid-template-columns: 1fr; } }
+
+    /* ── PRICING ─────────────────────────────── */
+    .pricing { padding: 72px 20px; background: #fff; }
+    .pricing-inner { max-width: 1000px; margin: 0 auto; }
+    .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 48px; }
+    .tier-card {
+      padding: 28px 20px; border: 2px solid #e5e7eb; border-radius: 14px;
+      text-align: center; transition: 0.2s; background: #fff;
+    }
+    .tier-card:hover { border-color: var(--pink); box-shadow: 0 4px 24px rgba(233,30,140,0.1); transform: translateY(-2px); }
+    .tier-card.featured {
+      border-color: var(--pink); border-width: 3px;
+      box-shadow: 0 8px 36px rgba(233,30,140,0.2);
+      position: relative;
+    }
+    .tier-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: var(--pink); color: #fff; font-size: 11px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 14px; border-radius: 20px;
+    }
+    .tier-name { font-family: 'Oswald', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .tier-event { font-size: 11px; color: var(--gray); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+    .tier-price-block { margin-bottom: 16px; }
+    .tier-price { font-size: 32px; font-weight: 800; color: var(--pink); line-height: 1; }
+    .tier-price-note { font-size: 11px; color: var(--gray); margin-top: 4px; font-weight: 600; }
+    .tier-features { font-size: 13px; color: var(--gray); line-height: 2.1; }
+    .tier-cta { margin-top: 20px; }
+    .tier-cta a { font-size: 13px; font-weight: 800; color: var(--pink); text-decoration: none; text-transform: uppercase; letter-spacing: 0.06em; }
+    .tier-cta a:hover { color: var(--pink-dark); }
+
+    /* ── FINAL CTA ───────────────────────────── */
+    .final-cta {
+      background: linear-gradient(135deg, var(--pink) 0%, #c0156f 100%);
+      padding: 72px 20px;
+      text-align: center;
+    }
+    .final-cta h2 {
+      font-family: 'Oswald', sans-serif;
+      font-size: clamp(28px, 6vw, 52px);
+      font-weight: 700; color: #fff;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      line-height: 1.1; margin-bottom: 16px;
+    }
+    .final-cta p { font-size: 16px; color: rgba(255,255,255,0.85); max-width: 480px; margin: 0 auto 32px; line-height: 1.7; }
+    .btn-white { background: #fff; color: var(--pink); }
+    .btn-white:hover { background: #f9fafb; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transform: translateY(-1px); }
+
+    /* ── FOOTER ──────────────────────────────── */
+    .footer {
+      background: var(--navy); padding: 32px 20px;
+      text-align: center;
+    }
+    .footer-logo {
+      font-family: 'Oswald', sans-serif;
+      font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px;
+    }
+    .footer-logo span { color: var(--pink); }
+    .footer p { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 16px; }
+    .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .footer-links a { font-size: 12px; color: rgba(255,255,255,0.5); text-decoration: none; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+    .footer-links a:hover { color: var(--pink); }
+
+    /* Mobile utils */
+    @media (max-width: 640px) {
+      .nav-right .hide-mobile { display: none; }
+      .hamburger { display: flex; }
+      .tier-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 400px) {
+      .tier-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
+  <!-- ── NAV ─────────────────────────────────── -->
   <nav class="nav">
     <div class="nav-inner">
-      <a href="/" class="nav-brand">&#x1f5fa;&#xfe0f; The<span>Fair</span>Map</a>
-      <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#pricing">Pricing</a>
-        <a href="/vendors/login" class="nav-login">Log In</a>
-        <a href="/platform/login">Admin</a>
-        <a href="/signup" class="btn btn-primary">Get Your Map</a>
+      <a href="/" class="nav-logo-text">The<span>Fair</span>MAP</a>
+      <div class="nav-right">
+        <a href="#features" class="hide-mobile">Features</a>
+        <a href="#pricing" class="hide-mobile">Pricing</a>
+        <a href="/vendors/login" class="nav-login hide-mobile">Log In</a>
+        <a href="/signup" class="btn btn-pink">Get Your Map</a>
+        <div class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </div>
       </div>
     </div>
   </nav>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="#features" onclick="toggleMenu()">Features</a>
+    <a href="#pricing" onclick="toggleMenu()">Pricing</a>
+    <a href="/vendors/login" onclick="toggleMenu()">Log In</a>
+    <a href="/platform/login" onclick="toggleMenu()">Admin</a>
+    <a href="/signup" onclick="toggleMenu()" style="color: var(--pink);">Get Your Map →</a>
+  </div>
 
+  <!-- ── WOW HERO ──────────────────────────────── -->
   <section class="hero">
-    <h1>Your fair. <em>Your map.</em><br>Your brand.</h1>
-    <p>Give your fair, market, or trade show a beautiful interactive vendor map — with built-in vendor management, approval workflows, and mobile-ready design.</p>
-    <div class="hero-actions">
-      <a href="/signup" class="btn btn-primary">Get Your Map &rarr;</a>
-      <a href="/?tenant=firstmonday" class="btn btn-outline">See Demo</a>
+    <div class="hero-wow">Wow</div>
+    <div class="hero-sub">You Created An Amazing Experience</div>
+
+    <!-- Video frame -->
+    <div class="video-wrap">
+      <div class="video-placeholder" onclick="loadDemo()">
+        <div class="video-play">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <div class="video-label">Watch How It Works</div>
+      </div>
+      <div class="video-logo-badge">The<span>Fair</span>MAP</div>
+    </div>
+
+    <!-- Photo strip -->
+    <div class="photo-strip">
+      <div class="photo-strip-item"><div class="photo-strip-emoji">🎪</div></div>
+      <div class="photo-strip-item"><div class="photo-strip-emoji">🎡</div></div>
+      <div class="photo-strip-item"><div class="photo-strip-emoji">🛍️</div></div>
     </div>
   </section>
 
+  <!-- ── TRANSFORM HEADLINE ────────────────────── -->
+  <section class="transform-section">
+    <div class="transform-headline">
+      Let Us <span class="pink">Transform<br>Your Event</span> Into A<br>
+      Searchable Map — A<br>
+      <span class="pink">Goldmine Of Data</span><br>
+      And Revenue
+    </div>
+    <div class="transform-sub">All In Less Than 30 Days!</div>
+    <p class="transform-body">
+      A digital, keyword-searchable event map helps your guests find more, do more &amp; spend more —
+      which keeps vendors happy and coming back. Plus your team gains powerful data every single day.
+    </p>
+    <div class="transform-actions">
+      <a href="/signup" class="btn btn-pink">Get Your Map &rarr;</a>
+      <a href="/?tenant=firstmonday" class="btn btn-outline-pink">See Live Demo</a>
+    </div>
+  </section>
+
+  <!-- ── SNEAK PEEK ─────────────────────────────── -->
+  <section class="sneak-peek" id="demo">
+    <div class="sneak-label">Sneak Peek — Admit One!</div>
+    <h2>The Fair Map Helps Your Guests<br><span>"Find It Fast"</span></h2>
+    <p>
+      In today's world, guests expect to search everything from their phone.
+      The Fair Map delivers a keyword-searchable map experience that helps them find food,
+      rides, shopping, and rest stops — fast.
+    </p>
+    <div class="map-demo-frame">
+      <iframe src="/?tenant=firstmonday" title="Live Demo — First Monday Trade Days" loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <!-- ── FEATURES ───────────────────────────────── -->
   <section class="features" id="features">
-    <h2>Everything your fair needs</h2>
-    <div class="feature-grid">
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#ecfdf5;color:#10b981;">&#x1f5fa;&#xfe0f;</div>
-        <h3>Interactive Map</h3>
-        <p>Beautiful 3D maps powered by MapLibre GL. Categories, search, filters — all mobile-ready out of the box.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#eff6ff;color:#3b82f6;">&#x1f464;</div>
-        <h3>Vendor Self-Service</h3>
-        <p>Vendors claim their booth, pick a plan, and manage their listing. You approve changes from the admin panel.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#fef3c7;color:#f59e0b;">&#x2705;</div>
-        <h3>Approval Workflow</h3>
-        <p>Vendor edits go to a review queue. Approve or reject with one click — stay in control of your map.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#fce7f3;color:#ec4899;">&#x1f4b3;</div>
-        <h3>Built-in Billing</h3>
-        <p>Stripe-powered vendor subscriptions. Free, Basic, Show Off, and Stand Out tiers with automatic billing.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#f3e8ff;color:#8b5cf6;">&#x1f3af;</div>
-        <h3>Your Subdomain</h3>
-        <p>Get <code>yourfair.thefairmap.com</code> instantly. Your brand, your data, your vendors.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#fef2f2;color:#ef4444;">&#x1f4f1;</div>
-        <h3>Mobile-First</h3>
-        <p>Designed for fairgoers on their phones. Fast, responsive, works offline-ready with service worker.</p>
+    <div class="features-inner">
+      <div class="section-label">Features</div>
+      <div class="section-title">Everything Your <span>Fair</span> Needs</div>
+      <p class="section-subtitle">One platform. Every tool you need to run a searchable, data-powered event map.</p>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🗺️</div>
+          <h3>Interactive Map</h3>
+          <p>Beautiful, keyword-searchable maps. Categories, search, filters — all mobile-ready. Guests find what they want in seconds.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🙋</div>
+          <h3>Vendor Self-Service</h3>
+          <p>Vendors claim their booth, pick a plan, upload photos and products. You stay in control with an approval queue.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">✅</div>
+          <h3>Approval Workflow</h3>
+          <p>Every vendor edit hits your review queue first. Approve or reject with one tap — your map, your standards.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💳</div>
+          <h3>Built-in Revenue</h3>
+          <p>Stripe-powered vendor subscriptions generate ongoing revenue for your event. Free through premium listing tiers.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Real-Time Analytics</h3>
+          <p>See what guests search, which vendors get the most views, and where traffic drops off. Data you can actually use.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3>Mobile-First Design</h3>
+          <p>Built for fairgoers on their phones. Fast, responsive, and easy to navigate even in a crowd of thousands.</p>
+        </div>
       </div>
     </div>
   </section>
 
+  <!-- ── ANALYTICS ──────────────────────────────── -->
+  <section class="analytics-section" id="analytics">
+    <div class="analytics-inner">
+      <div>
+        <div class="section-label">Analytics</div>
+        <div class="section-title">Designed To <span>Grow</span><br>Your Revenue</div>
+        <p class="analytics-body">
+          With The Fair Map, your fair becomes a data-smart event. You'll unlock real-time usage stats,
+          keyword trends, and guest behaviors that help you curate a better show year after year.
+        </p>
+        <ul class="analytics-list">
+          <li>See what guests are searching most (and what they're missing)</li>
+          <li>Learn which vendors, zones, or experiences draw the most interest</li>
+          <li>Use insights to guide layout, offerings, and sponsor packages</li>
+          <li>Build lookalike audiences from your visitor data for targeted ad campaigns</li>
+        </ul>
+      </div>
+      <div class="analytics-visual">
+        <div class="stat-row">
+          <div class="stat-item">
+            <div class="stat-bar-label"><span>Food &amp; Drink</span><span>84%</span></div>
+            <div class="stat-bar-track"><div class="stat-bar-fill" style="width:84%"></div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-bar-label"><span>Shopping</span><span>71%</span></div>
+            <div class="stat-bar-track"><div class="stat-bar-fill" style="width:71%"></div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-bar-label"><span>Rides &amp; Attractions</span><span>63%</span></div>
+            <div class="stat-bar-track"><div class="stat-bar-fill" style="width:63%"></div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-bar-label"><span>Restrooms</span><span>57%</span></div>
+            <div class="stat-bar-track"><div class="stat-bar-fill" style="width:57%"></div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-bar-label"><span>Parking</span><span>49%</span></div>
+            <div class="stat-bar-track"><div class="stat-bar-fill" style="width:49%"></div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-bar-label"><span>Crafts &amp; Art</span><span>38%</span></div>
+            <div class="stat-bar-track"><div class="stat-bar-fill" style="width:38%"></div></div>
+          </div>
+        </div>
+        <p style="font-size:11px; color:rgba(255,255,255,0.35); margin-top:20px; text-align:center; text-transform:uppercase; letter-spacing:0.08em;">Top guest search categories — First Monday Demo</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TESTIMONIALS ───────────────────────────── -->
+  <section class="testimonials">
+    <div class="testimonials-inner">
+      <div style="text-align:center;">
+        <div class="proof-badge">Proof of Use</div>
+        <div class="section-title" style="margin-bottom:8px;">The Fair Map Is Already Being Used By The <span>Largest Shopping Event</span> In The World</div>
+        <p class="section-subtitle">We can handle yours.</p>
+      </div>
+      <div class="testimonial-grid">
+        <div class="testimonial-card">
+          <p class="testimonial-text">
+            "With over 450 acres of shopping and thousands of vendors at our event, our customers needed a better way
+            to find what they were looking for. Fair Map gave us more than we needed with amazing search functions
+            and real time data to help us curate a better show."
+          </p>
+          <div class="testimonial-author">
+            <div class="testimonial-name">Cathrine Irwin</div>
+            <div class="testimonial-role">Event Manager — First Monday Trade Days</div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <p class="testimonial-text">
+            "I've been a vendor for 32 years and have signed up with countless marketing services that promised
+            to help my customers engage and find my booth. Fair Map is the first to actually provide searchable
+            and easy to follow directions. I've had great feedback and totally recommend it."
+          </p>
+          <div class="testimonial-author">
+            <div class="testimonial-name">David Platt</div>
+            <div class="testimonial-role">Vendor — Simply Southern Mixes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRICING ────────────────────────────────── -->
   <section class="pricing" id="pricing">
-    <h2>Vendor Pricing Tiers</h2>
-    <p>Map owners earn revenue from vendor listings. Each vendor picks their tier:</p>
-    <div class="tiers">
-      <div class="tier-card">
-        <div class="tier-name">Free</div>
-        <div class="tier-price">$0<span>/mo</span></div>
-        <div class="tier-features">Name &amp; description<br>Up to 3 categories<br>Text-only listing</div>
+    <div class="pricing-inner">
+      <div style="text-align:center;">
+        <div class="section-label">Pricing</div>
+        <div class="section-title">Scalable Pricing To Fit <span>Any Size Event</span></div>
+        <p class="section-subtitle">From farmers markets to state fairs. Fair Map was built as a cooperative effort by vendors and event managers.</p>
       </div>
-      <div class="tier-card">
-        <div class="tier-name">Basic</div>
-        <div class="tier-price">$4.99<span>/mo</span></div>
-        <div class="tier-features">Everything in Free<br>Priority support<br>Future features first</div>
-      </div>
-      <div class="tier-card featured">
-        <div class="tier-name">Show Off</div>
-        <div class="tier-price">$9.99<span>/mo</span></div>
-        <div class="tier-features">Up to 10 photos<br>Custom logo marker<br>Enhanced visibility</div>
-      </div>
-      <div class="tier-card">
-        <div class="tier-name">Stand Out</div>
-        <div class="tier-price">$19.99<span>/mo</span></div>
-        <div class="tier-features">Everything + video<br>Social links &amp; website<br>Maximum visibility</div>
+      <div class="tier-grid">
+        <div class="tier-card">
+          <div class="tier-name">Weekly Fair</div>
+          <div class="tier-event">Farmers markets, pop-ups, boutique trade shows</div>
+          <div class="tier-price-block">
+            <div class="tier-price">$34.99</div>
+            <div class="tier-price-note">per location + $1,499 basemap</div>
+          </div>
+          <div class="tier-features">Up to 250 locations<br>10,000 monthly views<br>Full vendor self-service<br>Approval workflow</div>
+          <div class="tier-cta"><a href="/signup">Get Started →</a></div>
+        </div>
+        <div class="tier-card featured">
+          <div class="tier-badge">Most Popular</div>
+          <div class="tier-name">Annual Festival</div>
+          <div class="tier-event">Town festivals, art fairs, holiday markets</div>
+          <div class="tier-price-block">
+            <div class="tier-price">$29.99</div>
+            <div class="tier-price-note">per location + custom basemap</div>
+          </div>
+          <div class="tier-features">Up to 1,000 locations<br>100,000 monthly views<br>Analytics dashboard<br>Priority support</div>
+          <div class="tier-cta"><a href="/signup">Get Started →</a></div>
+        </div>
+        <div class="tier-card">
+          <div class="tier-name">Big Event</div>
+          <div class="tier-event">State fairs, large expos, conferences</div>
+          <div class="tier-price-block">
+            <div class="tier-price">$27.99</div>
+            <div class="tier-price-note">per location + custom basemap</div>
+          </div>
+          <div class="tier-features">Up to 2,000 locations<br>1M monthly views<br>Advanced analytics<br>White-glove onboarding</div>
+          <div class="tier-cta"><a href="/signup">Get Started →</a></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="cta">
-    <h2>Ready to map your fair?</h2>
-    <p>Contact us to get started. We'll set up your map and have you live in 24 hours.</p>
-    <a href="/signup" class="btn btn-primary">Get Your Map &rarr;</a>
+  <!-- ── FINAL CTA ──────────────────────────────── -->
+  <section class="final-cta">
+    <h2>Ready To Map<br>Your Fair?</h2>
+    <p>Contact us to get started. We'll set up your map and have you live in less than 30 days.</p>
+    <a href="/signup" class="btn btn-white">Get Your Map &rarr;</a>
   </section>
 
+  <!-- ── FOOTER ─────────────────────────────────── -->
   <footer class="footer">
-    &copy; 2026 TheFairMap. Built in Canton, TX.
+    <div class="footer-logo">The<span>Fair</span>MAP</div>
+    <p>Built in Canton, TX &bull; &copy; 2026 TheFairMap</p>
+    <div class="footer-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="/vendors/login">Vendor Login</a>
+      <a href="/platform/login">Admin Login</a>
+      <a href="/signup">Get Your Map</a>
+    </div>
   </footer>
 
+  <script>
+    function toggleMenu() {
+      document.getElementById('mobile-menu').classList.toggle('open');
+    }
+    // Close mobile menu on outside click
+    document.addEventListener('click', function(e) {
+      const menu = document.getElementById('mobile-menu');
+      const nav = document.querySelector('.nav');
+      if (!nav.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.remove('open');
+      }
+    });
+    function loadDemo() {
+      // Could embed a YouTube or Vimeo video here when available
+      window.location.href = '/?tenant=firstmonday';
+    }
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const id = a.getAttribute('href').slice(1);
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('mobile-menu').classList.remove('open');
+      });
+    });
+  </script>
 </body>
 </html>
