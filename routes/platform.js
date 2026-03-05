@@ -130,6 +130,17 @@ router.post('/api/platform/tenants/:id/suspend', requirePlatformAdmin, (req, res
   res.json({ ok: true });
 });
 
+// Reset tenant owner password
+router.post('/api/platform/tenants/:id/reset-password', requirePlatformAdmin, (req, res) => {
+  const tenant = stmts.getTenantById.get(req.params.id);
+  if (!tenant) return res.status(404).json({ ok: false, error: 'Tenant not found' });
+  const { password } = req.body;
+  if (!password || password.length < 6) return res.status(400).json({ ok: false, error: 'Password must be at least 6 characters' });
+  const hashedPw = bcrypt.hashSync(password, 10);
+  db.prepare('UPDATE tenants SET owner_password = ? WHERE id = ?').run(hashedPw, tenant.id);
+  res.json({ ok: true });
+});
+
 // Create tenant manually
 router.post('/api/platform/tenants', requirePlatformAdmin, (req, res) => {
   const { slug, name, ownerEmail, ownerName, ownerPassword } = req.body;
