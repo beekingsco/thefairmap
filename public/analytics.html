@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VFM Analytics — Visit First Monday</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --pink: #e91e8c;
+      --navy: #1a1f3c;
+      --navy2: #2d3561;
+      --cream: #fdf8f0;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --gray: #6b7280;
+      --light: #f3f4f6;
+    }
+    body { font-family: 'Open Sans', sans-serif; background: var(--navy); color: #fff; min-height: 100vh; }
+
+    /* ── PASSWORD GATE ── */
+    #gate {
+      position: fixed; inset: 0; background: var(--navy);
+      display: flex; align-items: center; justify-content: center; z-index: 999;
+    }
+    .gate-box {
+      background: var(--navy2); border-radius: 16px; padding: 48px 40px;
+      width: 360px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border: 1px solid rgba(233,30,140,0.3);
+    }
+    .gate-logo { font-family: 'Oswald', sans-serif; font-size: 22px; color: var(--pink); letter-spacing: 2px; margin-bottom: 8px; }
+    .gate-sub { color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 32px; }
+    .gate-box h2 { font-size: 18px; margin-bottom: 24px; font-weight: 600; }
+    .gate-input {
+      width: 100%; padding: 12px 16px; border-radius: 8px;
+      border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05);
+      color: #fff; font-size: 16px; text-align: center; letter-spacing: 2px;
+      transition: border-color 0.2s; margin-bottom: 16px;
+    }
+    .gate-input:focus { outline: none; border-color: var(--pink); }
+    .gate-btn {
+      width: 100%; padding: 13px; border-radius: 8px; border: none;
+      background: var(--pink); color: #fff; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .gate-btn:hover { background: #c0156f; }
+    .gate-error { color: #ef4444; font-size: 13px; margin-top: 12px; display: none; }
+
+    /* ── MAIN DASHBOARD ── */
+    #dashboard { display: none; }
+
+    .top-bar {
+      background: var(--navy2); border-bottom: 3px solid var(--pink);
+      padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .top-bar-left { font-family: 'Oswald', sans-serif; font-size: 20px; letter-spacing: 2px; color: var(--pink); }
+    .top-bar-right { font-size: 13px; color: rgba(255,255,255,0.4); }
+    .period-badge {
+      display: inline-block; background: rgba(233,30,140,0.15); border: 1px solid var(--pink);
+      color: var(--pink); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+    /* ── PLATFORM SECTIONS ── */
+    .platform-section { margin-bottom: 48px; }
+    .platform-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+      padding-bottom: 16px; border-bottom: 2px solid rgba(255,255,255,0.08);
+    }
+    .platform-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 20px;
+    }
+    .ig-icon { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+    .tt-icon { background: #000; border: 1px solid #333; }
+    .platform-name { font-family: 'Oswald', sans-serif; font-size: 22px; letter-spacing: 1px; }
+    .platform-handle { color: rgba(255,255,255,0.4); font-size: 13px; margin-left: 4px; }
+
+    /* ── STAT CARDS ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px;
+      border: 1px solid rgba(255,255,255,0.08); transition: border-color 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stat-card.pink::before { background: var(--pink); }
+    .stat-card.green::before { background: var(--green); }
+    .stat-card.yellow::before { background: var(--yellow); }
+    .stat-card.blue::before { background: #3b82f6; }
+    .stat-card.purple::before { background: #8b5cf6; }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 700; font-family: 'Oswald', sans-serif; }
+    .stat-value input {
+      background: transparent; border: none; border-bottom: 2px solid rgba(255,255,255,0.2);
+      color: #fff; font-size: 28px; font-weight: 700; font-family: 'Oswald', sans-serif;
+      width: 100%; outline: none; padding-bottom: 2px;
+    }
+    .stat-value input:focus { border-bottom-color: var(--pink); }
+    .stat-delta { font-size: 12px; margin-top: 6px; color: rgba(255,255,255,0.4); }
+
+    /* ── TOP POSTS TABLE ── */
+    .section-title {
+      font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 1px;
+      color: rgba(255,255,255,0.6); text-transform: uppercase; margin-bottom: 16px;
+    }
+    .posts-table { width: 100%; border-collapse: collapse; }
+    .posts-table th {
+      text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: rgba(255,255,255,0.3); padding: 8px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .posts-table td {
+      padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 14px; vertical-align: middle;
+    }
+    .posts-table tr:hover td { background: rgba(255,255,255,0.03); }
+    .rank-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 50%; font-size: 12px; font-weight: 700;
+    }
+    .rank-1 { background: #f59e0b; color: #000; }
+    .rank-2 { background: #9ca3af; color: #000; }
+    .rank-3 { background: #92400e; color: #fff; }
+    .rank-other { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+    .post-type-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;
+    }
+    .type-reel { background: rgba(233,30,140,0.2); color: var(--pink); }
+    .type-photo { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .type-video { background: rgba(16,185,129,0.2); color: #34d399; }
+    .type-carousel { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    td[contenteditable="true"] {
+      outline: none; border-bottom: 1px dashed rgba(233,30,140,0.4);
+      cursor: text;
+    }
+    td[contenteditable="true"]:focus { background: rgba(233,30,140,0.05); }
+
+    /* ── EDIT MODE TOGGLE ── */
+    .edit-toggle {
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+      color: rgba(255,255,255,0.4); font-size: 13px; transition: color 0.2s;
+    }
+    .edit-toggle:hover { color: var(--pink); }
+    .edit-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.2);
+      transition: background 0.2s;
+    }
+    .edit-toggle.active { color: var(--pink); }
+    .edit-toggle.active .edit-dot { background: var(--pink); }
+
+    /* ── INSIGHTS SUMMARY BOX ── */
+    .insights-box {
+      background: rgba(233,30,140,0.08); border: 1px solid rgba(233,30,140,0.2);
+      border-radius: 12px; padding: 24px; margin-top: 24px;
+    }
+    .insights-box h3 { font-family: 'Oswald', sans-serif; font-size: 15px; color: var(--pink); margin-bottom: 12px; }
+    .insights-box p { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.7); }
+    .insights-box p[contenteditable="true"] { outline: none; }
+    .insights-box p[contenteditable="true"]:focus { color: #fff; }
+
+    /* ── SAVE BTN ── */
+    .save-bar {
+      position: fixed; bottom: 24px; right: 24px; display: none;
+      gap: 12px; z-index: 100;
+    }
+    .save-bar.visible { display: flex; }
+    .save-btn {
+      padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer;
+      font-weight: 700; font-size: 14px; transition: all 0.2s;
+    }
+    .save-btn.primary { background: var(--pink); color: #fff; }
+    .save-btn.primary:hover { background: #c0156f; }
+    .save-btn.secondary { background: rgba(255,255,255,0.1); color: #fff; }
+
+    /* ── LAST UPDATED ── */
+    .last-updated {
+      text-align: center; color: rgba(255,255,255,0.2); font-size: 12px;
+      padding: 24px; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 24px;
+    }
+
+    @media (max-width: 600px) {
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .posts-table { font-size: 12px; }
+      .top-bar { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">VISIT FIRST MONDAY</div>
+    <div class="gate-sub">Analytics Dashboard</div>
+    <h2>🔒 Enter Password</h2>
+    <input type="password" class="gate-input" id="gateInput" placeholder="••••••••••••••" autofocus>
+    <button class="gate-btn" onclick="checkPassword()">Unlock</button>
+    <div class="gate-error" id="gateError">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="top-bar">
+    <div class="top-bar-left">📊 VFM ANALYTICS</div>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <span class="period-badge">Last 30 Days</span>
+      <div class="edit-toggle" id="editToggle" onclick="toggleEdit()">
+        <div class="edit-dot"></div> Edit Mode
+      </div>
+    </div>
+    <div class="top-bar-right">@visitfirstmonday</div>
+  </div>
+
+  <div class="container">
+
+    <!-- ── INSTAGRAM ── -->
+    <div class="platform-section">
+      <div class="platform-header">
+        <div class="platform-icon ig-icon">📸</div>
+        <div>
+          <div class="platform-name">Instagram <span class="platform-handle">@visitfirstmonday</span></div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card pink">
+          <div class="stat-label">Followers</div>
+          <div class="stat-value"><input type="text" id="ig_followers" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta" id="ig_followers_delta">Enter total followers</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Posts (30d)</div>
+          <div class="stat-value"><input type="text" id="ig_posts" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Posts published this period</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">Total Reach</div>
+          <div class="stat-value"><input type="text" id="ig_reach" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Unique accounts reached</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Impressions</div>
+          <div class="stat-value"><input type="text" id="ig_impressions" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Total content views</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Engagements</div>
+          <div class="stat-value"><input type="text" id="ig_engagements" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Likes + Comments + Saves + Shares</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Eng. Rate</div>
+          <div class="stat-value"><input type="text" id="ig_eng_rate" value="0%" oninput="markDirty()"></div>
+          <div class="stat-delta">vs followers</div>
+        </div>
+        <div class="stat-card pink">
+          <div class="stat-label">Reel Views</div>
+          <div class="stat-value"><input type="text" id="ig_reel_views" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Total Reel plays</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">Profile Visits</div>
+          <div class="stat-value"><input type="text" id="ig_profile_visits" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">30-day profile views</div>
+        </div>
+      </div>
+
+      <div class="section-title">🏆 Top Posts — Last 30 Days</div>
+      <table class="posts-table" id="ig_posts_table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Post / Caption</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Views / Reach</th>
+            <th>Likes</th>
+            <th>Comments</th>
+            <th>Saves</th>
+            <th>Shares</th>
+          </tr>
+        </thead>
+        <tbody id="ig_posts_body">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+
+      <div class="insights-box">
+        <h3>📝 Instagram Insights & Notes</h3>
+        <p id="ig_notes" contenteditable="false">Click Edit Mode to add notes about Instagram performance, winning content themes, and opportunities for next month.</p>
+      </div>
+    </div>
+
+    <!-- ── TIKTOK ── -->
+    <div class="platform-section">
+      <div class="platform-header">
+        <div class="platform-icon tt-icon">🎵</div>
+        <div>
+          <div class="platform-name">TikTok <span class="platform-handle">@visitfirstmonday</span></div>
+        </div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card pink">
+          <div class="stat-label">Followers</div>
+          <div class="stat-value"><input type="text" id="tt_followers" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Total followers</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Videos (30d)</div>
+          <div class="stat-value"><input type="text" id="tt_posts" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Videos posted this period</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">Total Views</div>
+          <div class="stat-value"><input type="text" id="tt_views" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Video views (30d)</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Likes</div>
+          <div class="stat-value"><input type="text" id="tt_likes" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Total likes (30d)</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Comments</div>
+          <div class="stat-value"><input type="text" id="tt_comments" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Total comments (30d)</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Shares</div>
+          <div class="stat-value"><input type="text" id="tt_shares" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">Total shares (30d)</div>
+        </div>
+        <div class="stat-card pink">
+          <div class="stat-label">Avg Watch Time</div>
+          <div class="stat-value"><input type="text" id="tt_watch_time" value="0s" oninput="markDirty()"></div>
+          <div class="stat-delta">Average per video</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">Profile Views</div>
+          <div class="stat-value"><input type="text" id="tt_profile_views" value="0" oninput="markDirty()"></div>
+          <div class="stat-delta">30-day profile views</div>
+        </div>
+      </div>
+
+      <div class="section-title">🏆 Top Videos — Last 30 Days</div>
+      <table class="posts-table" id="tt_posts_table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Video / Caption</th>
+            <th>Date</th>
+            <th>Views</th>
+            <th>Likes</th>
+            <th>Comments</th>
+            <th>Shares</th>
+            <th>Watch %</th>
+          </tr>
+        </thead>
+        <tbody id="tt_posts_body">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+
+      <div class="insights-box">
+        <h3>📝 TikTok Insights & Notes</h3>
+        <p id="tt_notes" contenteditable="false">Click Edit Mode to add notes about TikTok performance, winning content themes, and opportunities for next month.</p>
+      </div>
+    </div>
+
+    <div class="last-updated" id="lastUpdated">Last updated: never — enter data in Edit Mode</div>
+  </div>
+</div>
+
+<!-- SAVE BAR -->
+<div class="save-bar" id="saveBar">
+  <button class="save-btn secondary" onclick="cancelEdit()">Cancel</button>
+  <button class="save-btn primary" onclick="saveData()">💾 Save Changes</button>
+</div>
+
+<script>
+  // ── PASSWORD ──
+  const PASSWORD = 'FirstMonday2026!';
+  document.getElementById('gateInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+
+  function checkPassword() {
+    const val = document.getElementById('gateInput').value;
+    if (val === PASSWORD) {
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      loadData();
+    } else {
+      document.getElementById('gateError').style.display = 'block';
+      document.getElementById('gateInput').value = '';
+      document.getElementById('gateInput').focus();
+    }
+  }
+
+  // ── DEFAULT TOP POSTS DATA ──
+  const defaultIgPosts = [
+    { caption: 'Add post caption here...', type: 'reel', date: '--', reach: '0', likes: '0', comments: '0', saves: '0', shares: '0' },
+    { caption: 'Add post caption here...', type: 'reel', date: '--', reach: '0', likes: '0', comments: '0', saves: '0', shares: '0' },
+    { caption: 'Add post caption here...', type: 'photo', date: '--', reach: '0', likes: '0', comments: '0', saves: '0', shares: '0' },
+    { caption: 'Add post caption here...', type: 'carousel', date: '--', reach: '0', likes: '0', comments: '0', saves: '0', shares: '0' },
+    { caption: 'Add post caption here...', type: 'reel', date: '--', reach: '0', likes: '0', comments: '0', saves: '0', shares: '0' },
+  ];
+
+  const defaultTtPosts = [
+    { caption: 'Add video caption here...', date: '--', views: '0', likes: '0', comments: '0', shares: '0', watch: '0%' },
+    { caption: 'Add video caption here...', date: '--', views: '0', likes: '0', comments: '0', shares: '0', watch: '0%' },
+    { caption: 'Add video caption here...', date: '--', views: '0', likes: '0', comments: '0', shares: '0', watch: '0%' },
+    { caption: 'Add video caption here...', date: '--', views: '0', likes: '0', comments: '0', shares: '0', watch: '0%' },
+    { caption: 'Add video caption here...', date: '--', views: '0', likes: '0', comments: '0', shares: '0', watch: '0%' },
+  ];
+
+  function typeClass(t) {
+    return { reel: 'type-reel', photo: 'type-photo', video: 'type-video', carousel: 'type-carousel' }[t] || 'type-video';
+  }
+
+  function renderIgPosts(posts) {
+    const tbody = document.getElementById('ig_posts_body');
+    tbody.innerHTML = posts.map((p, i) => `
+      <tr>
+        <td><span class="rank-badge rank-${i < 3 ? i+1 : 'other'}">${i+1}</span></td>
+        <td contenteditable="false" data-field="caption">${p.caption}</td>
+        <td><span class="post-type-badge ${typeClass(p.type)}">${p.type}</span></td>
+        <td contenteditable="false" data-field="date">${p.date}</td>
+        <td contenteditable="false" data-field="reach">${p.reach}</td>
+        <td contenteditable="false" data-field="likes">${p.likes}</td>
+        <td contenteditable="false" data-field="comments">${p.comments}</td>
+        <td contenteditable="false" data-field="saves">${p.saves}</td>
+        <td contenteditable="false" data-field="shares">${p.shares}</td>
+      </tr>`).join('');
+  }
+
+  function renderTtPosts(posts) {
+    const tbody = document.getElementById('tt_posts_body');
+    tbody.innerHTML = posts.map((p, i) => `
+      <tr>
+        <td><span class="rank-badge rank-${i < 3 ? i+1 : 'other'}">${i+1}</span></td>
+        <td contenteditable="false" data-field="caption">${p.caption}</td>
+        <td contenteditable="false" data-field="date">${p.date}</td>
+        <td contenteditable="false" data-field="views">${p.views}</td>
+        <td contenteditable="false" data-field="likes">${p.likes}</td>
+        <td contenteditable="false" data-field="comments">${p.comments}</td>
+        <td contenteditable="false" data-field="shares">${p.shares}</td>
+        <td contenteditable="false" data-field="watch">${p.watch}</td>
+      </tr>`).join('');
+  }
+
+  // ── EDIT MODE ──
+  let editMode = false;
+  let dirty = false;
+
+  function toggleEdit() {
+    editMode = !editMode;
+    const toggle = document.getElementById('editToggle');
+    toggle.classList.toggle('active', editMode);
+    // Toggle contenteditable on all editable cells
+    document.querySelectorAll('td[contenteditable], #ig_notes, #tt_notes').forEach(el => {
+      el.contentEditable = editMode ? 'true' : 'false';
+    });
+    document.getElementById('saveBar').classList.toggle('visible', editMode);
+    if (editMode) markDirty();
+  }
+
+  function markDirty() { dirty = true; }
+
+  function cancelEdit() {
+    editMode = false;
+    document.getElementById('editToggle').classList.remove('active');
+    document.querySelectorAll('td[contenteditable], #ig_notes, #tt_notes').forEach(el => {
+      el.contentEditable = 'false';
+    });
+    document.getElementById('saveBar').classList.remove('visible');
+    loadData(); // revert
+  }
+
+  function saveData() {
+    const data = {
+      ig: {
+        followers: document.getElementById('ig_followers').value,
+        posts: document.getElementById('ig_posts').value,
+        reach: document.getElementById('ig_reach').value,
+        impressions: document.getElementById('ig_impressions').value,
+        engagements: document.getElementById('ig_engagements').value,
+        eng_rate: document.getElementById('ig_eng_rate').value,
+        reel_views: document.getElementById('ig_reel_views').value,
+        profile_visits: document.getElementById('ig_profile_visits').value,
+        notes: document.getElementById('ig_notes').innerText,
+        topPosts: Array.from(document.querySelectorAll('#ig_posts_body tr')).map(tr => {
+          const cells = tr.querySelectorAll('td[data-field]');
+          const obj = {};
+          cells.forEach(c => obj[c.dataset.field] = c.innerText);
+          // get type from badge text
+          const badge = tr.querySelector('.post-type-badge');
+          obj.type = badge ? badge.innerText : 'reel';
+          return obj;
+        })
+      },
+      tt: {
+        followers: document.getElementById('tt_followers').value,
+        posts: document.getElementById('tt_posts').value,
+        views: document.getElementById('tt_views').value,
+        likes: document.getElementById('tt_likes').value,
+        comments: document.getElementById('tt_comments').value,
+        shares: document.getElementById('tt_shares').value,
+        watch_time: document.getElementById('tt_watch_time').value,
+        profile_views: document.getElementById('tt_profile_views').value,
+        notes: document.getElementById('tt_notes').innerText,
+        topPosts: Array.from(document.querySelectorAll('#tt_posts_body tr')).map(tr => {
+          const cells = tr.querySelectorAll('td[data-field]');
+          const obj = {};
+          cells.forEach(c => obj[c.dataset.field] = c.innerText);
+          return obj;
+        })
+      },
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem('vfm_analytics', JSON.stringify(data));
+    document.getElementById('lastUpdated').innerText = 'Last updated: ' + new Date().toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    editMode = false;
+    dirty = false;
+    document.getElementById('editToggle').classList.remove('active');
+    document.querySelectorAll('td[contenteditable], #ig_notes, #tt_notes').forEach(el => { el.contentEditable = 'false'; });
+    document.getElementById('saveBar').classList.remove('visible');
+    // flash confirmation
+    const btn = document.querySelector('.save-btn.primary');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ Saved!';
+    setTimeout(() => btn.innerHTML = orig, 1500);
+  }
+
+  function loadData() {
+    const raw = localStorage.getItem('vfm_analytics');
+    if (!raw) {
+      renderIgPosts(defaultIgPosts);
+      renderTtPosts(defaultTtPosts);
+      return;
+    }
+    const data = JSON.parse(raw);
+    const ig = data.ig || {};
+    const tt = data.tt || {};
+    // IG stats
+    ['followers','posts','reach','impressions','engagements','eng_rate','reel_views','profile_visits'].forEach(k => {
+      const el = document.getElementById('ig_' + k);
+      if (el && ig[k]) el.value = ig[k];
+    });
+    if (ig.notes) document.getElementById('ig_notes').innerText = ig.notes;
+    if (ig.topPosts) renderIgPosts(ig.topPosts); else renderIgPosts(defaultIgPosts);
+    // TT stats
+    ['followers','posts','views','likes','comments','shares','watch_time','profile_views'].forEach(k => {
+      const el = document.getElementById('tt_' + k);
+      if (el && tt[k]) el.value = tt[k];
+    });
+    if (tt.notes) document.getElementById('tt_notes').innerText = tt.notes;
+    if (tt.topPosts) renderTtPosts(tt.topPosts); else renderTtPosts(defaultTtPosts);
+    if (data.savedAt) {
+      document.getElementById('lastUpdated').innerText = 'Last updated: ' + new Date(data.savedAt).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+  }
+
+  // Initial render
+  renderIgPosts(defaultIgPosts);
+  renderTtPosts(defaultTtPosts);
+</script>
+</body>
+</html>

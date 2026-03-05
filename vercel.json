@@ -10,7 +10,8 @@
     { "source": "/vendors/login", "destination": "/vendor-login.html" },
     { "source": "/vendors/dashboard", "destination": "/vendor-dash.html" },
     { "source": "/vendors/claim", "destination": "/vendor-claim.html" },
-    { "source": "/platform", "destination": "/platform.html" }
+    { "source": "/platform", "destination": "/platform.html" },
+    { "source": "/analytics", "destination": "/analytics.html" }
   ],
   "headers": [
     {
