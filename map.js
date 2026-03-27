@@ -153,6 +153,7 @@ async function init() {
     pitch: initialMapView.pitch,
     bearing: DEFAULT_BEARING,
     maxZoom: data.map?.maxZoom || 20,
+    maxPitch: 85,
     attributionControl: false,
     antialias: true
   });
@@ -171,9 +172,25 @@ async function init() {
   map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '© <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> | TheFairMap' }), 'bottom-left');
 
   map.on('load', async () => {
+    addTerrain();
     await hydrateStyleContent();
     bindMapEvents();
   });
+}
+
+function addTerrain() {
+  if (!window.MAPTILER_KEY || !map) return;
+  try {
+    if (!map.getSource('maptiler-terrain')) {
+      map.addSource('maptiler-terrain', {
+        type: 'raster-dem',
+        url: `https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${window.MAPTILER_KEY}`
+      });
+    }
+    map.setTerrain({ source: 'maptiler-terrain', exaggeration: 1.2 });
+  } catch (e) {
+    console.warn('[map] terrain not available:', e.message);
+  }
 }
 
 async function loadIconManifest() {
@@ -1522,6 +1539,7 @@ async function setMapStyle(styleId) {
 }
 
 async function hydrateStyleContent() {
+  addTerrain();
   await loadMarkerIcons();
   buildLayers();
   appState.hoveredFeatureId = null;
