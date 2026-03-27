@@ -142,6 +142,33 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req,
   res.json({ received: true });
 });
 
+// ── Map-style proxy (mirrors Vercel Edge Function for local dev) ────────────
+const MAP_STYLE_ID = 'daff07a7-1b27-4d4e-bdc0-c18601af5067';
+app.get('/api/map-style', async (req, res) => {
+  const key = process.env.MAPTILER_KEY;
+  if (!key) return res.status(500).send('MAPTILER_KEY not configured');
+  const upstream = `https://api.maptiler.com/maps/${MAP_STYLE_ID}/style.json?key=${key}`;
+  try {
+    const resp = await fetch(upstream, {
+      headers: {
+        Referer: 'https://viewer.mapme.com/',
+        Origin: 'https://viewer.mapme.com',
+        'User-Agent': 'Mozilla/5.0 (compatible; TheFairMap/1.0)'
+      }
+    });
+    if (!resp.ok) return res.status(resp.status).send(`upstream error: ${resp.status}`);
+    const data = await resp.json();
+    res.set({
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(502).send('fetch failed: ' + err.message);
+  }
+});
+
 // ── Venue-tile proxy (mirrors Vercel Edge Function for local dev) ───────────
 const VENUE_TILESET_ID = '0196a1e2-92d2-7ed9-9540-2191fb00a1af';
 app.get('/api/venue-tile/:z/:x/:y', async (req, res) => {
