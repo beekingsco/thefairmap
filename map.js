@@ -29,6 +29,9 @@ const LAYER_SELECTED = 'location-selected';
 const LAYER_HOVER = 'location-hover';
 const MAP_BRAND_OVERLAY_ID = 'map-brand-overlay';
 
+// Spec: uiLayout.categories — fallback colors by marker shape
+const SHAPE_FALLBACK_COLORS = { circle: '#ff0000', pin: '#00ff00', none: '#0000ff' };
+
 // Group icon: colored circle + white SVG illustration (matches MapMe style)
 function makeGroupIcon(bgColor, svgPath) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="36" height="36">
@@ -317,6 +320,7 @@ function normalizeData(data) {
     id: String(category.id),
     name: String(category.name || 'Uncategorized'),
     color: normalizeColor(category.color),
+    shape: category.shape || 'circle',
     count: Number(category.count || 0)
   }));
 
@@ -346,7 +350,8 @@ function normalizeData(data) {
         bearing: Number(loc.bearing),
         categoryId,
         categoryName,
-        color: normalizeColor(category?.color || loc.color),
+        shape: category?.shape || 'circle',
+        color: normalizeColor(category?.color || loc.color || SHAPE_FALLBACK_COLORS[category?.shape] || SHAPE_FALLBACK_COLORS.circle),
         iconType: iconTypeForCategory(categoryId, categoryName),
         search: `${loc.name || ''} ${categoryName} ${loc.address || ''} ${loc.description || ''}`.toLowerCase()
       };
@@ -368,6 +373,7 @@ function normalizeData(data) {
       id: categoryId,
       name: sample?.categoryName || 'Uncategorized',
       color: normalizeColor(sample?.color || '#7a7a7a'),
+      shape: sample?.shape || 'circle',
       count: 0
     };
     appState.categories.push(fallback);
@@ -656,16 +662,28 @@ function buildLayers() {
     }
   });
 
+  // Shape-aware marker rendering (spec: uiLayout.categories.shape)
+  // "circle" → standard filled circle, "pin" → smaller circle with pin border, "none" → hidden
   map.addLayer({
     id: LAYER_MARKERS,
     type: 'circle',
     source: SOURCE_ID,
-    filter: ['!', ['has', 'point_count']],
+    filter: ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'shape'], 'none']],
     paint: {
       'circle-color': ['get', 'color'],
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 11.5, 16, 13.5, 17.5, 15.25, 20, 17.25],
-      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 14, 1.9, 17, 2.2, 20, 2.5],
-      'circle-stroke-color': '#ffffff',
+      'circle-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        14, ['match', ['get', 'shape'], 'pin', 9, 11.5],
+        16, ['match', ['get', 'shape'], 'pin', 11, 13.5],
+        17.5, ['match', ['get', 'shape'], 'pin', 13, 15.25],
+        20, ['match', ['get', 'shape'], 'pin', 14.5, 17.25]
+      ],
+      'circle-stroke-width': [
+        'match', ['get', 'shape'],
+        'pin', ['interpolate', ['linear'], ['zoom'], 14, 2.5, 17, 3, 20, 3.5],
+        ['interpolate', ['linear'], ['zoom'], 14, 1.9, 17, 2.2, 20, 2.5]
+      ],
+      'circle-stroke-color': ['match', ['get', 'shape'], 'pin', '#1a1a2e', '#ffffff'],
       'circle-opacity': 0.98
     }
   });
@@ -674,6 +692,7 @@ function buildLayers() {
     id: LAYER_ICONS,
     type: 'symbol',
     source: SOURCE_ID,
+    filter: ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'shape'], 'none']],
     layout: {
       'icon-image': ['coalesce', ['get', 'iconImage'], 'pin-white'],
       'icon-allow-overlap': true,
@@ -682,10 +701,10 @@ function buildLayers() {
       'symbol-sort-key': ['-', 1000, ['to-number', ['id'], 0]],
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.69,
-        16, 0.79,
-        17.5, 0.86,
-        20, 0.98
+        14, ['match', ['get', 'shape'], 'pin', 0.58, 0.69],
+        16, ['match', ['get', 'shape'], 'pin', 0.67, 0.79],
+        17.5, ['match', ['get', 'shape'], 'pin', 0.74, 0.86],
+        20, ['match', ['get', 'shape'], 'pin', 0.84, 0.98]
       ]
     }
   });
@@ -694,7 +713,7 @@ function buildLayers() {
     id: LAYER_HOVER,
     type: 'circle',
     source: SOURCE_ID,
-    filter: ['all', ['!', ['has', 'point_count']], ['==', ['id'], -1]],
+    filter: ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'shape'], 'none'], ['==', ['id'], -1]],
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
@@ -712,7 +731,7 @@ function buildLayers() {
     id: LAYER_SELECTED,
     type: 'circle',
     source: SOURCE_ID,
-    filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'id'], '']],
+    filter: ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'shape'], 'none'], ['==', ['get', 'id'], '']],
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
@@ -902,6 +921,8 @@ function renderCategoryCard({ category, query, visibleCounts }) {
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'category-visibility';
+  if (category.shape === 'pin') toggle.classList.add('shape-pin');
+  if (category.shape === 'none') toggle.classList.add('shape-none');
   toggle.title = active ? 'Hide category markers' : 'Show category markers';
   toggle.setAttribute('aria-label', `${active ? 'Hide' : 'Show'} ${category.name}`);
   toggle.style.setProperty('--cat-color', category.color);
@@ -1609,6 +1630,7 @@ function toFeatureCollection(locations) {
       properties: {
         id: loc.id,
         color: loc.color,
+        shape: loc.shape || 'circle',
         iconType: loc.iconType,
         iconImage: `${loc.iconType}-${pickMarkerIconTone(loc.color)}`
       }

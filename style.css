@@ -258,6 +258,26 @@ body {
   box-shadow: none;
 }
 
+/* Shape indicators: pin → diamond, none → dash */
+.category-visibility.shape-pin {
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid #1a1a2e;
+  width: 11px;
+  height: 11px;
+}
+
+.category-visibility.shape-pin:hover {
+  transform: rotate(-45deg) scale(1.05);
+}
+
+.category-visibility.shape-none {
+  border-radius: 2px;
+  width: 12px;
+  height: 4px;
+  opacity: 0.5;
+}
+
 .category-head {
   border: none;
   background: transparent;
