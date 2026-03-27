@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/map-style", "destination": "/api/map-style" },
     { "source": "/api/venue-tile-style", "destination": "/api/venue-tile-style" },
     { "source": "/api/venue-tile/:path*", "destination": "/api/venue-tile/:path*" },
     { "source": "/api/config.js", "destination": "/api/config.js" },

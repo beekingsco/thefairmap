@@ -170,7 +170,7 @@ async function init() {
     locations: Array.isArray(data.locations) ? data.locations.length : 0
   });
   appState.mapData = data;
-  appState.venueStyleUrl = resolveVenueStyleUrl(data.map?.style);
+  appState.venueStyleUrl = await resolveVenueStyleUrl(data.map?.style);
   appState.satelliteStyleUrl = resolveSatelliteStyleUrl();
   normalizeData(data);
   console.log('[filters] init:locations-parsed', {
@@ -1792,8 +1792,14 @@ function resolveStyleUrl(rawStyle) {
   return STYLE_FALLBACK;
 }
 
-function resolveVenueStyleUrl(rawStyle) {
-  // Prefer custom MapTiler hybrid style with 3D buildings
+async function resolveVenueStyleUrl(rawStyle) {
+  // Prefer proxied style endpoint — keeps MapTiler key server-side
+  const proxyUrl = `${window.location.origin}/api/map-style`;
+  try {
+    const res = await fetch(proxyUrl, { method: 'HEAD' });
+    if (res.ok) return proxyUrl;
+  } catch (_) { /* fall through */ }
+  // Fallback: direct MapTiler URL or generic open style
   if (window.MAPTILER_KEY) return `${MAPTILER_CUSTOM_STYLE}?key=${window.MAPTILER_KEY}`;
   return resolveStyleUrl(rawStyle);
 }
