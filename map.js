@@ -431,6 +431,7 @@ function bindUi() {
   document.getElementById('mobile-sheet-collapse')?.addEventListener('click', () => setMobileSidebarOpen(false));
   document.getElementById('style-venue-btn').addEventListener('click', () => setMapStyle('venue'));
   document.getElementById('style-satellite-btn').addEventListener('click', () => setMapStyle('satellite'));
+  document.getElementById('venue-overlay-toggle')?.addEventListener('click', toggleVenueOverlay);
   document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebar);
   document.getElementById('detail-scrim').addEventListener('click', closeDetailPanel);
   document.getElementById('detail-close').addEventListener('click', closeDetailPanel);
@@ -556,12 +557,13 @@ function addVenueOverlay() {
   // Only add venue overlay when in venue map mode (not satellite)
   if (appState.activeMapStyle === 'satellite') return;
   // Raster overlay from MapMe's custom MapTiler tileset, proxied via /api/venue-tile/
+  // Shows colored pavilion rows and booth numbers matching MapMe viewer
   if (map.getSource('venue-overlay')) return;
   map.addSource('venue-overlay', {
     type: 'raster',
     tiles: [`${window.location.origin}/api/venue-tile/{z}/{x}/{y}.png`],
     tileSize: 256,
-    minzoom: 13,
+    minzoom: 14,
     maxzoom: 22,
     bounds: [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321],
     attribution: 'Map data © First Monday Trade Days'
@@ -572,8 +574,31 @@ function addVenueOverlay() {
     id: 'venue-overlay-layer',
     type: 'raster',
     source: 'venue-overlay',
-    paint: { 'raster-opacity': 0.88 }
+    paint: {
+      // Fade in as user zooms closer — full detail at booth-level zoom
+      'raster-opacity': [
+        'interpolate', ['linear'], ['zoom'],
+        14, 0.0,
+        15, 0.72,
+        16, 0.88,
+        18, 0.94
+      ]
+    }
   }, beforeId);
+  // Sync toggle button state
+  const btn = document.getElementById('venue-overlay-toggle');
+  if (btn) btn.classList.add('is-active');
+}
+
+function toggleVenueOverlay() {
+  if (!map) return;
+  const layer = map.getLayer('venue-overlay-layer');
+  if (!layer) return;
+  const current = map.getLayoutProperty('venue-overlay-layer', 'visibility');
+  const next = current === 'none' ? 'visible' : 'none';
+  map.setLayoutProperty('venue-overlay-layer', 'visibility', next);
+  const btn = document.getElementById('venue-overlay-toggle');
+  if (btn) btn.classList.toggle('is-active', next === 'visible');
 }
 
 function buildLayers() {
@@ -1525,6 +1550,9 @@ function updateMapStyleButtons() {
   satelliteBtn.disabled = appState.mapStyleLoading;
   venueBtn.setAttribute('aria-pressed', String(isVenue));
   satelliteBtn.setAttribute('aria-pressed', String(!isVenue));
+  // Hide booth overlay toggle when in satellite mode (no venue tiles)
+  const overlayBtn = document.getElementById('venue-overlay-toggle');
+  if (overlayBtn) overlayBtn.style.display = isVenue ? '' : 'none';
 }
 
 async function setMapStyle(styleId) {
