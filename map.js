@@ -540,6 +540,18 @@ function loadImageByUrl(url) {
   });
 }
 
+function findFirstSymbolLayer() {
+  // Find the first symbol (label) layer in the base map style so we can
+  // insert the venue raster overlay beneath it.  This keeps road names,
+  // POI labels, and 3D-building extrusions rendered on top of the
+  // coloured pavilion tiles — matching MapMe's visual hierarchy.
+  const layers = map.getStyle().layers || [];
+  for (const layer of layers) {
+    if (layer.type === 'symbol') return layer.id;
+  }
+  return undefined; // fallback: add on top
+}
+
 function addVenueOverlay() {
   // Only add venue overlay when in venue map mode (not satellite)
   if (appState.activeMapStyle === 'satellite') return;
@@ -554,12 +566,14 @@ function addVenueOverlay() {
     bounds: [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321],
     attribution: 'Map data © First Monday Trade Days'
   });
+  // Insert below the first symbol layer so base-map labels stay on top
+  const beforeId = findFirstSymbolLayer();
   map.addLayer({
     id: 'venue-overlay-layer',
     type: 'raster',
     source: 'venue-overlay',
-    paint: { 'raster-opacity': 1.0 }
-  });
+    paint: { 'raster-opacity': 0.88 }
+  }, beforeId);
 }
 
 function buildLayers() {
