@@ -84,6 +84,7 @@ const appState = {
   mapEventsBound: false,
   activeMapStyle: 'venue',
   venueStyleUrl: STYLE_FALLBACK,
+  venueOverlayConfig: null,
   satelliteStyleUrl: SATELLITE_STYLE_FALLBACK,
   filtersInitialized: false,
   totalLocationCount: 0,
@@ -173,6 +174,8 @@ async function init() {
 
   map.on('load', async () => {
     addTerrain();
+    // Resolve venue overlay tileset metadata before building layers
+    appState.venueOverlayConfig = await resolveVenueOverlay();
     await hydrateStyleContent();
     bindMapEvents();
   });
@@ -559,13 +562,15 @@ function addVenueOverlay() {
   // Raster overlay from MapMe's custom MapTiler tileset, proxied via /api/venue-tile/
   // Shows colored pavilion rows and booth numbers matching MapMe viewer
   if (map.getSource('venue-overlay')) return;
+  const cfg = appState.venueOverlayConfig;
+  const defaultBounds = [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321];
   map.addSource('venue-overlay', {
     type: 'raster',
     tiles: [`${window.location.origin}/api/venue-tile/{z}/{x}/{y}.png`],
     tileSize: 256,
-    minzoom: 14,
-    maxzoom: 22,
-    bounds: [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321],
+    minzoom: cfg?.minzoom ?? 14,
+    maxzoom: cfg?.maxzoom ?? 22,
+    bounds: cfg?.bounds ?? defaultBounds,
     attribution: 'Map data © First Monday Trade Days'
   });
   // Insert below the first symbol layer so base-map labels stay on top
@@ -1692,6 +1697,25 @@ function resolveVenueStyleUrl(rawStyle) {
   // Prefer custom MapTiler hybrid style with 3D buildings
   if (window.MAPTILER_KEY) return `${MAPTILER_CUSTOM_STYLE}?key=${window.MAPTILER_KEY}`;
   return resolveStyleUrl(rawStyle);
+}
+
+async function resolveVenueOverlay() {
+  // Fetch tileset metadata (bounds, zoom, tile URL template) from proxied style.json
+  // so the overlay source is configured dynamically rather than hardcoded.
+  try {
+    const res = await fetch(`${window.location.origin}/api/venue-tile-style`);
+    if (!res.ok) return null;
+    const meta = await res.json();
+    return {
+      bounds: meta.bounds || null,
+      minzoom: meta.minzoom ?? 14,
+      maxzoom: meta.maxzoom ?? 22,
+      name: meta.name || 'venue-overlay'
+    };
+  } catch (err) {
+    console.warn('[venue-overlay] failed to resolve tileset metadata, using defaults', err);
+    return null;
+  }
 }
 
 function resolveSatelliteStyleUrl() {
