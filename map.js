@@ -30,7 +30,7 @@ const LAYER_HOVER = 'location-hover';
 const MAP_BRAND_OVERLAY_ID = 'map-brand-overlay';
 
 // Spec: uiLayout.categories — fallback colors by marker shape
-const SHAPE_FALLBACK_COLORS = { circle: '#ff0000', pin: '#00ff00', none: '#0000ff' };
+const SHAPE_FALLBACK_COLORS = { circle: '#7a7a7a', pin: '#4a4a4a', none: '#999999' };
 
 // Group icon: colored circle + white SVG illustration (matches MapMe style)
 function makeGroupIcon(bgColor, svgPath) {
@@ -127,6 +127,41 @@ const ICON_SVGS = {
   pin: '<path fill="#fff" d="M12 2a6 6 0 0 1 6 6c0 4.7-6 12-6 12S6 12.7 6 8a6 6 0 0 1 6-6Zm0 2a4 4 0 0 0-4 4c0 2.5 2.5 6.5 4 8.7 1.5-2.2 4-6.2 4-8.7a4 4 0 0 0-4-4Z"/>'
 };
 
+// --- Deep-link support ---
+// Supports ?loc=<id>, #loc=<id>, and /location/<id> patterns (MapMe compat)
+function getDeepLinkedLocationId() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('loc')) return params.get('loc');
+  if (params.get('location')) return params.get('location');
+  const hash = window.location.hash.replace(/^#/, '');
+  if (hash.startsWith('loc=')) return hash.slice(4);
+  // MapMe-style /location/<uuid> encoded in hash
+  const locMatch = hash.match(/^location\/(.+)/);
+  if (locMatch) return locMatch[1];
+  return null;
+}
+
+function openDeepLinkedLocation() {
+  const id = getDeepLinkedLocationId();
+  if (!id) return;
+  const location = appState.locations.find((loc) => loc.id === id || loc.name === id);
+  if (!location) return;
+  openLocation(location, true);
+}
+
+function updateUrlHash(locationId) {
+  if (!locationId) {
+    if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+    return;
+  }
+  history.replaceState(null, '', `${window.location.pathname}${window.location.search}#loc=${encodeURIComponent(locationId)}`);
+}
+
+window.addEventListener('hashchange', () => {
+  if (!map) return;
+  openDeepLinkedLocation();
+});
+
 async function init() {
   console.log('[filters] init:start');
   const data = await fetchMapData();
@@ -181,6 +216,8 @@ async function init() {
     appState.venueOverlayConfig = await resolveVenueOverlay();
     await hydrateStyleContent();
     bindMapEvents();
+    // Deep-link: open location from URL hash or query param
+    openDeepLinkedLocation();
   });
 }
 
@@ -1064,6 +1101,7 @@ function renderCategoryLocationsView(wrap, query) {
 
 function openLocation(location, fly) {
   appState.selectedLocationId = location.id;
+  updateUrlHash(location.id);
   syncSelectedLayer();
 
   renderDetail(location);
