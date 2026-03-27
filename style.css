@@ -1085,27 +1085,7 @@ body {
   }
 
   .map-brand-overlay {
-    display: flex;
-    top: calc(52px + env(safe-area-inset-top));
-    left: 0;
-    right: 0;
-    transform: none;
-    border-radius: 0;
-    z-index: 6050;
-    box-shadow: none;
-    background: transparent;
-    justify-content: center;
-    align-items: center;
-    padding: 0;
-  }
-
-  .map-brand-script {
-    font-size: 30px;
-  }
-
-  .map-brand-block {
-    font-size: 12px;
-    letter-spacing: 0.2em;
+    display: none !important;
   }
 
   #sidebar {
