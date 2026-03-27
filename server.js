@@ -174,6 +174,32 @@ app.get('/api/venue-tile/:z/:x/:y', async (req, res) => {
   }
 });
 
+// Venue-tile style/metadata proxy (mirrors Vercel Edge Function for local dev)
+app.get('/api/venue-tile-style', async (req, res) => {
+  const key = process.env.MAPTILER_KEY;
+  if (!key) return res.status(500).send('MAPTILER_KEY not configured');
+  const upstream = `https://api.maptiler.com/tiles/${VENUE_TILESET_ID}/tiles.json?key=${key}`;
+  try {
+    const resp = await fetch(upstream, {
+      headers: {
+        Referer: 'https://viewer.mapme.com/',
+        Origin: 'https://viewer.mapme.com',
+        'User-Agent': 'Mozilla/5.0 (compatible; TheFairMap/1.0)'
+      }
+    });
+    if (!resp.ok) return res.status(resp.status).send(`upstream error: ${resp.status}`);
+    const data = await resp.json();
+    res.set({
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(502).send('fetch failed: ' + err.message);
+  }
+});
+
 // ── Middleware ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
