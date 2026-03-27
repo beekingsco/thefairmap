@@ -31,6 +31,28 @@
     </button>
   </div>
 
+  <!-- Top header bar — date + cycle number -->
+  <header id="top-header" aria-label="Fair info">
+    <div class="header-brand">
+      <img src="/data/icons/first-monday-finder-logo.png" alt="First Monday Finder" class="header-logo">
+    </div>
+    <div class="header-info">
+      <span id="header-date" class="header-date"></span>
+      <span class="header-sep">|</span>
+      <span id="header-cycle" class="header-cycle"></span>
+    </div>
+    <div class="header-search-wrap">
+      <label for="header-search-input" class="sr-only">Search</label>
+      <input id="header-search-input" type="search" placeholder="Search vendors..." autocomplete="off">
+      <span class="header-search-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </span>
+    </div>
+  </header>
+
   <header id="mobile-topbar" aria-label="Mobile search">
     <div class="mobile-search-wrap">
       <label for="mobile-search-input" class="sr-only">Search</label>
@@ -88,6 +110,21 @@
         </button>
       </div>
     </main>
+
+    <!-- Bottom panel — vendor list + recent updates -->
+    <footer id="bottom-panel" aria-label="Vendors and updates">
+      <div class="bottom-panel-handle" aria-hidden="true">
+        <span class="sheet-handle"></span>
+      </div>
+      <div class="bottom-panel-tabs">
+        <button id="tab-vendors" class="bottom-tab is-active" type="button">Vendors</button>
+        <button id="tab-updates" class="bottom-tab" type="button">Recent Updates</button>
+      </div>
+      <div id="bottom-panel-content" class="bottom-panel-content">
+        <div id="vendor-list" class="vendor-list" aria-live="polite"></div>
+        <div id="updates-list" class="updates-list" hidden></div>
+      </div>
+    </footer>
 
     <section id="detail-panel" aria-label="Location details" hidden>
       <div class="sheet-handle-wrap" data-sheet-handle="detail" aria-hidden="true">
