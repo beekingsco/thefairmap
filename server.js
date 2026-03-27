@@ -150,7 +150,8 @@ app.get('/api/venue-tile/:z/:x/:y', async (req, res) => {
   if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
     return res.status(400).send('invalid tile coordinates');
   }
-  const key = process.env.MAPTILER_KEY || 'fQ4ZMToXe3rVrmKMAN7K';
+  const key = process.env.MAPTILER_KEY;
+  if (!key) return res.status(500).send('MAPTILER_KEY not configured');
   const upstream = `https://api.maptiler.com/tiles/${VENUE_TILESET_ID}/${z}/${x}/${y}.png?key=${key}`;
   try {
     const resp = await fetch(upstream, {
