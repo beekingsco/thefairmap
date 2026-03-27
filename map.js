@@ -655,8 +655,16 @@ function bindUi() {
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
+      closeSuggestions();
       closeDetailPanel();
       closeMobileSidebar();
+    }
+  });
+
+  // Close suggestions when clicking outside search areas
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.header-search-wrap') && !event.target.closest('.sidebar-search-wrap')) {
+      closeSuggestions();
     }
   });
 
@@ -1294,6 +1302,7 @@ function renderCategoryLocationsView(wrap, query) {
 }
 
 function openLocation(location, fly) {
+  closeSuggestions();
   appState.selectedLocationId = location.id;
   updateUrlHash(location.id);
   syncSelectedLayer();
