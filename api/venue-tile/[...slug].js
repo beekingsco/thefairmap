@@ -24,7 +24,10 @@ export default async function handler(req) {
     return new Response('invalid tile coordinates', { status: 400 });
   }
 
-  const key = process.env.MAPTILER_KEY || 'fQ4ZMToXe3rVrmKMAN7K';
+  const key = process.env.MAPTILER_KEY;
+  if (!key) {
+    return new Response('MAPTILER_KEY not configured', { status: 500 });
+  }
   const upstream = `https://api.maptiler.com/tiles/${TILESET_ID}/${z}/${x}/${y}.png?key=${key}`;
 
   try {
