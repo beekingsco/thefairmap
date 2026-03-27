@@ -16,7 +16,7 @@ const SATELLITE_STYLE_FALLBACK = {
   },
   layers: [{ id: 'esri-imagery', type: 'raster', source: 'esri' }]
 };
-const DEFAULT_CENTER = [-95.8624, 32.5585];
+const DEFAULT_CENTER = [-95.86328, 32.55795]; // Centered on Boardwalk area
 const DEFAULT_ZOOM = 17;
 const DEFAULT_PITCH = 60;
 const DEFAULT_BEARING = 0;
@@ -180,8 +180,11 @@ async function init() {
   updateFilterCount('init:after-normalize');
   scheduleFilterCountRefresh(250, 'init:deferred-250ms');
   initializeSidebarState();
+  initHeader();
+  initBottomPanel();
   bindUi();
   applyFilters();
+  renderBottomPanel();
   const initialMapView = resolveInitialMapView(data);
 
   map = new maplibregl.Map({
@@ -450,9 +453,11 @@ function normalizeData(data) {
 function bindUi() {
   const searchInput = document.getElementById('search-input');
   const mobileSearchInput = document.getElementById('mobile-search-input');
+  const headerSearchInput = document.getElementById('header-search-input');
   const syncSearch = (value, source) => {
     if (searchInput && source !== searchInput) searchInput.value = value;
     if (mobileSearchInput && source !== mobileSearchInput) mobileSearchInput.value = value;
+    if (headerSearchInput && source !== headerSearchInput) headerSearchInput.value = value;
   };
 
   searchInput.addEventListener('input', () => {
@@ -922,7 +927,7 @@ function onMarkerMouseLeave() {
 }
 
 function applyFilters() {
-  const query = document.getElementById('search-input').value.trim().toLowerCase();
+  const query = (document.getElementById('search-input')?.value || document.getElementById('header-search-input')?.value || '').trim().toLowerCase();
 
   appState.filteredLocations = appState.locations.filter((loc) => {
     const catVisible = appState.activeCategories.has(loc.categoryId);
@@ -942,6 +947,7 @@ function applyFilters() {
   }
 
   renderOverview(query);
+  renderBottomPanel();
   console.log('[filters] applyFilters:computed', {
     query,
     filtered: appState.filteredLocations.length,
@@ -1959,6 +1965,110 @@ function extractLocationPhotos(location) {
     if (/^https?:\/\//i.test(cleaned) || cleaned.startsWith('/uploads/')) urls.push(cleaned);
   }
   return Array.from(new Set(urls));
+}
+
+// ── Header: date + cycle number ──────────────────────────────────────────
+function computeFairCycle() {
+  // First Monday Trade Days has run since 1850. Cycle = months since epoch.
+  // We use a simpler formula: cycle number relative to a known anchor.
+  // March 2026 = cycle 1816 (per build report filename).
+  const now = new Date();
+  const anchorYear = 2026;
+  const anchorMonth = 2; // March (0-indexed)
+  const anchorCycle = 1816;
+  const monthsDiff = (now.getFullYear() - anchorYear) * 12 + (now.getMonth() - anchorMonth);
+  return anchorCycle + monthsDiff;
+}
+
+function initHeader() {
+  const dateEl = document.getElementById('header-date');
+  const cycleEl = document.getElementById('header-cycle');
+  if (dateEl) {
+    const now = new Date();
+    dateEl.textContent = now.toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+  }
+  if (cycleEl) {
+    cycleEl.textContent = `Cycle #${computeFairCycle()}`;
+  }
+
+  // Sync header search with sidebar search
+  const headerSearch = document.getElementById('header-search-input');
+  const sidebarSearch = document.getElementById('search-input');
+  if (headerSearch) {
+    headerSearch.addEventListener('input', () => {
+      if (sidebarSearch) sidebarSearch.value = headerSearch.value;
+      applyFilters();
+    });
+  }
+}
+
+// ── Bottom Panel: vendor list + recent updates ──────────────────────────
+function initBottomPanel() {
+  const tabVendors = document.getElementById('tab-vendors');
+  const tabUpdates = document.getElementById('tab-updates');
+  const vendorList = document.getElementById('vendor-list');
+  const updatesList = document.getElementById('updates-list');
+  if (!tabVendors || !tabUpdates) return;
+
+  tabVendors.addEventListener('click', () => {
+    tabVendors.classList.add('is-active');
+    tabUpdates.classList.remove('is-active');
+    if (vendorList) vendorList.hidden = false;
+    if (updatesList) updatesList.hidden = true;
+  });
+
+  tabUpdates.addEventListener('click', () => {
+    tabUpdates.classList.add('is-active');
+    tabVendors.classList.remove('is-active');
+    if (vendorList) vendorList.hidden = true;
+    if (updatesList) updatesList.hidden = false;
+  });
+}
+
+function renderBottomPanel() {
+  const vendorList = document.getElementById('vendor-list');
+  const updatesList = document.getElementById('updates-list');
+  if (!vendorList) return;
+
+  // Render vendor cards — show a horizontal scrolling list of all locations
+  vendorList.innerHTML = '';
+  const locations = appState.filteredLocations.length ? appState.filteredLocations : appState.locations;
+  for (const loc of locations.slice(0, 100)) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'vendor-card';
+    const category = appState.categoriesById.get(loc.categoryId);
+    const color = normalizeColor(category?.color || loc.color);
+    card.innerHTML = `
+      <div class="vendor-card-name">${escapeHtml(loc.name)}</div>
+      <div class="vendor-card-category">
+        <span class="vendor-card-dot" style="background:${color};"></span>
+        ${escapeHtml(category?.name || loc.categoryName || 'Uncategorized')}
+      </div>
+    `;
+    card.addEventListener('click', () => openLocation(loc, true));
+    vendorList.appendChild(card);
+  }
+
+  // Render recent updates (simulated from location data)
+  if (updatesList) {
+    updatesList.innerHTML = '';
+    const recentLocations = appState.locations.slice(0, 15);
+    for (const loc of recentLocations) {
+      const item = document.createElement('div');
+      item.className = 'update-item';
+      item.innerHTML = `
+        <span class="update-dot"></span>
+        <span class="update-text"><strong>${escapeHtml(loc.name)}</strong> added to the map</span>
+      `;
+      updatesList.appendChild(item);
+    }
+    if (recentLocations.length === 0) {
+      updatesList.innerHTML = '<div style="padding:12px;color:#667085;font-size:12px;">No recent updates.</div>';
+    }
+  }
 }
 
 if ('serviceWorker' in navigator) {
