@@ -3,7 +3,7 @@
 export const config = { runtime: 'edge' };
 
 const TILESET_ID = '0196a1e2-92d2-7ed9-9540-2191fb00a1af';
-const MAPTILER_KEY = 'fQ4ZMToXe3rVrmKMAN7K';
+const MAPTILER_KEY = process.env.MAPTILER_KEY || 'fQ4ZMToXe3rVrmKMAN7K';
 
 export default async function handler(req) {
   const url = new URL(req.url);
