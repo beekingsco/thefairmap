@@ -162,9 +162,47 @@ window.addEventListener('hashchange', () => {
   openDeepLinkedLocation();
 });
 
+function showLoading(text) {
+  const overlay = document.getElementById('loading-overlay');
+  const textEl = overlay?.querySelector('.loading-text');
+  if (overlay) {
+    overlay.classList.remove('is-hidden');
+    overlay.hidden = false;
+  }
+  if (textEl && text) textEl.textContent = text;
+}
+
+function hideLoading() {
+  const overlay = document.getElementById('loading-overlay');
+  if (overlay) {
+    overlay.classList.add('is-hidden');
+    setTimeout(() => { overlay.hidden = true; }, 400);
+  }
+}
+
+function showError(message) {
+  const banner = document.getElementById('error-banner');
+  const msgEl = document.getElementById('error-message');
+  if (banner) banner.hidden = false;
+  if (msgEl) msgEl.textContent = message;
+}
+
 async function init() {
   console.log('[filters] init:start');
-  const data = await fetchMapData();
+  showLoading('Loading map data...');
+
+  let data;
+  try {
+    data = await fetchMapData();
+  } catch (err) {
+    console.error('[init] failed to load map data', err);
+    hideLoading();
+    showError('Unable to load map data. Please refresh the page.');
+    const retryBtn = document.getElementById('error-retry');
+    if (retryBtn) retryBtn.addEventListener('click', () => { location.reload(); });
+    return;
+  }
+
   console.log('[filters] init:data-loaded', {
     categories: Array.isArray(data.categories) ? data.categories.length : 0,
     locations: Array.isArray(data.locations) ? data.locations.length : 0
@@ -186,6 +224,8 @@ async function init() {
   applyFilters();
   renderBottomPanel();
   const initialMapView = resolveInitialMapView(data);
+
+  showLoading('Initializing map...');
 
   map = new maplibregl.Map({
     container: 'map',
@@ -221,6 +261,12 @@ async function init() {
     bindMapEvents();
     // Deep-link: open location from URL hash or query param
     openDeepLinkedLocation();
+    hideLoading();
+  });
+
+  map.on('error', (e) => {
+    console.error('[map] error', e.error);
+    hideLoading();
   });
 }
 
@@ -450,6 +496,110 @@ function normalizeData(data) {
   scheduleFilterCountRefresh(600, 'normalizeData:deferred-600ms');
 }
 
+// ── Search Suggestions ───────────────────────────────────────────────────
+const MAX_SUGGESTIONS = 12;
+
+function buildSuggestionItems(query) {
+  if (!query) return [];
+  const q = query.toLowerCase();
+  const scored = [];
+  for (const loc of appState.locations) {
+    if (!loc.search.includes(q)) continue;
+    // Prioritize name matches over description matches
+    const nameMatch = loc.name.toLowerCase().includes(q);
+    const exactStart = loc.name.toLowerCase().startsWith(q);
+    const score = exactStart ? 3 : nameMatch ? 2 : 1;
+    scored.push({ loc, score });
+  }
+  scored.sort((a, b) => b.score - a.score || a.loc.name.localeCompare(b.loc.name));
+  return scored.slice(0, MAX_SUGGESTIONS).map((s) => s.loc);
+}
+
+function renderSuggestions(dropdownEl, query) {
+  if (!dropdownEl) return;
+  if (!query || query.length < 1) {
+    dropdownEl.innerHTML = '';
+    dropdownEl.classList.remove('is-visible');
+    return;
+  }
+  const results = buildSuggestionItems(query);
+  dropdownEl.innerHTML = '';
+  if (results.length === 0) {
+    dropdownEl.innerHTML = '<div class="search-suggestions-empty">No results found</div>';
+    dropdownEl.classList.add('is-visible');
+    return;
+  }
+  for (const loc of results) {
+    const cat = appState.categoriesById.get(loc.categoryId);
+    const color = normalizeColor(cat?.color || loc.color);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'search-suggestion-item';
+    btn.setAttribute('role', 'option');
+    btn.innerHTML = `
+      <span class="search-suggestion-dot" style="background:${color};"></span>
+      <span class="search-suggestion-info">
+        <span class="search-suggestion-name">${escapeHtml(loc.name)}</span>
+        <span class="search-suggestion-category">${escapeHtml(cat?.name || loc.categoryName)}</span>
+      </span>
+    `;
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // prevent blur before click fires
+      openLocation(loc, true);
+      closeSuggestions();
+    });
+    dropdownEl.appendChild(btn);
+  }
+  dropdownEl.classList.add('is-visible');
+}
+
+function closeSuggestions() {
+  document.querySelectorAll('.search-suggestions').forEach((el) => {
+    el.classList.remove('is-visible');
+    el.innerHTML = '';
+  });
+}
+
+function bindSearchSuggestions(inputEl, dropdownEl) {
+  if (!inputEl || !dropdownEl) return;
+  inputEl.addEventListener('input', () => {
+    renderSuggestions(dropdownEl, inputEl.value.trim());
+  });
+  inputEl.addEventListener('focus', () => {
+    const q = inputEl.value.trim();
+    if (q) renderSuggestions(dropdownEl, q);
+  });
+  inputEl.addEventListener('blur', () => {
+    // Small delay to allow mousedown on suggestion to fire
+    setTimeout(() => dropdownEl.classList.remove('is-visible'), 150);
+  });
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeSuggestions();
+      inputEl.blur();
+    }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const items = dropdownEl.querySelectorAll('.search-suggestion-item');
+      if (!items.length) return;
+      const active = dropdownEl.querySelector('.search-suggestion-item.is-active');
+      let idx = Array.from(items).indexOf(active);
+      if (e.key === 'ArrowDown') idx = idx < items.length - 1 ? idx + 1 : 0;
+      else idx = idx > 0 ? idx - 1 : items.length - 1;
+      items.forEach((it) => it.classList.remove('is-active'));
+      items[idx].classList.add('is-active');
+      items[idx].scrollIntoView({ block: 'nearest' });
+    }
+    if (e.key === 'Enter') {
+      const active = dropdownEl.querySelector('.search-suggestion-item.is-active');
+      if (active) {
+        e.preventDefault();
+        active.click();
+      }
+    }
+  });
+}
+
 function bindUi() {
   const searchInput = document.getElementById('search-input');
   const mobileSearchInput = document.getElementById('mobile-search-input');
@@ -458,7 +608,13 @@ function bindUi() {
     if (searchInput && source !== searchInput) searchInput.value = value;
     if (mobileSearchInput && source !== mobileSearchInput) mobileSearchInput.value = value;
     if (headerSearchInput && source !== headerSearchInput) headerSearchInput.value = value;
+    // Close suggestions on other inputs when syncing
+    document.querySelectorAll('.search-suggestions').forEach((el) => el.classList.remove('is-visible'));
   };
+
+  // Bind search suggestions
+  bindSearchSuggestions(headerSearchInput, document.getElementById('header-search-suggestions'));
+  bindSearchSuggestions(searchInput, document.getElementById('sidebar-search-suggestions'));
 
   searchInput.addEventListener('input', () => {
     syncSearch(searchInput.value, searchInput);
