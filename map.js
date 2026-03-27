@@ -464,6 +464,15 @@ function bindUi() {
     applyFilters();
   });
 
+  document.getElementById('select-all-btn')?.addEventListener('click', () => {
+    appState.categories.forEach((cat) => appState.activeCategories.add(cat.id));
+    applyFilters();
+  });
+  document.getElementById('deselect-all-btn')?.addEventListener('click', () => {
+    appState.activeCategories.clear();
+    applyFilters();
+  });
+
   document.getElementById('overview-toggle').addEventListener('click', () => {
     appState.overviewOpen = !appState.overviewOpen;
     document.getElementById('overview-toggle').setAttribute('aria-expanded', String(appState.overviewOpen));
@@ -1012,22 +1021,45 @@ function renderOverview(query) {
     const section = document.createElement('section');
     section.className = 'category-group';
 
-    const groupHeader = document.createElement('button');
-    groupHeader.type = 'button';
+    const allGroupActive = group.categories.every((cat) => appState.activeCategories.has(cat.id));
+    const someGroupActive = group.categories.some((cat) => appState.activeCategories.has(cat.id));
+
+    const groupHeader = document.createElement('div');
     groupHeader.className = 'category-group-header';
-    groupHeader.setAttribute('aria-expanded', String(expanded));
-    groupHeader.innerHTML = `
+
+    const groupToggleBtn = document.createElement('button');
+    groupToggleBtn.type = 'button';
+    groupToggleBtn.className = `group-toggle-check${allGroupActive ? ' is-all' : someGroupActive ? ' is-partial' : ''}`;
+    groupToggleBtn.title = allGroupActive ? 'Hide all in group' : 'Show all in group';
+    groupToggleBtn.setAttribute('aria-label', `${allGroupActive ? 'Hide' : 'Show'} all ${group.label}`);
+    groupToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const activate = !allGroupActive;
+      for (const cat of group.categories) {
+        if (activate) appState.activeCategories.add(cat.id);
+        else appState.activeCategories.delete(cat.id);
+      }
+      applyFilters();
+    });
+
+    const expandBtn = document.createElement('button');
+    expandBtn.type = 'button';
+    expandBtn.className = 'group-expand-btn';
+    expandBtn.setAttribute('aria-expanded', String(expanded));
+    expandBtn.innerHTML = `
       <span class="category-group-arrow">${expanded ? '&#9660;' : '&#9654;'}</span>
       <span class="category-group-icon"></span>
       <span class="category-group-name">${escapeHtml(group.label)}</span>
       <span class="category-group-count">${groupVisible}/${groupTotal}</span>
     `;
-    // Set SVG icon HTML (safe — icons are internal definitions, not user content)
-    groupHeader.querySelector('.category-group-icon').innerHTML = group.icon;
-    groupHeader.addEventListener('click', () => {
+    expandBtn.querySelector('.category-group-icon').innerHTML = group.icon;
+    expandBtn.addEventListener('click', () => {
       appState.groupExpanded.set(group.id, !expanded);
       renderOverview(query);
     });
+
+    groupHeader.appendChild(groupToggleBtn);
+    groupHeader.appendChild(expandBtn);
     section.appendChild(groupHeader);
 
     const groupBody = document.createElement('div');
@@ -1239,6 +1271,7 @@ function closeDetailPanel() {
   if (!panel || panel.hidden || appState.detailClosing) return;
   appState.popupPinned = false;
   removeAnchorPopup();
+  updateUrlHash(null);
   appState.detailClosing = true;
   panel.classList.add('is-closing');
   panel.classList.remove('is-open');
