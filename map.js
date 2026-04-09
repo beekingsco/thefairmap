@@ -1,6 +1,8 @@
 let map;
 let geolocateControl;
 
+// MapTiler custom style — satellite/vector hybrid with 3D buildings
+const MAPTILER_CUSTOM_STYLE = 'https://api.maptiler.com/maps/daff07a7-1b27-4d4e-bdc0-c18601af5067/style.json';
 const STYLE_FALLBACK = 'https://tiles.openfreemap.org/styles/liberty';
 const SATELLITE_STYLE_FALLBACK = {
   version: 8,
@@ -14,11 +16,10 @@ const SATELLITE_STYLE_FALLBACK = {
   },
   layers: [{ id: 'esri-imagery', type: 'raster', source: 'esri' }]
 };
-const DEFAULT_CENTER = [-95.86125950671834, 32.560925506814755];
-const DEFAULT_ZOOM = 17.5;
-const DEFAULT_PITCH = 50;
+const DEFAULT_CENTER = [-95.8624, 32.5585];
+const DEFAULT_ZOOM = 17;
+const DEFAULT_PITCH = 60;
 const DEFAULT_BEARING = 0;
-const LEGACY_CENTER = [-95.8624, 32.5585];
 const SOURCE_ID = 'locations';
 const LAYER_MARKERS = 'location-markers';
 const LAYER_ICONS = 'location-icons';
@@ -27,6 +28,9 @@ const LAYER_CLUSTER_COUNT = 'location-cluster-count';
 const LAYER_SELECTED = 'location-selected';
 const LAYER_HOVER = 'location-hover';
 const MAP_BRAND_OVERLAY_ID = 'map-brand-overlay';
+
+// Spec: uiLayout.categories — fallback colors by marker shape
+const SHAPE_FALLBACK_COLORS = { circle: '#7a7a7a', pin: '#4a4a4a', none: '#999999' };
 
 // Group icon: colored circle + white SVG illustration (matches MapMe style)
 function makeGroupIcon(bgColor, svgPath) {
@@ -83,6 +87,7 @@ const appState = {
   mapEventsBound: false,
   activeMapStyle: 'venue',
   venueStyleUrl: STYLE_FALLBACK,
+  venueOverlayConfig: null,
   satelliteStyleUrl: SATELLITE_STYLE_FALLBACK,
   filtersInitialized: false,
   totalLocationCount: 0,
@@ -122,6 +127,41 @@ const ICON_SVGS = {
   pin: '<path fill="#fff" d="M12 2a6 6 0 0 1 6 6c0 4.7-6 12-6 12S6 12.7 6 8a6 6 0 0 1 6-6Zm0 2a4 4 0 0 0-4 4c0 2.5 2.5 6.5 4 8.7 1.5-2.2 4-6.2 4-8.7a4 4 0 0 0-4-4Z"/>'
 };
 
+// --- Deep-link support ---
+// Supports ?loc=<id>, #loc=<id>, and /location/<id> patterns (MapMe compat)
+function getDeepLinkedLocationId() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('loc')) return params.get('loc');
+  if (params.get('location')) return params.get('location');
+  const hash = window.location.hash.replace(/^#/, '');
+  if (hash.startsWith('loc=')) return hash.slice(4);
+  // MapMe-style /location/<uuid> encoded in hash
+  const locMatch = hash.match(/^location\/(.+)/);
+  if (locMatch) return locMatch[1];
+  return null;
+}
+
+function openDeepLinkedLocation() {
+  const id = getDeepLinkedLocationId();
+  if (!id) return;
+  const location = appState.locations.find((loc) => loc.id === id || loc.name === id);
+  if (!location) return;
+  openLocation(location, true);
+}
+
+function updateUrlHash(locationId) {
+  if (!locationId) {
+    if (window.location.hash) history.replaceState(null, '', window.location.pathname + window.location.search);
+    return;
+  }
+  history.replaceState(null, '', `${window.location.pathname}${window.location.search}#loc=${encodeURIComponent(locationId)}`);
+}
+
+window.addEventListener('hashchange', () => {
+  if (!map) return;
+  openDeepLinkedLocation();
+});
+
 async function init() {
   console.log('[filters] init:start');
   const data = await fetchMapData();
@@ -152,6 +192,7 @@ async function init() {
     pitch: initialMapView.pitch,
     bearing: DEFAULT_BEARING,
     maxZoom: data.map?.maxZoom || 20,
+    maxPitch: 85,
     attributionControl: false,
     antialias: true
   });
@@ -167,12 +208,32 @@ async function init() {
     showUserHeading: true
   });
   map.addControl(geolocateControl, 'top-right');
-  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: 'Mapme' }), 'bottom-left');
+  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '© <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> | TheFairMap' }), 'bottom-left');
 
   map.on('load', async () => {
+    addTerrain();
+    // Resolve venue overlay tileset metadata before building layers
+    appState.venueOverlayConfig = await resolveVenueOverlay();
     await hydrateStyleContent();
     bindMapEvents();
+    // Deep-link: open location from URL hash or query param
+    openDeepLinkedLocation();
   });
+}
+
+function addTerrain() {
+  if (!window.MAPTILER_KEY || !map) return;
+  try {
+    if (!map.getSource('maptiler-terrain')) {
+      map.addSource('maptiler-terrain', {
+        type: 'raster-dem',
+        url: `https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${window.MAPTILER_KEY}`
+      });
+    }
+    map.setTerrain({ source: 'maptiler-terrain', exaggeration: 1.2 });
+  } catch (e) {
+    console.warn('[map] terrain not available:', e.message);
+  }
 }
 
 async function loadIconManifest() {
@@ -296,6 +357,7 @@ function normalizeData(data) {
     id: String(category.id),
     name: String(category.name || 'Uncategorized'),
     color: normalizeColor(category.color),
+    shape: category.shape || 'circle',
     count: Number(category.count || 0)
   }));
 
@@ -325,7 +387,8 @@ function normalizeData(data) {
         bearing: Number(loc.bearing),
         categoryId,
         categoryName,
-        color: normalizeColor(category?.color || loc.color),
+        shape: category?.shape || 'circle',
+        color: normalizeColor(category?.color || loc.color || SHAPE_FALLBACK_COLORS[category?.shape] || SHAPE_FALLBACK_COLORS.circle),
         iconType: iconTypeForCategory(categoryId, categoryName),
         search: `${loc.name || ''} ${categoryName} ${loc.address || ''} ${loc.description || ''}`.toLowerCase()
       };
@@ -347,6 +410,7 @@ function normalizeData(data) {
       id: categoryId,
       name: sample?.categoryName || 'Uncategorized',
       color: normalizeColor(sample?.color || '#7a7a7a'),
+      shape: sample?.shape || 'circle',
       count: 0
     };
     appState.categories.push(fallback);
@@ -413,6 +477,7 @@ function bindUi() {
   document.getElementById('mobile-sheet-collapse')?.addEventListener('click', () => setMobileSidebarOpen(false));
   document.getElementById('style-venue-btn').addEventListener('click', () => setMapStyle('venue'));
   document.getElementById('style-satellite-btn').addEventListener('click', () => setMapStyle('satellite'));
+  document.getElementById('venue-overlay-toggle')?.addEventListener('click', toggleVenueOverlay);
   document.getElementById('mobile-scrim').addEventListener('click', closeMobileSidebar);
   document.getElementById('detail-scrim').addEventListener('click', closeDetailPanel);
   document.getElementById('detail-close').addEventListener('click', closeDetailPanel);
@@ -522,26 +587,66 @@ function loadImageByUrl(url) {
   });
 }
 
+function findFirstSymbolLayer() {
+  // Find the first symbol (label) layer in the base map style so we can
+  // insert the venue raster overlay beneath it.  This keeps road names,
+  // POI labels, and 3D-building extrusions rendered on top of the
+  // coloured pavilion tiles — matching MapMe's visual hierarchy.
+  const layers = map.getStyle().layers || [];
+  for (const layer of layers) {
+    if (layer.type === 'symbol') return layer.id;
+  }
+  return undefined; // fallback: add on top
+}
+
 function addVenueOverlay() {
   // Only add venue overlay when in venue map mode (not satellite)
   if (appState.activeMapStyle === 'satellite') return;
   // Raster overlay from MapMe's custom MapTiler tileset, proxied via /api/venue-tile/
+  // Shows colored pavilion rows and booth numbers matching MapMe viewer
   if (map.getSource('venue-overlay')) return;
+  const cfg = appState.venueOverlayConfig;
+  const defaultBounds = [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321];
   map.addSource('venue-overlay', {
     type: 'raster',
-    tiles: [`${window.location.origin}/api/tile?z={z}&x={x}&y={y}`],
+    tiles: [`${window.location.origin}/api/venue-tile/{z}/{x}/{y}.png`],
     tileSize: 256,
-    minzoom: 13,
-    maxzoom: 22,
-    bounds: [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321],
+    minzoom: cfg?.minzoom ?? 14,
+    maxzoom: cfg?.maxzoom ?? 22,
+    bounds: cfg?.bounds ?? defaultBounds,
     attribution: 'Map data © First Monday Trade Days'
   });
+  // Insert below the first symbol layer so base-map labels stay on top
+  const beforeId = findFirstSymbolLayer();
   map.addLayer({
     id: 'venue-overlay-layer',
     type: 'raster',
     source: 'venue-overlay',
-    paint: { 'raster-opacity': 1.0 }
-  });
+    paint: {
+      // Fade in as user zooms closer — full detail at booth-level zoom
+      'raster-opacity': [
+        'interpolate', ['linear'], ['zoom'],
+        14, 0.0,
+        15, 0.72,
+        16, 0.88,
+        18, 0.94
+      ]
+    }
+  }, beforeId);
+  // Sync toggle button state
+  const btn = document.getElementById('venue-overlay-toggle');
+  if (btn) btn.classList.add('is-active');
+}
+
+function toggleVenueOverlay() {
+  if (!map) return;
+  const layer = map.getLayer('venue-overlay-layer');
+  if (!layer) return;
+  const current = map.getLayoutProperty('venue-overlay-layer', 'visibility');
+  const next = current === 'none' ? 'visible' : 'none';
+  map.setLayoutProperty('venue-overlay-layer', 'visibility', next);
+  const btn = document.getElementById('venue-overlay-toggle');
+  if (btn) btn.classList.toggle('is-active', next === 'visible');
 }
 
 function buildLayers() {
@@ -594,16 +699,28 @@ function buildLayers() {
     }
   });
 
+  // Shape-aware marker rendering (spec: uiLayout.categories.shape)
+  // "circle" → standard filled circle, "pin" → smaller circle with pin border, "none" → hidden
   map.addLayer({
     id: LAYER_MARKERS,
     type: 'circle',
     source: SOURCE_ID,
-    filter: ['!', ['has', 'point_count']],
+    filter: ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'shape'], 'none']],
     paint: {
       'circle-color': ['get', 'color'],
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 11.5, 16, 13.5, 17.5, 15.25, 20, 17.25],
-      'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 14, 1.9, 17, 2.2, 20, 2.5],
-      'circle-stroke-color': '#ffffff',
+      'circle-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        14, ['match', ['get', 'shape'], 'pin', 9, 11.5],
+        16, ['match', ['get', 'shape'], 'pin', 11, 13.5],
+        17.5, ['match', ['get', 'shape'], 'pin', 13, 15.25],
+        20, ['match', ['get', 'shape'], 'pin', 14.5, 17.25]
+      ],
+      'circle-stroke-width': [
+        'match', ['get', 'shape'],
+        'pin', ['interpolate', ['linear'], ['zoom'], 14, 2.5, 17, 3, 20, 3.5],
+        ['interpolate', ['linear'], ['zoom'], 14, 1.9, 17, 2.2, 20, 2.5]
+      ],
+      'circle-stroke-color': ['match', ['get', 'shape'], 'pin', '#1a1a2e', '#ffffff'],
       'circle-opacity': 0.98
     }
   });
@@ -612,6 +729,7 @@ function buildLayers() {
     id: LAYER_ICONS,
     type: 'symbol',
     source: SOURCE_ID,
+    filter: ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'shape'], 'none']],
     layout: {
       'icon-image': ['coalesce', ['get', 'iconImage'], 'pin-white'],
       'icon-allow-overlap': true,
@@ -620,10 +738,10 @@ function buildLayers() {
       'symbol-sort-key': ['-', 1000, ['to-number', ['id'], 0]],
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        14, 0.69,
-        16, 0.79,
-        17.5, 0.86,
-        20, 0.98
+        14, ['match', ['get', 'shape'], 'pin', 0.58, 0.69],
+        16, ['match', ['get', 'shape'], 'pin', 0.67, 0.79],
+        17.5, ['match', ['get', 'shape'], 'pin', 0.74, 0.86],
+        20, ['match', ['get', 'shape'], 'pin', 0.84, 0.98]
       ]
     }
   });
@@ -632,7 +750,7 @@ function buildLayers() {
     id: LAYER_HOVER,
     type: 'circle',
     source: SOURCE_ID,
-    filter: ['all', ['!', ['has', 'point_count']], ['==', ['id'], -1]],
+    filter: ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'shape'], 'none'], ['==', ['id'], -1]],
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
@@ -650,7 +768,7 @@ function buildLayers() {
     id: LAYER_SELECTED,
     type: 'circle',
     source: SOURCE_ID,
-    filter: ['all', ['!', ['has', 'point_count']], ['==', ['get', 'id'], '']],
+    filter: ['all', ['!', ['has', 'point_count']], ['!=', ['get', 'shape'], 'none'], ['==', ['get', 'id'], '']],
     paint: {
       'circle-radius': [
         'interpolate', ['linear'], ['zoom'],
@@ -705,8 +823,8 @@ function buildLayers() {
       'text-ignore-placement': true
     },
     paint: {
-      'text-color': '#313131',
-      'text-halo-color': 'rgba(255,255,255,0.92)',
+      'text-color': '#ffffff',
+      'text-halo-color': 'rgba(0,0,0,0.7)',
       'text-halo-width': 2
     },
     minzoom: 14
@@ -840,6 +958,8 @@ function renderCategoryCard({ category, query, visibleCounts }) {
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'category-visibility';
+  if (category.shape === 'pin') toggle.classList.add('shape-pin');
+  if (category.shape === 'none') toggle.classList.add('shape-none');
   toggle.title = active ? 'Hide category markers' : 'Show category markers';
   toggle.setAttribute('aria-label', `${active ? 'Hide' : 'Show'} ${category.name}`);
   toggle.style.setProperty('--cat-color', category.color);
@@ -981,6 +1101,7 @@ function renderCategoryLocationsView(wrap, query) {
 
 function openLocation(location, fly) {
   appState.selectedLocationId = location.id;
+  updateUrlHash(location.id);
   syncSelectedLayer();
 
   renderDetail(location);
@@ -1493,6 +1614,9 @@ function updateMapStyleButtons() {
   satelliteBtn.disabled = appState.mapStyleLoading;
   venueBtn.setAttribute('aria-pressed', String(isVenue));
   satelliteBtn.setAttribute('aria-pressed', String(!isVenue));
+  // Hide booth overlay toggle when in satellite mode (no venue tiles)
+  const overlayBtn = document.getElementById('venue-overlay-toggle');
+  if (overlayBtn) overlayBtn.style.display = isVenue ? '' : 'none';
 }
 
 async function setMapStyle(styleId) {
@@ -1521,6 +1645,7 @@ async function setMapStyle(styleId) {
 }
 
 async function hydrateStyleContent() {
+  addTerrain();
   await loadMarkerIcons();
   buildLayers();
   appState.hoveredFeatureId = null;
@@ -1543,6 +1668,7 @@ function toFeatureCollection(locations) {
       properties: {
         id: loc.id,
         color: loc.color,
+        shape: loc.shape || 'circle',
         iconType: loc.iconType,
         iconImage: `${loc.iconType}-${pickMarkerIconTone(loc.color)}`
       }
@@ -1619,36 +1745,51 @@ function resolveStyleUrl(rawStyle) {
       : rawStyle;
   }
 
-  // MapMe exports "maptiler" style id; without an API key it renders blank.
-  if (rawStyle === 'maptiler' && window.MAPTILER_KEY) {
-    return `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}`;
+  // Use custom MapTiler style (satellite/vector hybrid with 3D buildings)
+  if (window.MAPTILER_KEY) {
+    return `${MAPTILER_CUSTOM_STYLE}?key=${window.MAPTILER_KEY}`;
   }
 
   return STYLE_FALLBACK;
 }
 
 function resolveVenueStyleUrl(rawStyle) {
-  if (window.MAPTILER_KEY) return `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}`;
+  // Prefer custom MapTiler hybrid style with 3D buildings
+  if (window.MAPTILER_KEY) return `${MAPTILER_CUSTOM_STYLE}?key=${window.MAPTILER_KEY}`;
   return resolveStyleUrl(rawStyle);
 }
 
+async function resolveVenueOverlay() {
+  // Fetch tileset metadata (bounds, zoom, tile URL template) from proxied style.json
+  // so the overlay source is configured dynamically rather than hardcoded.
+  try {
+    const res = await fetch(`${window.location.origin}/api/venue-tile-style`);
+    if (!res.ok) return null;
+    const meta = await res.json();
+    return {
+      bounds: meta.bounds || null,
+      minzoom: meta.minzoom ?? 14,
+      maxzoom: meta.maxzoom ?? 22,
+      name: meta.name || 'venue-overlay'
+    };
+  } catch (err) {
+    console.warn('[venue-overlay] failed to resolve tileset metadata, using defaults', err);
+    return null;
+  }
+}
+
 function resolveSatelliteStyleUrl() {
+  // Use MapTiler satellite when key available, ESRI as fallback
+  if (window.MAPTILER_KEY) {
+    return `https://api.maptiler.com/maps/satellite/style.json?key=${window.MAPTILER_KEY}`;
+  }
   return SATELLITE_STYLE_FALLBACK;
 }
 
 function resolveInitialMapView(data) {
-  const hasCenter = Array.isArray(data.map?.center) && data.map.center.length === 2;
-  let center = hasCenter ? data.map.center : DEFAULT_CENTER;
-  let zoom = Number.isFinite(data.map?.zoom) ? data.map.zoom : DEFAULT_ZOOM;
-  let pitch = Number.isFinite(data.map?.pitch) ? data.map.pitch : DEFAULT_PITCH;
-
-  const isLegacyCenter =
-    hasCenter &&
-    Math.abs(center[0] - LEGACY_CENTER[0]) < 1e-7 &&
-    Math.abs(center[1] - LEGACY_CENTER[1]) < 1e-7;
-  if (isLegacyCenter) center = DEFAULT_CENTER;
-  zoom = Math.max(zoom, DEFAULT_ZOOM);
-  pitch = Math.min(pitch, DEFAULT_PITCH);
+  const center = DEFAULT_CENTER;
+  const zoom = DEFAULT_ZOOM;
+  const pitch = DEFAULT_PITCH;
 
   return { center, zoom, pitch };
 }

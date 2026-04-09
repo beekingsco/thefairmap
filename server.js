@@ -142,6 +142,38 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req,
   res.json({ received: true });
 });
 
+// ── Venue-tile proxy (mirrors Vercel Edge Function for local dev) ───────────
+const VENUE_TILESET_ID = '0196a1e2-92d2-7ed9-9540-2191fb00a1af';
+app.get('/api/venue-tile/:z/:x/:y', async (req, res) => {
+  const { z, x } = req.params;
+  const y = String(req.params.y).replace(/\.png$/, '');
+  if (!/^\d+$/.test(z) || !/^\d+$/.test(x) || !/^\d+$/.test(y)) {
+    return res.status(400).send('invalid tile coordinates');
+  }
+  const key = process.env.MAPTILER_KEY;
+  if (!key) return res.status(500).send('MAPTILER_KEY not configured');
+  const upstream = `https://api.maptiler.com/tiles/${VENUE_TILESET_ID}/${z}/${x}/${y}.png?key=${key}`;
+  try {
+    const resp = await fetch(upstream, {
+      headers: {
+        Referer: 'https://viewer.mapme.com/',
+        Origin: 'https://viewer.mapme.com',
+        'User-Agent': 'Mozilla/5.0 (compatible; TheFairMap/1.0)'
+      }
+    });
+    if (!resp.ok) return res.status(resp.status).send(`upstream error: ${resp.status}`);
+    const buf = Buffer.from(await resp.arrayBuffer());
+    res.set({
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.send(buf);
+  } catch (err) {
+    res.status(502).send('fetch failed: ' + err.message);
+  }
+});
+
 // ── Middleware ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
