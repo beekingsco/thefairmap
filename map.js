@@ -1,6 +1,8 @@
 let map;
 let geolocateControl;
 
+// MapTiler custom style — satellite/vector hybrid with 3D buildings
+const MAPTILER_CUSTOM_STYLE = 'https://api.maptiler.com/maps/daff07a7-1b27-4d4e-bdc0-c18601af5067/style.json';
 const STYLE_FALLBACK = 'https://tiles.openfreemap.org/styles/liberty';
 const SATELLITE_STYLE_FALLBACK = {
   version: 8,
@@ -14,11 +16,10 @@ const SATELLITE_STYLE_FALLBACK = {
   },
   layers: [{ id: 'esri-imagery', type: 'raster', source: 'esri' }]
 };
-const DEFAULT_CENTER = [-95.86125950671834, 32.560925506814755];
-const DEFAULT_ZOOM = 17.5;
-const DEFAULT_PITCH = 50;
+const DEFAULT_CENTER = [-95.8624, 32.5585];
+const DEFAULT_ZOOM = 17;
+const DEFAULT_PITCH = 60;
 const DEFAULT_BEARING = 0;
-const LEGACY_CENTER = [-95.8624, 32.5585];
 const SOURCE_ID = 'locations';
 const LAYER_MARKERS = 'location-markers';
 const LAYER_ICONS = 'location-icons';
@@ -152,6 +153,7 @@ async function init() {
     pitch: initialMapView.pitch,
     bearing: DEFAULT_BEARING,
     maxZoom: data.map?.maxZoom || 20,
+    maxPitch: 85,
     attributionControl: false,
     antialias: true
   });
@@ -167,12 +169,28 @@ async function init() {
     showUserHeading: true
   });
   map.addControl(geolocateControl, 'top-right');
-  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: 'Mapme' }), 'bottom-left');
+  map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '© <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> | TheFairMap' }), 'bottom-left');
 
   map.on('load', async () => {
+    addTerrain();
     await hydrateStyleContent();
     bindMapEvents();
   });
+}
+
+function addTerrain() {
+  if (!window.MAPTILER_KEY || !map) return;
+  try {
+    if (!map.getSource('maptiler-terrain')) {
+      map.addSource('maptiler-terrain', {
+        type: 'raster-dem',
+        url: `https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${window.MAPTILER_KEY}`
+      });
+    }
+    map.setTerrain({ source: 'maptiler-terrain', exaggeration: 1.2 });
+  } catch (e) {
+    console.warn('[map] terrain not available:', e.message);
+  }
 }
 
 async function loadIconManifest() {
@@ -522,6 +540,18 @@ function loadImageByUrl(url) {
   });
 }
 
+function findFirstSymbolLayer() {
+  // Find the first symbol (label) layer in the base map style so we can
+  // insert the venue raster overlay beneath it.  This keeps road names,
+  // POI labels, and 3D-building extrusions rendered on top of the
+  // coloured pavilion tiles — matching MapMe's visual hierarchy.
+  const layers = map.getStyle().layers || [];
+  for (const layer of layers) {
+    if (layer.type === 'symbol') return layer.id;
+  }
+  return undefined; // fallback: add on top
+}
+
 function addVenueOverlay() {
   // Only add venue overlay when in venue map mode (not satellite)
   if (appState.activeMapStyle === 'satellite') return;
@@ -529,19 +559,21 @@ function addVenueOverlay() {
   if (map.getSource('venue-overlay')) return;
   map.addSource('venue-overlay', {
     type: 'raster',
-    tiles: [`${window.location.origin}/api/tile?z={z}&x={x}&y={y}`],
+    tiles: [`${window.location.origin}/api/venue-tile/{z}/{x}/{y}.png`],
     tileSize: 256,
     minzoom: 13,
     maxzoom: 22,
     bounds: [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321],
     attribution: 'Map data © First Monday Trade Days'
   });
+  // Insert below the first symbol layer so base-map labels stay on top
+  const beforeId = findFirstSymbolLayer();
   map.addLayer({
     id: 'venue-overlay-layer',
     type: 'raster',
     source: 'venue-overlay',
-    paint: { 'raster-opacity': 1.0 }
-  });
+    paint: { 'raster-opacity': 0.88 }
+  }, beforeId);
 }
 
 function buildLayers() {
@@ -705,8 +737,8 @@ function buildLayers() {
       'text-ignore-placement': true
     },
     paint: {
-      'text-color': '#313131',
-      'text-halo-color': 'rgba(255,255,255,0.92)',
+      'text-color': '#ffffff',
+      'text-halo-color': 'rgba(0,0,0,0.7)',
       'text-halo-width': 2
     },
     minzoom: 14
@@ -1521,6 +1553,7 @@ async function setMapStyle(styleId) {
 }
 
 async function hydrateStyleContent() {
+  addTerrain();
   await loadMarkerIcons();
   buildLayers();
   appState.hoveredFeatureId = null;
@@ -1619,36 +1652,32 @@ function resolveStyleUrl(rawStyle) {
       : rawStyle;
   }
 
-  // MapMe exports "maptiler" style id; without an API key it renders blank.
-  if (rawStyle === 'maptiler' && window.MAPTILER_KEY) {
-    return `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}`;
+  // Use custom MapTiler style (satellite/vector hybrid with 3D buildings)
+  if (window.MAPTILER_KEY) {
+    return `${MAPTILER_CUSTOM_STYLE}?key=${window.MAPTILER_KEY}`;
   }
 
   return STYLE_FALLBACK;
 }
 
 function resolveVenueStyleUrl(rawStyle) {
-  if (window.MAPTILER_KEY) return `https://api.maptiler.com/maps/streets-v2/style.json?key=${window.MAPTILER_KEY}`;
+  // Prefer custom MapTiler hybrid style with 3D buildings
+  if (window.MAPTILER_KEY) return `${MAPTILER_CUSTOM_STYLE}?key=${window.MAPTILER_KEY}`;
   return resolveStyleUrl(rawStyle);
 }
 
 function resolveSatelliteStyleUrl() {
+  // Use MapTiler satellite when key available, ESRI as fallback
+  if (window.MAPTILER_KEY) {
+    return `https://api.maptiler.com/maps/satellite/style.json?key=${window.MAPTILER_KEY}`;
+  }
   return SATELLITE_STYLE_FALLBACK;
 }
 
 function resolveInitialMapView(data) {
-  const hasCenter = Array.isArray(data.map?.center) && data.map.center.length === 2;
-  let center = hasCenter ? data.map.center : DEFAULT_CENTER;
-  let zoom = Number.isFinite(data.map?.zoom) ? data.map.zoom : DEFAULT_ZOOM;
-  let pitch = Number.isFinite(data.map?.pitch) ? data.map.pitch : DEFAULT_PITCH;
-
-  const isLegacyCenter =
-    hasCenter &&
-    Math.abs(center[0] - LEGACY_CENTER[0]) < 1e-7 &&
-    Math.abs(center[1] - LEGACY_CENTER[1]) < 1e-7;
-  if (isLegacyCenter) center = DEFAULT_CENTER;
-  zoom = Math.max(zoom, DEFAULT_ZOOM);
-  pitch = Math.min(pitch, DEFAULT_PITCH);
+  const center = DEFAULT_CENTER;
+  const zoom = DEFAULT_ZOOM;
+  const pitch = DEFAULT_PITCH;
 
   return { center, zoom, pitch };
 }
