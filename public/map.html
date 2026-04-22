@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=EB+Garamond:wght@400;500;600;700&family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Permanent+Marker&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.9.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/maplibre-gl.css">
+  <link rel="stylesheet" href="/style.css?v=20260422c">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2f3d4d">
   <script>
@@ -50,14 +50,19 @@
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
       </span>
+      <button class="mobile-expand-btn" type="button" aria-label="Expand map">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M7 14H5v5h5v-2H7v-3Zm-2-4h2V7h3V5H5v5Zm12 7h-3v2h5v-5h-2v3ZM14 5v2h3v3h2V5h-5Z"/></svg>
+      </button>
     </div>
   </header>
 
   <div id="app" class="sidebar-collapsed">
     <aside id="sidebar" aria-label="Overview">
-      <button id="mobile-sheet-collapse" type="button" aria-label="Collapse filters" hidden>v</button>
+      <button id="mobile-sheet-collapse" type="button" aria-label="Collapse filters" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+      </button>
       <div class="sheet-handle-wrap" data-sheet-handle="sidebar" aria-hidden="true">
-        <span class="sheet-handle"></span>
+        <svg class="sheet-chevron" viewBox="0 0 30 14" width="30" height="14"><path d="M3 3l12 8 12-8" fill="none" stroke="#9ca3af" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div class="sidebar-search-wrap">
         <label for="search-input" class="sr-only">Search</label>
@@ -82,6 +87,7 @@
         <img id="map-brand-img" src="/data/icons/first-monday-finder-logo.png" alt="Map" class="map-brand-img">
       </div>
       <div id="map" role="application" aria-label="Map"></div>
+      <button id="parking-btn" class="parking-btn-fixed" type="button" aria-label="Save my car location" title="Save my car location">P</button>
       <div id="map-controls">
         <button id="sidebar-toggle" class="map-control-btn chevron-btn" type="button" aria-label="Open filters" aria-expanded="false">
           <span class="map-btn-glyph">&gt;</span>
@@ -105,7 +111,99 @@
     <div id="mobile-scrim" hidden></div>
   </div>
 
-  <script src="https://unpkg.com/maplibre-gl@4.9.1/dist/maplibre-gl.js"></script>
+  <!-- Tab pages (shown when bottom nav tabs are tapped) -->
+  <div id="tab-tips" class="tab-page" hidden>
+    <div class="tab-page-inner">
+      <h2 class="tips-subtitle">Tips</h2>
+      <h1 class="tips-title">APP SUPPORT</h1>
+      <p class="tips-intro">Below are a list of quick tips to help you get the most out of our Visit First Monday Finder App.</p>
+
+      <h3 class="tips-heading">SHOW WHERE <u>YOU</u> ARE</h3>
+      <div class="tips-section">
+        <p>Click the Black Nav icon in the upper right of the map to activate and share your GPS location with the app. Be sure click "Allow" when your phone prompts you to share your location.</p>
+      </div>
+
+      <h3 class="tips-heading">SAVE TO FAVORITES</h3>
+      <div class="tips-section">
+        <p>When you find and click on a location dot or vendor space that you want to be sure to find again, you can save it to your favorites by clicking the star icon in the header. It should turn yellow and will be saved to a small list of favorite locations in the "shop categories" list.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-contest" class="tab-page" hidden>
+    <div class="tab-page-inner">
+      <h1 class="tips-title">CONTEST</h1>
+      <p class="tips-intro">Coming soon!</p>
+    </div>
+  </div>
+
+  <div id="tab-links" class="tab-page" hidden>
+    <div class="tab-page-inner links-page">
+      <h2 class="links-script">First Monday</h2>
+      <h1 class="links-title">LINKS + DEALS</h1>
+      <p class="links-follow">Follow &amp; Tag <strong>@VisitFirstMonday</strong></p>
+
+      <div class="links-socials">
+        <a href="https://www.facebook.com/VisitFirstMonday" target="_blank" rel="noopener" class="links-social-item">
+          <svg viewBox="0 0 24 24" width="44" height="44"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.99 3.66 9.12 8.44 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99C18.34 21.12 22 16.99 22 12z"/></svg>
+          <span>Facebook</span>
+        </a>
+        <a href="https://www.instagram.com/VisitFirstMonday" target="_blank" rel="noopener" class="links-social-item">
+          <svg viewBox="0 0 24 24" width="44" height="44"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10m0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+          <span>Instagram</span>
+        </a>
+        <a href="https://www.tiktok.com/@VisitFirstMonday" target="_blank" rel="noopener" class="links-social-item">
+          <svg viewBox="0 0 24 24" width="44" height="44"><path d="M16.6 5.82s.51.5 0 0A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z"/></svg>
+          <span>TikTok</span>
+        </a>
+      </div>
+
+      <div class="links-church">
+        <div class="links-church-info">
+          <span class="links-church-when">Sunday</span>
+          <span class="links-church-where">@ Food Court<br>Pavillion 4500</span>
+        </div>
+        <div class="links-church-label">
+          <strong>CHURCH<br>SERVICES</strong>
+        </div>
+        <span class="links-church-cross">&#10013;</span>
+      </div>
+
+      <a href="#" class="links-btn links-btn-vendor">&#9679; Vendor Map Listing Signup</a>
+      <a href="#" class="links-btn links-btn-qr">&#9641;&#9641; QR Code for Sharing</a>
+    </div>
+  </div>
+
+  <!-- VIP Alerts bar -->
+  <div id="vip-bar" class="vip-bar">
+    <div class="vip-title">VIP ALERTS FOR CELEBRITY VISITS + EVENTS!</div>
+    <form class="vip-form" onsubmit="return false;">
+      <input type="email" placeholder="Email" class="vip-email" aria-label="Email for VIP alerts">
+      <button type="submit" class="vip-btn">Sign Me Up!</button>
+    </form>
+  </div>
+
+  <!-- Bottom nav tabs -->
+  <nav id="bottom-nav" class="bottom-nav">
+    <a href="#" class="bottom-nav-tab is-active" data-tab="map">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5Z"/></svg>
+      <span>MAP</span>
+    </a>
+    <a href="#" class="bottom-nav-tab" data-tab="contest">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg>
+      <span>CONTEST</span>
+    </a>
+    <a href="#" class="bottom-nav-tab" data-tab="links">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1ZM8 13h8v-2H8v2Zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5Z"/></svg>
+      <span>LINKS</span>
+    </a>
+    <a href="#" class="bottom-nav-tab" data-tab="tips">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1Zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7Z"/></svg>
+      <span>TIPS</span>
+    </a>
+  </nav>
+
+  <script src="/maplibre-gl.js"></script>
   <script src="/api/config.js"></script>
   <script>
     // Tenant-aware: update logo from tenant settings
@@ -124,6 +222,38 @@
       } catch(e) {}
     })();
   </script>
-  <script src="/map.js"></script>
+  <script src="/map.js?v=20260422c"></script>
+  <script>
+    // Bottom nav tab switching
+    document.querySelectorAll('.bottom-nav-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = tab.dataset.tab;
+        // Update active tab
+        document.querySelectorAll('.bottom-nav-tab').forEach(t => t.classList.remove('is-active'));
+        tab.classList.add('is-active');
+        // Hide all tab pages
+        document.querySelectorAll('.tab-page').forEach(p => p.hidden = true);
+        // Show/hide map vs tab page
+        const app = document.getElementById('app');
+        const vipBar = document.getElementById('vip-bar');
+        const styleControls = document.querySelector('.style-controls');
+        const topbar = document.getElementById('mobile-topbar');
+        if (target === 'map') {
+          app.style.display = '';
+          if (vipBar) vipBar.style.display = '';
+          if (styleControls) styleControls.style.display = '';
+          if (topbar) topbar.style.display = '';
+        } else {
+          app.style.display = 'none';
+          if (vipBar) vipBar.style.display = 'none';
+          if (styleControls) styleControls.style.display = 'none';
+          if (topbar) topbar.style.display = 'none';
+          const page = document.getElementById('tab-' + target);
+          if (page) page.hidden = false;
+        }
+      });
+    });
+  </script>
 </body>
 </html>
