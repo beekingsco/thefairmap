@@ -903,9 +903,56 @@ async function fetchSvgFile(filename) {
   } catch { _svgFileCache.set(filename, null); return null; }
 }
 
+async function buildLogoMarkerCanvas(logoUrl, size = 80) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const r = size / 2;
+      // White border
+      ctx.beginPath();
+      ctx.arc(r, r, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      // Clip to inner circle and draw logo
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(r, r, r - 3, 0, Math.PI * 2);
+      ctx.clip();
+      const scale = Math.min((size - 6) / img.width, (size - 6) / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, r - w / 2, r - h / 2, w, h);
+      ctx.restore();
+      resolve(canvas);
+    };
+    img.onerror = reject;
+    img.src = logoUrl;
+  });
+}
+
 async function ensureCompositeImages(locations) {
   const seen = new Set();
   for (const loc of locations) {
+    // Per-vendor logo marker
+    if (loc.logoUrl) {
+      const logoId = `logo-${loc.id}`;
+      if (!seen.has(logoId) && !map.hasImage(logoId)) {
+        seen.add(logoId);
+        try {
+          const canvas = await buildLogoMarkerCanvas(loc.logoUrl);
+          map.addImage(logoId, canvas, { pixelRatio: 2 });
+        } catch (_) { /* fall through to category icon */ }
+      }
+      continue;
+    }
+
     const color = loc.color || '#7a7a7a';
     const iconType = loc.iconType || 'pin';
     const id = compositeImageId(loc.categoryId, iconType, color);
@@ -2086,7 +2133,7 @@ function toFeatureCollection(locations) {
         color: loc.color,
         shape: loc.shape || 'circle',
         iconType: loc.iconType,
-        iconImage: compositeImageId(loc.categoryId, loc.iconType || 'pin', loc.color || '#7a7a7a')
+        iconImage: loc.logoUrl ? `logo-${loc.id}` : compositeImageId(loc.categoryId, loc.iconType || 'pin', loc.color || '#7a7a7a')
       }
     }))
   };

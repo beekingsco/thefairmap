@@ -295,7 +295,10 @@ app.get('/signup', (req, res) => {
 });
 
 // ── Static files ────────────────────────────────────────────────────────────
-app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/uploads', (req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  next();
+}, express.static(UPLOADS_DIR));
 app.use('/data', express.static(path.join(ROOT, 'data')));
 app.use(express.static(path.join(ROOT, 'public'), {
   index: false,
