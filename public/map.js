@@ -1175,12 +1175,12 @@ function buildLayers() {
   });
 
   const areaFeatures = [
-    { name: 'Arbor 1', lng: -95.86333, lat: 32.55882 },
-    { name: 'Arbor 2', lng: -95.86225, lat: 32.55905 },
-    { name: 'Trade Center', lng: -95.86095, lat: 32.5581 },
-    { name: 'Food Court', lng: -95.86192, lat: 32.55758 },
-    { name: 'Boardwalk', lng: -95.86328, lat: 32.55795 },
-    { name: 'PARKING', lng: -95.86415, lat: 32.55695 }
+    { name: 'Arbor 1',      lng: -95.86195, lat: 32.56064 },
+    { name: 'Arbor 2',      lng: -95.86155, lat: 32.56053 },
+    { name: 'Trade Center', lng: -95.86177, lat: 32.56135 },
+    { name: 'Food Court',   lng: -95.86230, lat: 32.56030 },
+    { name: 'Boardwalk',    lng: -95.86086, lat: 32.56071 },
+    { name: 'PARKING',      lng: -95.86415, lat: 32.55695 }
   ];
 
   map.addSource('venue-areas', {
