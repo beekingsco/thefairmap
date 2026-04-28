@@ -856,19 +856,51 @@ async function loadMarkerIcons() {
   }
 }
 
-// Build composite marker: colored circle + white border + white icon — single atomic image
+// Build composite marker: colored circle + white border + bold white icon — single atomic image
+// Uses generic ICON_SVGS path (24×24 viewBox)
 function buildCompositeMarkerSvg(iconType, bgColor) {
   const markup = ICON_SVGS[iconType] || ICON_SVGS.pin;
   const tinted = markup.replace(/fill=\"#[0-9a-f]{3,8}\"/gi, `fill="#ffffff"`);
-  // 80×80 canvas: circle r=36 centered at 40,40 with 3px white stroke, icon 24×24 centered
   return `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
     <circle cx="40" cy="40" r="36" fill="${bgColor}" stroke="#ffffff" stroke-width="4"/>
-    <g transform="translate(28,28) scale(1)">${tinted}</g>
+    <g transform="translate(16,16) scale(2)">${tinted}</g>
   </svg>`;
 }
 
-function compositeImageId(iconType, color) {
-  return `composite-${color.replace('#', '')}-${iconType}`;
+// Build composite using actual MapMe category SVG content (100×100 viewBox paths)
+function buildCompositeFromCategorySvg(svgContent, bgColor) {
+  // Extract inner paths from the MapMe SVG (nested SVG with viewBox 0 0 100 100)
+  const pathMatch = svgContent.match(/<svg[^>]*viewBox="0 0 100 100"[^>]*>([\s\S]*?)<\/svg>/i);
+  const innerPaths = pathMatch ? pathMatch[1] : '';
+  if (!innerPaths) return null;
+  // Force all fills to white
+  const whitePaths = innerPaths.replace(/fill="[^"]*"/gi, 'fill="#ffffff"');
+  // 80×80 canvas: icon from 100×100 viewBox scaled to fit inside circle (r=36 → diameter 72)
+  // Scale 100→48 = 0.48, offset to center: (80-48)/2 = 16
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">
+    <circle cx="40" cy="40" r="36" fill="${bgColor}" stroke="#ffffff" stroke-width="4"/>
+    <g transform="translate(16,16) scale(0.48)">${whitePaths}</g>
+  </svg>`;
+}
+
+function compositeImageId(categoryId, iconType, color) {
+  // Use categoryId when available (unique per category SVG), fall back to iconType
+  const key = categoryId || iconType;
+  return `composite-${color.replace('#', '')}-${key}`;
+}
+
+// Cache fetched SVG file contents
+const _svgFileCache = new Map();
+
+async function fetchSvgFile(filename) {
+  if (_svgFileCache.has(filename)) return _svgFileCache.get(filename);
+  try {
+    const res = await fetch(`/data/${filename}`);
+    if (!res.ok) { _svgFileCache.set(filename, null); return null; }
+    const text = await res.text();
+    _svgFileCache.set(filename, text);
+    return text;
+  } catch { _svgFileCache.set(filename, null); return null; }
 }
 
 async function ensureCompositeImages(locations) {
@@ -876,10 +908,20 @@ async function ensureCompositeImages(locations) {
   for (const loc of locations) {
     const color = loc.color || '#7a7a7a';
     const iconType = loc.iconType || 'pin';
-    const id = compositeImageId(iconType, color);
+    const id = compositeImageId(loc.categoryId, iconType, color);
     if (seen.has(id) || map.hasImage(id)) continue;
     seen.add(id);
-    const svg = buildCompositeMarkerSvg(iconType, color);
+
+    // Try actual MapMe category SVG first
+    const svgFile = appState.categoryIconFiles.get(loc.categoryId);
+    let svg = null;
+    if (svgFile) {
+      const svgContent = await fetchSvgFile(svgFile);
+      if (svgContent) svg = buildCompositeFromCategorySvg(svgContent, color);
+    }
+    // Fallback to generic icon
+    if (!svg) svg = buildCompositeMarkerSvg(iconType, color);
+
     const image = await loadSvgImage(svg);
     map.addImage(id, image, { pixelRatio: 2 });
   }
@@ -1122,7 +1164,9 @@ function buildLayers() {
       'text-letter-spacing': 0.08,
       'text-transform': 'uppercase',
       'text-allow-overlap': true,
-      'text-ignore-placement': true
+      'text-ignore-placement': true,
+      'text-pitch-alignment': 'viewport',
+      'text-rotation-alignment': 'viewport'
     },
     paint: {
       'text-color': '#ffffff',
@@ -1575,7 +1619,14 @@ function renderDetail(location) {
     </section>
     ${linksHtml}
     <div class="detail-actions">
-      <a class="detail-btn primary" href="${directionsUrl}" target="_blank" rel="noreferrer noopener">Directions</a>
+      <a class="detail-btn primary" href="${directionsUrl}" target="_blank" rel="noreferrer noopener">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:5px;flex-shrink:0"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2ZM9.8 8.9 7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7Z"/></svg>
+        Directions
+      </a>
+      <button class="detail-btn" type="button" onclick="shareLocation('${escapeAttr(location.id)}','${escapeAttr(location.name)}',${location.lat},${location.lng})">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:5px;flex-shrink:0"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92Z"/></svg>
+        Share
+      </button>
     </div>
   `;
 
@@ -2035,7 +2086,7 @@ function toFeatureCollection(locations) {
         color: loc.color,
         shape: loc.shape || 'circle',
         iconType: loc.iconType,
-        iconImage: compositeImageId(loc.iconType || 'pin', loc.color || '#7a7a7a')
+        iconImage: compositeImageId(loc.categoryId, loc.iconType || 'pin', loc.color || '#7a7a7a')
       }
     }))
   };
@@ -2258,6 +2309,77 @@ function truncateDescriptionToText(rawDescription) {
   return (text.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
+function printMap() {
+  const dir = document.getElementById('print-directory');
+  if (dir && appState.locations.length) {
+    const sorted = appState.locations.slice().sort((a, b) => a.name.localeCompare(b.name));
+
+    // Category legend
+    const cats = appState.categories.filter(c => !HIDDEN_CATEGORY_NAMES.has(c.name.toLowerCase()));
+    let legendHtml = '<div style="margin-bottom:16px;"><h3 style="font-size:13px;margin-bottom:6px;">Category Legend</h3><div style="display:flex;flex-wrap:wrap;gap:8px;">';
+    cats.forEach(cat => {
+      const count = sorted.filter(l => l.categoryId === cat.id).length;
+      if (count > 0) {
+        legendHtml += `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:10px;background:#f3f4f6;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${cat.color};display:inline-block;"></span>
+          ${escapeHtml(cat.name)} (${count})
+        </span>`;
+      }
+    });
+    legendHtml += '</div></div>';
+
+    let rows = sorted.map(loc => {
+      const cat = appState.categoriesById.get(loc.categoryId);
+      const catName = cat?.name || loc.categoryName || '';
+      const catColor = cat?.color || '#707070';
+      const addr = loc.address || '';
+      return `<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${catColor};margin-right:4px;"></span>${escapeHtml(loc.name)}</td><td>${escapeHtml(catName)}</td><td>${escapeHtml(addr)}</td></tr>`;
+    }).join('');
+
+    dir.innerHTML = `<h2>${escapeHtml(appState.mapData?.map?.name || 'TheFairMap')} — Vendor Directory</h2>
+      <p style="font-size:11px;color:#666;margin-bottom:8px;">${sorted.length} locations</p>
+      ${legendHtml}
+      <table><thead><tr><th>Name</th><th>Category</th><th>Address / Booth</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  window.print();
+}
+
+async function shareLocation(locId, name, lat, lng) {
+  const shareUrl = `${window.location.origin}/location/${encodeURIComponent(locId)}`;
+  const shareData = { title: `${name} — TheFairMap`, text: `Check out ${name} on TheFairMap`, url: shareUrl };
+
+  if (navigator.share) {
+    try { await navigator.share(shareData); } catch (e) { /* user cancelled */ }
+  } else {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showShareToast('Link copied to clipboard!');
+    } catch {
+      // Fallback: select from a temporary input
+      const tmp = document.createElement('input');
+      tmp.value = shareUrl;
+      document.body.appendChild(tmp);
+      tmp.select();
+      document.execCommand('copy');
+      document.body.removeChild(tmp);
+      showShareToast('Link copied!');
+    }
+  }
+}
+
+function showShareToast(msg) {
+  let toast = document.getElementById('share-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'share-toast';
+    toast.className = 'share-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add('is-visible');
+  setTimeout(() => toast.classList.remove('is-visible'), 2200);
+}
+
 function switchDetailPhoto(url) {
   const img = document.getElementById('detail-hero-img');
   if (img) {
@@ -2403,8 +2525,73 @@ function renderBottomPanel() {
   }
 }
 
+// ── Smart scroll overlay for embedded maps ─────────────────────────────────
+function initSmartScrollOverlay() {
+  if (window.self === window.top) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'scroll-overlay';
+  overlay.innerHTML = '<div class="scroll-overlay-msg">Use two fingers to move the map</div>';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);pointer-events:none;transition:opacity 0.3s;';
+  overlay.querySelector('.scroll-overlay-msg').style.cssText = 'background:#fff;color:#333;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
+  document.body.appendChild(overlay);
+
+  let hideTimer = null;
+  function showOverlay(msg) {
+    if (msg) overlay.querySelector('.scroll-overlay-msg').textContent = msg;
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.style.display = 'none'; }, 300);
+    }, 1500);
+  }
+
+  const mapEl = document.getElementById('map');
+  if (mapEl) {
+    mapEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        if (map && map.dragPan) map.dragPan.disable();
+        showOverlay('Use two fingers to move the map');
+      } else if (e.touches.length >= 2) {
+        if (map && map.dragPan) map.dragPan.enable();
+        overlay.style.display = 'none';
+      }
+    }, { passive: true });
+    mapEl.addEventListener('touchend', () => {
+      setTimeout(() => { if (map && map.dragPan) map.dragPan.enable(); }, 300);
+    }, { passive: true });
+  }
+
+  document.addEventListener('wheel', (e) => {
+    if (!mapEl || !mapEl.contains(e.target)) return;
+    if (!e.ctrlKey && !e.metaKey) {
+      showOverlay('Use Ctrl + scroll to zoom the map');
+    }
+  }, { passive: true });
+}
+
+// ── High-res export & print legend ─────────────────────────────────────────
+function exportMapImage() {
+  if (!map) return;
+  const canvas = map.getCanvas();
+  canvas.toBlob((blob) => {
+    if (!blob) { alert('Could not export map image.'); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `thefairmap-${new Date().toISOString().slice(0, 10)}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  initSmartScrollOverlay();
+});
