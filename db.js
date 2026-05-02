@@ -83,6 +83,29 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS vendor_login_codes (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    code TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS vendor_instant_wins (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    vendor_id TEXT NOT NULL,
+    location_id TEXT NOT NULL,
+    prize_title TEXT NOT NULL,
+    prize_description TEXT,
+    instructions TEXT,
+    active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS pending_edits (
     id TEXT PRIMARY KEY,
     tenant_id TEXT NOT NULL,
@@ -96,13 +119,70 @@ db.exec(`
     review_note TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS team_members (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    username TEXT NOT NULL,
+    password TEXT NOT NULL,
+    display_name TEXT,
+    role TEXT DEFAULT 'editor',
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(tenant_id, username)
+  );
+
+  CREATE TABLE IF NOT EXISTS broadcast_messages (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    audience TEXT NOT NULL,
+    subject TEXT,
+    body TEXT NOT NULL,
+    recipient_count INTEGER DEFAULT 0,
+    sent_count INTEGER DEFAULT 0,
+    failed_count INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'pending',
+    sent_by TEXT,
+    sent_at TEXT DEFAULT (datetime('now')),
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS guest_subscribers (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
+    name TEXT,
+    source TEXT DEFAULT 'map',
+    subscribed INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(email, tenant_id)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_locations_tenant ON locations(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_categories_tenant ON categories(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_vendors_tenant ON vendors(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_vendors_email ON vendors(email);
+  CREATE INDEX IF NOT EXISTS idx_vlc_email ON vendor_login_codes(email, tenant_id);
   CREATE INDEX IF NOT EXISTS idx_pending_edits_tenant ON pending_edits(tenant_id);
   CREATE INDEX IF NOT EXISTS idx_pending_edits_status ON pending_edits(status);
+  CREATE INDEX IF NOT EXISTS idx_team_members_tenant ON team_members(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_broadcast_tenant ON broadcast_messages(tenant_id);
+  CREATE INDEX IF NOT EXISTS idx_guests_tenant ON guest_subscribers(tenant_id);
 `);
+
+function safeAddColumn(table, column, definition) {
+  try {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  } catch (err) {
+    if (!/duplicate column name/i.test(err.message)) throw err;
+  }
+}
+
+safeAddColumn('vendors', 'phone', 'TEXT');
+safeAddColumn('vendors', 'contact_name', 'TEXT');
+safeAddColumn('locations', 'categories', "TEXT DEFAULT '[]'");
+safeAddColumn('locations', 'contact_phone', 'TEXT');
+safeAddColumn('locations', 'contact_name', 'TEXT');
 
 // ── Helper functions ────────────────────────────────────────────────────────
 
@@ -150,7 +230,7 @@ const stmts = {
     VALUES (@id, @tenant_id, @name, @color, @shape, @icon, @sort_order)
   `),
   updateCategory: db.prepare(`
-    UPDATE categories SET name = @name, color = @color, shape = @shape WHERE id = @id AND tenant_id = @tenant_id
+    UPDATE categories SET name = @name, color = @color, shape = @shape, icon = @icon WHERE id = @id AND tenant_id = @tenant_id
   `),
   deleteCategory: db.prepare('DELETE FROM categories WHERE id = ? AND tenant_id = ?'),
   countLocationsByCategory: db.prepare('SELECT COUNT(*) as cnt FROM locations WHERE category_id = ? AND tenant_id = ?'),
@@ -163,6 +243,10 @@ const stmts = {
     INSERT INTO vendors (id, tenant_id, location_id, email, name, password, plan, billing_cycle, status)
     VALUES (@id, @tenant_id, @location_id, @email, @name, @password, @plan, @billing_cycle, @status)
   `),
+  updateVendorProfile: db.prepare(`
+    UPDATE vendors SET name = @name, phone = @phone, contact_name = @contact_name
+    WHERE id = @id
+  `),
   updateVendor: db.prepare(`
     UPDATE vendors SET name = @name, plan = @plan, billing_cycle = @billing_cycle,
     stripe_customer_id = @stripe_customer_id, stripe_subscription_id = @stripe_subscription_id,
@@ -170,6 +254,23 @@ const stmts = {
     WHERE id = @id
   `),
   updateVendorPassword: db.prepare('UPDATE vendors SET password = ? WHERE id = ?'),
+
+  updateLocationListing: db.prepare(`
+    UPDATE locations SET
+      name = @name,
+      description = @description,
+      category_id = @category_id,
+      category_name = @category_name,
+      categories = @categories,
+      contact_phone = @contact_phone,
+      contact_name = @contact_name,
+      photos = @photos,
+      video_url = @video_url,
+      website_url = @website_url,
+      social_links = @social_links,
+      approval_status = @approval_status
+    WHERE id = @id AND tenant_id = @tenant_id
+  `),
 
   // Pending edits
   getPendingEditsByTenant: db.prepare("SELECT * FROM pending_edits WHERE tenant_id = ? AND status = 'pending' ORDER BY submitted_at DESC"),
@@ -181,6 +282,65 @@ const stmts = {
   updatePendingEditStatus: db.prepare(`
     UPDATE pending_edits SET status = @status, reviewed_by = @reviewed_by,
     reviewed_at = @reviewed_at, review_note = @review_note WHERE id = @id
+  `),
+
+  // Login codes
+  insertLoginCode: db.prepare(`
+    INSERT INTO vendor_login_codes (id, tenant_id, email, code, expires_at)
+    VALUES (@id, @tenant_id, @email, @code, @expires_at)
+  `),
+  getLoginCode: db.prepare(`
+    SELECT * FROM vendor_login_codes
+    WHERE email = ? AND tenant_id = ? AND code = ? AND used = 0 AND expires_at > datetime('now')
+    ORDER BY created_at DESC LIMIT 1
+  `),
+  markLoginCodeUsed: db.prepare('UPDATE vendor_login_codes SET used = 1 WHERE id = ?'),
+  invalidateOldCodes: db.prepare('UPDATE vendor_login_codes SET used = 1 WHERE email = ? AND tenant_id = ?'),
+
+  // Instant wins
+  getInstantWinByVendor: db.prepare('SELECT * FROM vendor_instant_wins WHERE vendor_id = ? AND tenant_id = ?'),
+  upsertInstantWin: db.prepare(`
+    INSERT INTO vendor_instant_wins (id, tenant_id, vendor_id, location_id, prize_title, prize_description, instructions, active)
+    VALUES (@id, @tenant_id, @vendor_id, @location_id, @prize_title, @prize_description, @instructions, @active)
+    ON CONFLICT(id) DO UPDATE SET
+      prize_title = excluded.prize_title,
+      prize_description = excluded.prize_description,
+      instructions = excluded.instructions,
+      active = excluded.active,
+      updated_at = datetime('now')
+  `),
+  getInstantWinsByTenant: db.prepare(`
+    SELECT iw.*, l.name as location_name
+    FROM vendor_instant_wins iw
+    JOIN locations l ON iw.location_id = l.id AND iw.tenant_id = l.tenant_id
+    WHERE iw.tenant_id = ? AND iw.active = 1
+  `),
+
+  // Team members
+  getTeamMembersByTenant: db.prepare('SELECT * FROM team_members WHERE tenant_id = ? ORDER BY created_at'),
+  getTeamMember: db.prepare('SELECT * FROM team_members WHERE id = ? AND tenant_id = ?'),
+  getTeamMemberByUsername: db.prepare('SELECT * FROM team_members WHERE username = ? AND tenant_id = ?'),
+  insertTeamMember: db.prepare(`
+    INSERT INTO team_members (id, tenant_id, username, password, display_name, role)
+    VALUES (@id, @tenant_id, @username, @password, @display_name, @role)
+  `),
+  deleteTeamMember: db.prepare('DELETE FROM team_members WHERE id = ? AND tenant_id = ?'),
+
+  // Broadcasts
+  insertBroadcast: db.prepare(`
+    INSERT INTO broadcast_messages (id, tenant_id, channel, audience, subject, body, recipient_count, status, sent_by)
+    VALUES (@id, @tenant_id, @channel, @audience, @subject, @body, @recipient_count, @status, @sent_by)
+  `),
+  getBroadcastsByTenant: db.prepare('SELECT * FROM broadcast_messages WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 50'),
+  updateBroadcastStatus: db.prepare(`
+    UPDATE broadcast_messages
+    SET status = @status, sent_count = @sent_count, failed_count = @failed_count
+    WHERE id = @id
+  `),
+  getGuestSubscribers: db.prepare('SELECT * FROM guest_subscribers WHERE tenant_id = ? AND subscribed = 1'),
+  insertGuestSubscriber: db.prepare(`
+    INSERT OR IGNORE INTO guest_subscribers (id, tenant_id, email, phone, name, source)
+    VALUES (@id, @tenant_id, @email, @phone, @name, @source)
   `),
 
   // Stats

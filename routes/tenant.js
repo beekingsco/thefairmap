@@ -3,6 +3,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 const { db, stmts, uuid } = require('../db');
 
 const router = express.Router();
@@ -31,10 +32,61 @@ const upload = multer({
 function requireTenantAdmin(req, res, next) {
   const user = req.session?.user;
   if (!user) return res.status(401).json({ ok: false, error: 'Not authenticated' });
-  // Platform admin can impersonate
   if (user.role === 'platform_admin') return next();
-  if (user.role === 'tenant_admin' && user.tenantId === req.tenant?.id) return next();
+  if ((user.role === 'tenant_admin' || user.role === 'tenant_editor') && user.tenantId === req.tenant?.id) return next();
   res.status(403).json({ ok: false, error: 'Tenant admin access required' });
+}
+
+const BROADCAST_AUDIENCES = new Set(['vendors_all', 'vendors_paid', 'vendors_free', 'guests_all']);
+const BROADCAST_CHANNELS = new Set(['email', 'sms']);
+
+function cleanContact(value) {
+  return String(value || '').trim();
+}
+
+const broadcastTokens = new Map();
+
+function cleanExpiredTokens() {
+  const now = Date.now();
+  for (const [key, value] of broadcastTokens) {
+    if (value.expiresAt < now) broadcastTokens.delete(key);
+  }
+}
+
+function getBroadcastRecipients(tenantId, audience, channel) {
+  const contactField = channel === 'sms' ? 'phone' : 'email';
+  let rows = [];
+
+  if (audience === 'vendors_all') {
+    rows = db.prepare('SELECT name, email, phone FROM vendors WHERE tenant_id = ?').all(tenantId);
+  } else if (audience === 'vendors_paid') {
+    rows = db.prepare("SELECT name, email, phone FROM vendors WHERE tenant_id = ? AND plan != 'free' AND billing_status = 'active'").all(tenantId);
+  } else if (audience === 'vendors_free') {
+    rows = db.prepare("SELECT name, email, phone FROM vendors WHERE tenant_id = ? AND plan = 'free'").all(tenantId);
+  } else if (audience === 'guests_all') {
+    rows = stmts.getGuestSubscribers.all(tenantId).map(guest => ({
+      name: guest.name,
+      email: guest.email,
+      phone: guest.phone
+    }));
+  }
+
+  return rows
+    .map(row => ({
+      name: cleanContact(row.name),
+      email: cleanContact(row.email),
+      phone: cleanContact(row.phone)
+    }))
+    .filter(row => Boolean(row[contactField]));
+}
+
+function getBroadcastPreview(tenantId, audience, channel) {
+  const recipients = getBroadcastRecipients(tenantId, audience, channel);
+  const contactField = channel === 'sms' ? 'phone' : 'email';
+  return {
+    recipients,
+    previewNames: recipients.slice(0, 5).map(row => row.name || row[contactField])
+  };
 }
 
 // ── Dashboard stats ─────────────────────────────────────────────────────────
@@ -61,15 +113,20 @@ router.get('/api/admin/stats', requireTenantAdmin, (req, res) => {
 // ── Location CRUD (admin) ───────────────────────────────────────────────────
 
 router.get('/api/admin/locations', requireTenantAdmin, (req, res) => {
-  const locations = stmts.getLocationsByTenant.all(req.tenant.id).map(loc => ({
+  const tid = req.tenant.id;
+  const locations = stmts.getLocationsByTenant.all(tid).map(loc => ({
     id: loc.id,
     name: loc.name,
     description: loc.description,
     lat: loc.lat,
     lng: loc.lng,
+    booth: loc.booth || '',
     categoryId: loc.category_id,
     categoryName: loc.category_name,
     tier: loc.tier,
+    featured: Boolean(loc.featured),
+    image: loc.image || '',
+    website: loc.website_url || '',
     photos: JSON.parse(loc.photos || '[]'),
     images: JSON.parse(loc.photos || '[]'),
     logoUrl: loc.logo_url,
@@ -77,9 +134,31 @@ router.get('/api/admin/locations', requireTenantAdmin, (req, res) => {
     websiteUrl: loc.website_url,
     socialLinks: JSON.parse(loc.social_links || '{}'),
     approvalStatus: loc.approval_status,
-    vendorId: loc.vendor_id
+    vendorId: loc.vendor_id,
+    ctaButtons: loc.cta_buttons || '[]'
   }));
-  res.json({ ok: true, locations });
+
+  const categories = stmts.getCategoriesByTenant.all(tid).map(c => ({
+    id: c.id,
+    name: c.name,
+    color: c.color,
+    shape: c.shape,
+    icon: c.icon,
+    count: locations.filter(l => l.categoryId === c.id).length
+  }));
+
+  const settings = JSON.parse(req.tenant.settings || '{}');
+
+  res.json({
+    map: {
+      name: req.tenant.name,
+      center: settings.mapCenter || [-95.8624, 32.5585],
+      zoom: settings.mapZoom || 17,
+      style: settings.mapStyle || 'maptiler'
+    },
+    categories,
+    locations
+  });
 });
 
 router.post('/api/locations', requireTenantAdmin, (req, res) => {
@@ -191,12 +270,13 @@ router.post('/api/categories', requireTenantAdmin, (req, res) => {
 router.put('/api/categories/:id', requireTenantAdmin, (req, res) => {
   const existing = stmts.getCategory.get(req.params.id, req.tenant.id);
   if (!existing) return res.status(404).json({ ok: false, error: 'Not found' });
-  const { name, color, shape } = req.body;
+  const { name, color, shape, icon } = req.body;
   stmts.updateCategory.run({
     id: req.params.id, tenant_id: req.tenant.id,
-    name: name ?? existing.name, color: color ?? existing.color, shape: shape ?? existing.shape
+    name: name ?? existing.name, color: color ?? existing.color,
+    shape: shape ?? existing.shape, icon: icon !== undefined ? icon : existing.icon
   });
-  res.json({ ok: true, category: { id: req.params.id, name: name ?? existing.name, color: color ?? existing.color, shape: shape ?? existing.shape } });
+  res.json({ ok: true, category: { id: req.params.id, name: name ?? existing.name, color: color ?? existing.color, shape: shape ?? existing.shape, icon: icon !== undefined ? icon : existing.icon } });
 });
 
 router.delete('/api/categories/:id', requireTenantAdmin, (req, res) => {
@@ -292,6 +372,180 @@ router.get('/api/admin/vendors', requireTenantAdmin, (req, res) => {
   res.json({ ok: true, vendors });
 });
 
+router.get('/api/admin/broadcast/recipients-preview', requireTenantAdmin, (req, res) => {
+  const { audience, channel } = req.query;
+  if (!BROADCAST_AUDIENCES.has(audience) || !BROADCAST_CHANNELS.has(channel)) {
+    return res.status(400).json({ ok: false, error: 'Invalid audience or channel' });
+  }
+
+  const { recipients, previewNames } = getBroadcastPreview(req.tenant.id, audience, channel);
+
+  res.json({
+    ok: true,
+    count: recipients.length,
+    preview: previewNames
+  });
+});
+
+router.post('/api/admin/broadcast/preview', requireTenantAdmin, (req, res) => {
+  const { audience, channel } = req.body || {};
+  if (!BROADCAST_AUDIENCES.has(audience) || !BROADCAST_CHANNELS.has(channel)) {
+    return res.status(400).json({ ok: false, error: 'Invalid audience or channel' });
+  }
+
+  cleanExpiredTokens();
+
+  const { recipients, previewNames } = getBroadcastPreview(req.tenant.id, audience, channel);
+  if (recipients.length === 0) {
+    return res.status(400).json({ ok: false, error: 'No recipients found for this audience/channel combination' });
+  }
+
+  const token = uuid();
+  broadcastTokens.set(token, {
+    tenantId: req.tenant.id,
+    audience,
+    channel,
+    expiresAt: Date.now() + (5 * 60 * 1000)
+  });
+
+  res.json({
+    ok: true,
+    token,
+    recipientCount: recipients.length,
+    previewNames
+  });
+});
+
+router.post('/api/admin/broadcast/send', requireTenantAdmin, async (req, res) => {
+  const { audience, channel, subject, body, confirmCount, token } = req.body || {};
+  const tenantId = req.tenant.id;
+
+  if (!BROADCAST_AUDIENCES.has(audience) || !BROADCAST_CHANNELS.has(channel) || !cleanContact(body)) {
+    return res.status(400).json({ ok: false, error: 'audience, channel, and body are required' });
+  }
+  if (channel === 'email' && !cleanContact(subject)) {
+    return res.status(400).json({ ok: false, error: 'Email subject is required' });
+  }
+  if (channel === 'sms' && String(body).length > 300) {
+    return res.status(400).json({ ok: false, error: 'SMS body must be 300 characters or less' });
+  }
+
+  cleanExpiredTokens();
+  const tokenKey = cleanContact(token);
+  const tokenEntry = broadcastTokens.get(tokenKey);
+  if (!tokenEntry || tokenEntry.tenantId !== tenantId || tokenEntry.audience !== audience || tokenEntry.channel !== channel) {
+    return res.status(400).json({ ok: false, error: 'Broadcast confirmation required. Preview recipients again before sending.' });
+  }
+  broadcastTokens.delete(tokenKey);
+
+  const recipients = getBroadcastRecipients(tenantId, audience, channel);
+  if (recipients.length === 0) {
+    return res.status(400).json({ ok: false, error: 'No recipients found for this audience/channel combination' });
+  }
+
+  const expectedCount = Number(confirmCount);
+  if (!Number.isFinite(expectedCount) || expectedCount !== recipients.length) {
+    return res.status(400).json({ ok: false, error: 'Recipient count changed. Preview recipients again before sending.' });
+  }
+
+  if (channel === 'sms' && !(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER)) {
+    return res.status(400).json({ ok: false, error: 'SMS is not configured yet' });
+  }
+
+  const broadcastId = uuid();
+  const tenant = req.tenant;
+  stmts.insertBroadcast.run({
+    id: broadcastId,
+    tenant_id: tenantId,
+    channel,
+    audience,
+    subject: channel === 'email' ? cleanContact(subject) : null,
+    body: String(body),
+    recipient_count: recipients.length,
+    status: 'sending',
+    sent_by: req.session?.user?.email || req.session?.user?.username || 'admin'
+  });
+
+  res.json({
+    ok: true,
+    broadcastId,
+    recipientCount: recipients.length,
+    message: `Broadcast queued to ${recipients.length} recipients`
+  });
+
+  setImmediate(async () => {
+    let sent = 0;
+    let failed = 0;
+
+    try {
+      if (channel === 'email') {
+        const { send: sendEmail } = require('../email');
+
+        for (const recipient of recipients) {
+          try {
+            const personalizedBody = String(body).replace(/\{\{name\}\}/gi, recipient.name || 'Vendor');
+            const htmlBody = `<div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;padding:24px;color:#1e2d40;">${personalizedBody.replace(/\n/g, '<br>')}<hr style="margin:24px 0;border:none;border-top:1px solid #eee;"><p style="font-size:12px;color:#999;">Sent by ${tenant.name} via TheFairMap. To unsubscribe, reply STOP.</p></div>`;
+            await sendEmail(recipient.email, cleanContact(subject), htmlBody);
+            sent++;
+          } catch (err) {
+            failed++;
+          }
+        }
+      } else {
+        let twilioClient;
+        try {
+          twilioClient = require('twilio')(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        } catch (err) {
+          stmts.updateBroadcastStatus.run({ id: broadcastId, status: 'failed', sent_count: 0, failed_count: recipients.length });
+          return;
+        }
+
+        for (const recipient of recipients) {
+          try {
+            const personalizedBody = String(body).replace(/\{\{name\}\}/gi, recipient.name || 'Vendor');
+            await twilioClient.messages.create({
+              body: personalizedBody,
+              from: process.env.TWILIO_FROM_NUMBER,
+              to: recipient.phone
+            });
+            sent++;
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } catch (err) {
+            failed++;
+          }
+        }
+      }
+
+      stmts.updateBroadcastStatus.run({
+        id: broadcastId,
+        status: sent > 0 ? 'done' : 'failed',
+        sent_count: sent,
+        failed_count: failed
+      });
+    } catch (err) {
+      stmts.updateBroadcastStatus.run({
+        id: broadcastId,
+        status: 'failed',
+        sent_count: sent,
+        failed_count: Math.max(failed, recipients.length - sent)
+      });
+    }
+  });
+});
+
+router.get('/api/admin/broadcast/history', requireTenantAdmin, (req, res) => {
+  const messages = stmts.getBroadcastsByTenant.all(req.tenant.id);
+  res.json({ ok: true, messages });
+});
+
+router.get('/api/admin/broadcast/config', requireTenantAdmin, (req, res) => {
+  res.json({
+    ok: true,
+    emailConfigured: !!process.env.RESEND_API_KEY,
+    smsConfigured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER)
+  });
+});
+
 // ── Settings ────────────────────────────────────────────────────────────────
 
 router.get('/api/admin/settings', requireTenantAdmin, (req, res) => {
@@ -371,6 +625,50 @@ router.post('/api/import-locations', requireTenantAdmin, (req, res) => {
 
   const count = stmts.countLocationsByTenant.get(tid).cnt;
   res.json({ ok: true, count });
+});
+
+// ── Team members ───────────────────────────────────────────────────────────
+
+router.get('/api/users', requireTenantAdmin, (req, res) => {
+  const tid = req.tenant.id;
+  const members = stmts.getTeamMembersByTenant.all(tid).map(m => ({
+    id: m.id, username: m.username, displayName: m.display_name,
+    role: m.role, createdAt: m.created_at
+  }));
+  const owner = {
+    id: 'admin', username: req.tenant.owner_email,
+    displayName: req.tenant.owner_name || 'Owner',
+    role: 'admin', createdAt: null
+  };
+  res.json({ ok: true, users: [owner, ...members] });
+});
+
+router.post('/api/users', requireTenantAdmin, (req, res) => {
+  const { username, password, displayName, role } = req.body;
+  if (!username || !password) return res.status(400).json({ ok: false, error: 'Username and password required' });
+  if (password.length < 6) return res.status(400).json({ ok: false, error: 'Min 6 characters' });
+  const validRoles = ['editor', 'admin'];
+  const safeRole = validRoles.includes(role) ? role : 'editor';
+  const tid = req.tenant.id;
+
+  const existing = stmts.getTeamMemberByUsername.get(username, tid);
+  if (existing) return res.status(400).json({ ok: false, error: 'Username already exists' });
+
+  const id = uuid();
+  stmts.insertTeamMember.run({
+    id, tenant_id: tid, username,
+    password: bcrypt.hashSync(password, 10),
+    display_name: displayName || username,
+    role: safeRole
+  });
+  res.json({ ok: true, user: { id, username, displayName: displayName || username, role: safeRole } });
+});
+
+router.delete('/api/users/:id', requireTenantAdmin, (req, res) => {
+  if (req.params.id === 'admin') return res.status(400).json({ ok: false, error: 'Cannot remove owner' });
+  const result = stmts.deleteTeamMember.run(req.params.id, req.tenant.id);
+  if (result.changes === 0) return res.status(404).json({ ok: false, error: 'Not found' });
+  res.json({ ok: true });
 });
 
 // ── HTML pages ──────────────────────────────────────────────────────────────

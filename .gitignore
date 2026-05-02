@@ -10,3 +10,5 @@ data/*.db-wal
 .tmp/
 tmp-*.png
 shots-*.png
+ecosystem.config.js
+# ecosystem.config.*.js — only ignore the real one
