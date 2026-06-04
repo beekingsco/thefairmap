@@ -3,7 +3,6 @@
 export const config = { runtime: 'edge' };
 
 const TILESET_ID = '0196a1e2-92d2-7ed9-9540-2191fb00a1af';
-const MAPTILER_KEY = 'fQ4ZMToXe3rVrmKMAN7K';
 const MAPME_REFERER = 'https://viewer.mapme.com/';
 
 export default async function handler(req) {
@@ -25,7 +24,8 @@ export default async function handler(req) {
     return new Response('invalid tile coordinates', { status: 400 });
   }
 
-  const upstream = `https://api.maptiler.com/tiles/${TILESET_ID}/${z}/${x}/${y}.png?key=${MAPTILER_KEY}`;
+  const key = process.env.MAPTILER_KEY || 'fQ4ZMToXe3rVrmKMAN7K';
+  const upstream = `https://api.maptiler.com/tiles/${TILESET_ID}/${z}/${x}/${y}.png?key=${key}`;
 
   try {
     const res = await fetch(upstream, {

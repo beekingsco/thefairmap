@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/api/venue-tile/:path*", "destination": "/api/venue-tile/:path*" },
+    { "source": "/api/tile", "destination": "/api/tile" },
+    { "source": "/api/config", "destination": "/api/config" },
     { "source": "/api/:path*", "destination": "https://thefairmap-production.up.railway.app/api/:path*" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/embed", "destination": "/embed.html" },

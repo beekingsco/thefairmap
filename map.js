@@ -529,7 +529,7 @@ function addVenueOverlay() {
   if (map.getSource('venue-overlay')) return;
   map.addSource('venue-overlay', {
     type: 'raster',
-    tiles: [`${window.location.origin}/api/tile?z={z}&x={x}&y={y}`],
+    tiles: [`${window.location.origin}/api/venue-tile/{z}/{x}/{y}.png`],
     tileSize: 256,
     minzoom: 13,
     maxzoom: 22,
