@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node --experimental-vm-modules --test tests/venue-tile-proxy.test.js"
+    "test": "python3 scripts/test-stay-page.py && node --experimental-vm-modules --test tests/venue-tile-proxy.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

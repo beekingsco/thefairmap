@@ -9,6 +9,7 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/embed", "destination": "/embed.html" },
     { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/stay", "destination": "/stay.html" },
     { "source": "/map", "destination": "/map.html" },
     { "source": "/platform/login", "destination": "/vendor-login.html" },
     { "source": "/vendor-login", "destination": "/vendor-login.html" },
