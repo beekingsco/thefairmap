@@ -101,6 +101,36 @@ class StayMenuTests(unittest.TestCase):
             empty = subprocess.run([sys.executable, str(script), "--check", tmp], capture_output=True, text=True)
             self.assertNotEqual(empty.returncode, 0)
 
+    def test_cli_fails_when_html_has_no_recognized_menu_targets(self):
+        script = ROOT / "scripts" / "add_stay_menu.py"
+        with tempfile.TemporaryDirectory() as tmp:
+            Path(tmp, "plain.html").write_text('<header class="other"><a href="/app-download">Maps</a></header>')
+            result = subprocess.run([sys.executable, str(script), "--check", tmp], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("no Visit First Monday map-menu targets", result.stderr)
+
+    def test_malformed_html_aborts_batch_before_any_file_is_written(self):
+        script = ROOT / "scripts" / "add_stay_menu.py"
+        valid = '<header class="site-header"><a href="/app-download">Maps</a></header>'
+        malformed = '<header class="site-header"><a href="/app-download">Maps<header class="other"></a></header></header>'
+        with tempfile.TemporaryDirectory() as tmp:
+            valid_path = Path(tmp, "a-valid.html")
+            malformed_path = Path(tmp, "z-malformed.html")
+            valid_path.write_text(valid)
+            malformed_path.write_text(malformed)
+            result = subprocess.run([sys.executable, str(script), tmp], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("malformed menu HTML", result.stderr)
+            self.assertEqual(valid_path.read_text(), valid)
+            self.assertEqual(malformed_path.read_text(), malformed)
+
+    def test_update_file_rejects_unclosed_site_header(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp, "index.html")
+            path.write_text('<header class="site-header"><a href="/app-download">Maps</a>')
+            with self.assertRaises(ValueError):
+                update_file(path)
+
 
 if __name__ == "__main__":
     unittest.main()
