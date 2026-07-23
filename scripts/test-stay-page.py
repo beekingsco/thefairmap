@@ -20,11 +20,16 @@ CANONICAL = "https://www.visitfirstmonday.com/stay"
 HOTEL_URL = "https://www.visitcantontx.com/stay"
 RV_BOOKING_URL = "https://www.e-marketmanager.net/webrentalFirstMondayTd/Contents/LayoutIndex.aspx?FleaMarketID=6628374051"
 RV_MAP_URL = "https://www.firstmondaycanton.com/_files/ugd/0b9bd5_52e039d6a3e5436b92c7c85b70f1cb52.pdf"
+HERO_IMAGE_URL = "https://statics.myclickfunnels.com/workspace/eOQKpZ/image/10541981/file/40957c5ee88b2b879b815abfd151b3b2.jpg"
+HOTEL_SOURCE_URL = "https://cantontxfirstmonday.com/first-monday-trade-days-hotels.htm"
+RV_SOURCE_URL = "https://cantontxfirstmonday.com/first-monday-trade-days-rv-parks.htm"
 APPROVED_IMAGE_URLS = {
     "https://statics.myclickfunnels.com/workspace/eOQKpZ/image/15189067/file/931702d11ab922f606c918993fa3f790.png",
     "https://statics.myclickfunnels.com/workspace/eOQKpZ/image/15872527/file/3ddf6e709dd2be91167e8afb794025e9.png",
     "https://statics.myclickfunnels.com/workspace/eOQKpZ/image/13558040/file/977106dac8923699b28e1c56e2fa25f0.jpg",
+    HERO_IMAGE_URL,
 }
+APPROVED_IMAGE_DIMENSIONS = {HERO_IMAGE_URL: (5200, 3466)}
 REQUIRED_PLANNING_LINKS = {
     "https://www.visitfirstmonday.com/dates-first-monday",
     "https://www.visitfirstmonday.com/first-monday-trade-days-map",
@@ -72,6 +77,17 @@ class StayParser(html.parser.HTMLParser):
 def require(condition: bool, message: str, failures: list[str]) -> None:
     if not condition:
         failures.append(message)
+
+
+def relative_luminance(color: str) -> float:
+    channels = [int(color[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+    linear = [channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4 for channel in channels]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast_ratio(foreground: str, background: str) -> float:
+    lighter, darker = sorted((relative_luminance(foreground), relative_luminance(background)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
 
 
 def jsonld_types(value: object) -> set[str]:
@@ -124,6 +140,13 @@ def main() -> int:
     require(HOTEL_URL in hrefs, "Visit Canton lodging CTA must use the approved URL", failures)
     require(RV_BOOKING_URL in hrefs, "official First Monday RV booking link must be present", failures)
     require(RV_MAP_URL in hrefs, "official RV park PDF map link must be present", failures)
+    require({HOTEL_SOURCE_URL, RV_SOURCE_URL} <= hrefs, "independent Canton lodging and RV source links must be present", failures)
+    require(
+        all(name in visible for name in ("Quality Inn & Suites", "Days Inn & Suites by Wyndham Canton", "Super 8 by Wyndham Canton")),
+        "Canton hotel starting points must be visible",
+        failures,
+    )
+    require(all(name in visible for name in ("Canton Marketplace RV Park", "The Silver Spur Resort", "Rolling Oaks RV Park", "Bluebird RV Park", "Texas Log Cabin RV Park", "Sumner RV Park")), "curated RV comparison options must be visible", failures)
     require(
         any(href == "tel:903-567-6556" for href in hrefs) and "903-567-6556" in visible_phone_normalized,
         "full-hookup phone number must be visible and use a tel: link",
@@ -137,6 +160,8 @@ def main() -> int:
     require("max-height: calc(100dvh - 78px)" in source and "overflow-y: auto" in source, "mobile navigation must scroll within short viewports", failures)
     require(":focus-visible" in source, "keyboard focus styles must be present", failures)
     require("prefers-reduced-motion" in source, "reduced-motion preference must be respected", failures)
+    require(contrast_ratio("#08271f", "#149d61") >= 4.5 and contrast_ratio("#08271f", "#1bc879") >= 4.5, "primary CTA text must meet WCAG AA contrast across its gradient", failures)
+    require(all(contrast_ratio("#7d3a22", background) >= 4.5 for background in ("#f5efe2", "#fffaf0", "#ecdfc6")), "small rust labels must meet WCAG AA contrast on their backgrounds", failures)
 
     parsed_jsonld: list[object] = []
     for attrs, body in parser.scripts:
@@ -175,6 +200,10 @@ def main() -> int:
     require(bool(page_images), "page must use approved current imagery", failures)
     require(page_images <= approved_images, "all branded image URLs must be in the approved Visit First Monday image allowlist", failures)
     require(all(image.get("alt", "").strip() for image in parser.images), "all img elements must have alt text", failures)
+    require(source.count(HERO_IMAGE_URL) >= 4, "approved high-resolution hero image must power hero, social cards, and structured data", failures)
+    hero_width, hero_height = APPROVED_IMAGE_DIMENSIONS[HERO_IMAGE_URL]
+    require(hero_width >= 1200 and hero_height >= 630 and hero_width / hero_height >= 1.4, "hero/social image must be high-resolution and landscape-oriented", failures)
+    require(source.count("Two shoppers smiling beside clothing racks at First Monday Trade Days") == 2, "social image alt metadata must accurately describe the approved photo", failures)
 
     sitemap = ET.parse(SITEMAP)
     locs = {node.text for node in sitemap.findall("{http://www.sitemaps.org/schemas/sitemap/0.9}url/{http://www.sitemaps.org/schemas/sitemap/0.9}loc")}
