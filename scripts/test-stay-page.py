@@ -25,11 +25,11 @@ APPROVED_IMAGE_URLS = {
     "https://statics.myclickfunnels.com/workspace/eOQKpZ/image/15872527/file/3ddf6e709dd2be91167e8afb794025e9.png",
     "https://statics.myclickfunnels.com/workspace/eOQKpZ/image/13558040/file/977106dac8923699b28e1c56e2fa25f0.jpg",
 }
-REQUIRED_INTERNAL_LINKS = {
-    "/dates-first-monday",
-    "/first-monday-trade-days-map",
-    "/lewis-first-monday-parking",
-    "/first-monday-first-timer-guide",
+REQUIRED_PLANNING_LINKS = {
+    "https://www.visitfirstmonday.com/dates-first-monday",
+    "https://www.visitfirstmonday.com/first-monday-trade-days-map",
+    "https://www.visitfirstmonday.com/lewis-first-monday-parking",
+    "https://www.visitfirstmonday.com/first-monday-first-timer-guide",
 }
 
 
@@ -129,11 +129,12 @@ def main() -> int:
         "full-hookup phone number must be visible and use a tel: link",
         failures,
     )
-    require(REQUIRED_INTERNAL_LINKS <= hrefs, "dates, map, parking, and first-timer links must all be present", failures)
+    require(REQUIRED_PLANNING_LINKS <= hrefs, "dates, map, parking, and first-timer production links must all be present", failures)
 
     require(any(button.get("id") == "menu-toggle" and button.get("aria-expanded") == "false" and button.get("aria-controls") == "mobile-nav" for button in parser.buttons), "mobile menu button must expose aria-expanded and aria-controls", failures)
     require('id="mobile-nav"' in source and 'aria-label="Mobile"' in source, "mobile navigation must be labelled", failures)
     require("min-height: 44px" in source or "min-height:44px" in source, "actionable controls must have a 44px minimum target size", failures)
+    require("max-height: calc(100dvh - 78px)" in source and "overflow-y: auto" in source, "mobile navigation must scroll within short viewports", failures)
     require(":focus-visible" in source, "keyboard focus styles must be present", failures)
     require("prefers-reduced-motion" in source, "reduced-motion preference must be respected", failures)
 
@@ -172,7 +173,7 @@ def main() -> int:
         )
     page_images = set(re.findall(r'https://statics\.myclickfunnels\.com/[^"\')\s]+', source))
     require(bool(page_images), "page must use approved current imagery", failures)
-    require(page_images <= approved_images, "all branded image URLs must already appear on vfm-homepage.html", failures)
+    require(page_images <= approved_images, "all branded image URLs must be in the approved Visit First Monday image allowlist", failures)
     require(all(image.get("alt", "").strip() for image in parser.images), "all img elements must have alt text", failures)
 
     sitemap = ET.parse(SITEMAP)
@@ -182,6 +183,7 @@ def main() -> int:
 
     external_hrefs = [href for href in hrefs if href.startswith(("http://", "https://"))]
     require(all(urlparse(href).scheme == "https" and urlparse(href).netloc for href in external_hrefs), "external links must be absolute HTTPS URLs", failures)
+    require(not any(href.startswith("/") and href != "/stay" for href in hrefs), "preview-safe navigation must use production Visit First Monday URLs", failures)
 
     if failures:
         print("STAY PAGE TESTS: FAIL")
