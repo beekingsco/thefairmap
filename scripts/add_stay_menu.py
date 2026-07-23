@@ -32,6 +32,7 @@ class MenuHeaderParser(HTMLParser):
         self.target_count = 0
         self.errors: list[str] = []
         self.saw_site_header = False
+        self.raw_text_depth = 0
 
     def source_index(self) -> int:
         line, column = self.getpos()
@@ -46,10 +47,16 @@ class MenuHeaderParser(HTMLParser):
     @staticmethod
     def is_site_header(attrs: list[tuple[str, str | None]]) -> bool:
         classes = next((value or "" for name, value in attrs if name.lower() == "class"), "")
-        return "site-header" in ASCII_WHITESPACE_RE.split(classes.strip())
+        ascii_trimmed = classes.strip(" \t\n\f\r")
+        return "site-header" in ASCII_WHITESPACE_RE.split(ascii_trimmed)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         tag = tag.lower()
+        raw_tag = self.get_starttag_text() or ""
+        if tag == "header" and "<" in raw_tag[1:]:
+            self.errors.append("header opener contains nested markup")
+        if tag in {"script", "style"}:
+            self.raw_text_depth += 1
         if tag == "header":
             is_site = self.is_site_header(attrs)
             if is_site:
@@ -80,8 +87,18 @@ class MenuHeaderParser(HTMLParser):
         elif tag == "a" and self.active_site_header() is not None:
             self.errors.append("self-closing anchor inside a site-header")
 
+    def handle_data(self, data: str) -> None:
+        if self.raw_text_depth:
+            return
+        position = self.source_index()
+        tail = self.source[position:]
+        if data == "<" and re.match(r"<header\b", tail, re.IGNORECASE) and "site-header" in tail:
+            self.errors.append("incomplete site-header opener")
+
     def handle_endtag(self, tag: str) -> None:
         tag = tag.lower()
+        if tag in {"script", "style"}:
+            self.raw_text_depth = max(0, self.raw_text_depth - 1)
         if tag == "a":
             if not self.anchor_stack:
                 if self.active_site_header() is not None:

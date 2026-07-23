@@ -131,6 +131,29 @@ class StayMenuTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 update_file(path)
 
+    def test_rejects_incomplete_and_merged_site_header_openers(self):
+        cases = [
+            '<header class="site-header"',
+            '<header class="site-header"\n<header class="site-header"><a href="/app-download">Maps</a></header>',
+        ]
+        for index, source in enumerate(cases):
+            with self.subTest(index=index), tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp, "index.html")
+                path.write_text(source)
+                with self.assertRaises(ValueError):
+                    update_file(path)
+                self.assertEqual(path.read_text(), source)
+
+    def test_unicode_whitespace_does_not_create_site_header_class_token(self):
+        for whitespace in ("\u00a0", "\u2003"):
+            for classes in (f"{whitespace}site-header", f"site-header{whitespace}"):
+                with self.subTest(classes=classes), tempfile.TemporaryDirectory() as tmp:
+                    path = Path(tmp, "index.html")
+                    source = f'<header class="{classes}"><a href="/app-download">Maps</a></header>'
+                    path.write_text(source)
+                    self.assertFalse(update_file(path))
+                    self.assertEqual(path.read_text(), source)
+
 
 if __name__ == "__main__":
     unittest.main()
