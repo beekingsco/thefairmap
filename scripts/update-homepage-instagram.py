@@ -250,9 +250,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "paths",
-        nargs="*",
+        nargs="+",
         type=Path,
-        default=[Path("public/vfm-homepage.html"), Path("public/index.html")],
+        help="production homepage artifacts, normally public/vfm-homepage.html and public/index.html",
     )
     parser.add_argument("--check", action="store_true", help="exit 1 when either homepage still needs the update")
     args = parser.parse_args()
