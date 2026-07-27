@@ -1,4 +1,5 @@
 import importlib.util
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -89,6 +90,16 @@ class HomepageInstagramUpdateTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 module.update_files([homepage, index], write=True)
             self.assertEqual(homepage.read_text(), fixture(module))
+
+    def test_cli_requires_explicit_production_paths(self):
+        result = subprocess.run(
+            ["python3", str(SCRIPT), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("the following arguments are required: paths", result.stderr)
 
     def test_file_check_and_write_modes(self):
         module = load_module()
