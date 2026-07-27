@@ -231,21 +231,39 @@ def update_file(path: Path, *, write: bool = True) -> bool:
     return True
 
 
+def update_files(paths: list[Path], *, write: bool = True) -> int:
+    plans: list[tuple[Path, bytes]] = []
+    for path in paths:
+        if not path.is_file():
+            raise ValueError(f"file not found: {path}")
+        original = path.read_bytes()
+        updated = updated_source(original.decode("utf-8")).encode("utf-8")
+        if updated != original:
+            plans.append((path, updated))
+    if write:
+        for path, updated in plans:
+            write_atomic(path, updated)
+    return len(plans)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("path", nargs="?", type=Path, default=Path("public/vfm-homepage.html"))
-    parser.add_argument("--check", action="store_true", help="exit 1 when the homepage still needs the update")
+    parser.add_argument(
+        "paths",
+        nargs="*",
+        type=Path,
+        default=[Path("public/vfm-homepage.html"), Path("public/index.html")],
+    )
+    parser.add_argument("--check", action="store_true", help="exit 1 when either homepage still needs the update")
     args = parser.parse_args()
-    if not args.path.is_file():
-        parser.error(f"file not found: {args.path}")
     try:
-        changed = update_file(args.path, write=not args.check)
-    except (UnicodeDecodeError, ValueError) as exc:
+        changed = update_files(args.paths, write=not args.check)
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
         parser.error(str(exc))
     if args.check:
-        print("Homepage Instagram feature needs update" if changed else "Homepage Instagram feature is ready")
+        print(f"Homepage Instagram feature needs update in {changed} file(s)" if changed else "Homepage Instagram feature is ready")
         return 1 if changed else 0
-    print("Updated homepage Instagram feature" if changed else "Homepage Instagram feature already ready")
+    print(f"Updated homepage Instagram feature in {changed} file(s)" if changed else "Homepage Instagram feature already ready")
     return 0
 
 
