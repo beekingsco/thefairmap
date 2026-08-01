@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "python3 tests/test_coupon_modal_scroll_updater.py"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
