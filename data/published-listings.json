@@ -1,0 +1,27 @@
+{
+  "photoHook": "Attach later JPEGs on Rowe Farms photos/images as https:// or /uploads/ URLs. Portal vendorUuid is 57925765-0d4e-4f77-a047-783a80180889 (path https://vfm.buzzonmarketing.com/vendor-photos/57925765-0d4e-4f77-a047-783a80180889/<file>.jpg). Do not reuse JT Jewelry id abcefc40-da73-4346-8105-47d847c24a68. After editing run: node scripts/apply-published-listings.js",
+  "locations": [
+    {
+      "id": "rowe-farms-4505",
+      "vendorUuid": "57925765-0d4e-4f77-a047-783a80180889",
+      "name": "Rowe Farms",
+      "description": "<p><b>Pavilion 4500: Booth 4505</b></p><p>4505 For 26 years we have operated as a wholesale plant farm that stocks up many garden centers all...</p>",
+      "address": "Pavilion 4500, Booth 4505",
+      "booth": "4505",
+      "pavilion": "4500",
+      "lat": 32.5660368,
+      "lng": -95.86080677,
+      "categoryId": "6399f794-c719-4e48-8ee5-11c1e64a6d12",
+      "categoryName": "Home",
+      "inactive": {
+        "address": true
+      },
+      "zoom": 20.02,
+      "pitch": 60,
+      "bearing": 0,
+      "photos": [],
+      "images": [],
+      "catalogStoreType": "product"
+    }
+  ]
+}
