@@ -42,6 +42,16 @@ app.locals.BASE_URL = BASE_URL;
 const UPLOADS_DIR = path.join(ROOT, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
+// Shopper map reads /api/locations then data/mapme-full-export.json.
+// The VFM / Trusted Vendor push path also opens pub/full-export.json.
+// Create that compatibility file from the existing export if it is missing
+// so a map-dot write cannot ENOENT on a missing pub/ directory.
+try {
+  require('./lib/map-export').ensureExportFiles();
+} catch (err) {
+  console.warn('⚠️  Could not ensure pub/full-export.json:', err.message);
+}
+
 // ── Stripe webhook (raw body — BEFORE json parser) ──────────────────────────
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), (req, res) => {
   if (!stripe) return res.status(503).json({ ok: false, error: 'Stripe not configured' });

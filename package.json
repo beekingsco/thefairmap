@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node scripts/test-map-export.js",
+    "ensure-map-export": "node scripts/ensure-map-export.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
