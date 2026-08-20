@@ -12,7 +12,7 @@ console.log(`  ${paths.canonicalFile}`);
 console.log(`  ${paths.seedFile}`);
 console.log(`  ${paths.pubFile}`);
 if (rowe) {
-  console.log(`Rowe Farms id=${rowe.id} booth=${rowe.booth || ''} lat=${rowe.lat} lng=${rowe.lng} photos=${(rowe.photos || []).length}`);
+  console.log(`Rowe Farms id=${rowe.id} booth=${rowe.booth || ''} category=${rowe.categoryName} lat=${rowe.lat} lng=${rowe.lng} photos=${(rowe.photos || []).length}`);
 } else {
   console.warn('Rowe Farms was not present after publish.');
   process.exitCode = 1;

@@ -47,7 +47,13 @@ assert.ok(embed.includes('/map.html'), 'embed.html must hand off to the shopper 
 
 const data = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'mapme-full-export.json'), 'utf8'));
 assert.ok(Array.isArray(data.locations));
-assert.ok(data.locations.length >= 711, `expected >= 711 locations, got ${data.locations.length}`);
+assert.strictEqual(data.locations.length, 711, `expected 711 locations, got ${data.locations.length}`);
+const garden = (data.categories || []).find((cat) => cat.id === '5dd4803e-9cff-4d80-99a1-98d86ef1c1af');
+const plants = (data.categories || []).find((cat) => cat.id === 'b8f1b4b4-9d3e-4c66-96d3-4f1d53e3d4f4');
+assert.ok(garden, 'Garden / Patio category must remain');
+assert.strictEqual(garden.name, 'Garden / Patio');
+assert.strictEqual(garden.count, 26, 'Rowe Farms moves Garden / Patio from 25 to 26');
+assert.strictEqual(plants && plants.count, 0, 'unused Plants category must stay empty');
 
 const jt = data.locations.find((loc) => loc.id === 'abcefc40-da73-4346-8105-47d847c24a68');
 assert.ok(jt, 'JT Jewelry pin must remain');
@@ -62,7 +68,9 @@ assert.ok(rowe, 'Rowe Farms must be a new location');
 assert.strictEqual(rowe.name, 'Rowe Farms');
 assert.strictEqual(String(rowe.booth), '4505');
 assert.strictEqual(String(rowe.pavilion), '4500');
-assert.strictEqual(rowe.categoryName, 'Home');
+assert.strictEqual(rowe.categoryId, '5dd4803e-9cff-4d80-99a1-98d86ef1c1af');
+assert.strictEqual(rowe.categoryName, 'Garden / Patio');
+assert.notStrictEqual(rowe.categoryId, 'b8f1b4b4-9d3e-4c66-96d3-4f1d53e3d4f4', 'do not use unused Plants category');
 assert.strictEqual(rowe.lat, 32.5660368);
 assert.strictEqual(rowe.lng, -95.86080677);
 assert.notStrictEqual(rowe.id, jt.id, 'Rowe Farms must not reuse the JT Jewelry id');

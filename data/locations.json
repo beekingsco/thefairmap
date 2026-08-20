@@ -34,7 +34,7 @@
       "color": "#0b5c59ff",
       "shape": "circle",
       "icon": "svg",
-      "count": 53
+      "count": 52
     },
     {
       "id": "e5b81123-8d94-47c5-b036-3f0a47c6a350",
@@ -106,7 +106,7 @@
       "color": "#357717ff",
       "shape": "circle",
       "icon": "svg",
-      "count": 25
+      "count": 26
     },
     {
       "id": "ad421483-d676-46d7-b3b3-756db8910c7a",
@@ -14099,8 +14099,8 @@
       "pavilion": "4500",
       "lat": 32.5660368,
       "lng": -95.86080677,
-      "categoryId": "6399f794-c719-4e48-8ee5-11c1e64a6d12",
-      "categoryName": "Home",
+      "categoryId": "5dd4803e-9cff-4d80-99a1-98d86ef1c1af",
+      "categoryName": "Garden / Patio",
       "inactive": {
         "address": true
       },
