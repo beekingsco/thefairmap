@@ -66,6 +66,22 @@ assert.strictEqual(rowe.categoryName, 'Home');
 assert.strictEqual(rowe.lat, 32.5660368);
 assert.strictEqual(rowe.lng, -95.86080677);
 assert.notStrictEqual(rowe.id, jt.id, 'Rowe Farms must not reuse the JT Jewelry id');
+const rowePhotos = Array.isArray(rowe.photos) ? rowe.photos : [];
+assert.strictEqual(rowePhotos.length, 6, 'Rowe Farms must have 6 shopper photos');
+assert.deepStrictEqual(rowePhotos, [
+  '/uploads/rowe-farms-1.jpg',
+  '/uploads/rowe-farms-2.jpg',
+  '/uploads/rowe-farms-3.jpg',
+  '/uploads/rowe-farms-4.jpg',
+  '/uploads/rowe-farms-5.jpg',
+  '/uploads/rowe-farms-6.jpg'
+]);
+for (const rel of rowePhotos) {
+  const full = path.join(publicDir, rel.replace(/^\//, ''));
+  assert.ok(fs.existsSync(full), `missing shopper photo ${rel}`);
+  const magic = fs.readFileSync(full).subarray(0, 3);
+  assert.deepStrictEqual(Array.from(magic), [0xff, 0xd8, 0xff], `${rel} must be a JPEG`);
+}
 
 const prepared = spawnSync(process.execPath, [path.join(__dirname, 'prepare-vercel-shopper.js')], {
   cwd: root,

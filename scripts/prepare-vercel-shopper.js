@@ -56,6 +56,7 @@ for (const name of [
 }
 
 copyFile(path.join(root, 'manifest.json'), path.join(publicDir, 'manifest.json'));
+const uploadCount = copyDir(path.join(root, 'uploads'), path.join(publicDir, 'uploads'));
 
 const required = [
   'first-monday-finder.html',
@@ -71,4 +72,4 @@ if (missing.length) {
   process.exit(1);
 }
 
-console.log(`prepare-vercel-shopper: export=${exportCopied} icons=${iconCount} output=${publicDir}`);
+console.log(`prepare-vercel-shopper: export=${exportCopied} icons=${iconCount} uploads=${uploadCount} output=${publicDir}`);

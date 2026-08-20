@@ -14107,8 +14107,22 @@
       "zoom": 20.02,
       "pitch": 60,
       "bearing": 0,
-      "photos": [],
-      "images": [],
+      "photos": [
+        "/uploads/rowe-farms-1.jpg",
+        "/uploads/rowe-farms-2.jpg",
+        "/uploads/rowe-farms-3.jpg",
+        "/uploads/rowe-farms-4.jpg",
+        "/uploads/rowe-farms-5.jpg",
+        "/uploads/rowe-farms-6.jpg"
+      ],
+      "images": [
+        "/uploads/rowe-farms-1.jpg",
+        "/uploads/rowe-farms-2.jpg",
+        "/uploads/rowe-farms-3.jpg",
+        "/uploads/rowe-farms-4.jpg",
+        "/uploads/rowe-farms-5.jpg",
+        "/uploads/rowe-farms-6.jpg"
+      ],
       "catalogStoreType": "product",
       "vendorUuid": "57925765-0d4e-4f77-a047-783a80180889"
     }
