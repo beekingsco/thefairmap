@@ -62,5 +62,27 @@ store.saveExport(afterWrite);
 assert.ok(fs.existsSync(pubFile), 'saveExport must mkdir pub/ and write the file');
 assert.doesNotThrow(() => fs.readFileSync(pubFile, 'utf8'));
 
+fs.writeFileSync(
+  path.join(tmp, 'data', 'published-listings.json'),
+  JSON.stringify({
+    locations: [{
+      id: 'rowe-farms',
+      name: 'Rowe Farms',
+      booth: '4505',
+      photos: ['/uploads/rowe-farms-1.jpg']
+    }]
+  }, null, 2)
+);
+const overlayStore = createMapExport(tmp);
+const overlayLoaded = overlayStore.loadExport();
+const overlayRowe = overlayLoaded.locations.find((loc) => loc.id === 'rowe-farms');
+assert.ok(overlayRowe, 'loadExport must merge data/published-listings.json');
+assert.strictEqual(overlayRowe.booth, '4505');
+assert.deepStrictEqual(overlayRowe.photos, ['/uploads/rowe-farms-1.jpg']);
+
+overlayStore.publishListedLocations();
+const persisted = JSON.parse(fs.readFileSync(path.join(tmp, 'data', 'mapme-full-export.json'), 'utf8'));
+assert.ok(persisted.locations.some((loc) => loc.id === 'rowe-farms' && loc.photos[0] === '/uploads/rowe-farms-1.jpg'));
+
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log('test-map-export: ok');

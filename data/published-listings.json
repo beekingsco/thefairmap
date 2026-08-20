@@ -1,0 +1,26 @@
+{
+  "photoHook": "Attach later JPEGs on the listing photos (and images) arrays as https:// URLs or /uploads/ paths. The shopper map already renders those fields. Typical vendor-portal files land at https://vfm.buzzonmarketing.com/vendor-photos/<vendor-id>/<timestamp>.jpg. After editing this file run `node scripts/apply-published-listings.js` and deploy thefairmap on Vercel.",
+  "locations": [
+    {
+      "id": "rowe-farms-4505",
+      "name": "Rowe Farms",
+      "description": "<p><b>Pavilion 4500: Booth 4505</b></p><p>4505 For 26 years we have operated as a wholesale plant farm that stocks up many garden centers all...</p>",
+      "address": "Pavilion 4500, Booth 4505",
+      "booth": "4505",
+      "pavilion": "4500",
+      "lat": 32.5660368,
+      "lng": -95.86080677,
+      "categoryId": "6399f794-c719-4e48-8ee5-11c1e64a6d12",
+      "categoryName": "Home",
+      "inactive": {
+        "address": true
+      },
+      "zoom": 20.02,
+      "pitch": 60,
+      "bearing": 0,
+      "photos": [],
+      "images": [],
+      "catalogStoreType": "product"
+    }
+  ]
+}

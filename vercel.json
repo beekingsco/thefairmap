@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/api/locations", "destination": "/data/mapme-full-export.json" },
     { "source": "/api/:path*", "destination": "https://thefairmap-production.up.railway.app/api/:path*" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/embed", "destination": "/embed.html" },
@@ -19,6 +20,13 @@
       "headers": [
         { "key": "X-Frame-Options", "value": "ALLOWALL" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    },
+    {
+      "source": "/data/(locations|mapme-full-export|published-listings).json",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=60, stale-while-revalidate=300" }
       ]
     }
   ]

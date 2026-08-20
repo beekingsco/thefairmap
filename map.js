@@ -189,6 +189,38 @@ async function loadIconManifest() {
   }
 }
 
+async function fetchPublishedListings() {
+  try {
+    const res = await fetch('/data/published-listings.json');
+    if (!res.ok) return [];
+    const json = await res.json();
+    if (Array.isArray(json)) return json;
+    return Array.isArray(json.locations) ? json.locations : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function mergePublishedLocations(data, extras) {
+  if (!extras.length) return data;
+  const locations = Array.isArray(data.locations) ? data.locations.slice() : [];
+  const byId = new Map(locations.map((loc) => [String(loc.id), loc]));
+  for (const loc of extras) {
+    if (!loc || loc.id == null) continue;
+    const id = String(loc.id);
+    const prev = byId.get(id);
+    const next = prev ? { ...prev, ...loc, id } : { ...loc, id };
+    if (prev) locations[locations.findIndex((item) => String(item.id) === id)] = next;
+    else locations.push(next);
+    byId.set(id, next);
+  }
+  const categories = (data.categories || []).map((cat) => ({
+    ...cat,
+    count: locations.filter((item) => item.categoryId === cat.id).length
+  }));
+  return { ...data, locations, categories };
+}
+
 async function fetchMapData() {
   const tp = window.__TENANT_PARAM || '';
   const sources = ['/api/locations' + tp, '/data/mapme-full-export.json'];
@@ -200,11 +232,12 @@ async function fetchMapData() {
       const hasLocations = Array.isArray(json.locations) && json.locations.length > 0;
       const hasCategories = Array.isArray(json.categories) && json.categories.length > 0;
       if (hasLocations && hasCategories) {
+        const merged = mergePublishedLocations(json, await fetchPublishedListings());
         console.log('[filters] fetchMapData:using-source', source, {
-          categories: json.categories.length,
-          locations: json.locations.length
+          categories: merged.categories.length,
+          locations: merged.locations.length
         });
-        return json;
+        return merged;
       }
     } catch (_) {
       // try next source
