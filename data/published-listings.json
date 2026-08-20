@@ -1,5 +1,5 @@
 {
-  "photoHook": "Rowe Farms photos live at public/uploads/rowe-farms-1.jpg … rowe-farms-6.jpg (shopper map extractLocationPhotos only accepts https:// or /uploads/ URLs). Portal vendorUuid is 57925765-0d4e-4f77-a047-783a80180889. Do not reuse JT Jewelry id abcefc40-da73-4346-8105-47d847c24a68. After editing run: node scripts/apply-published-listings.js",
+  "photoHook": "Rowe Farms photos live at public/uploads/rowe-farms-1.jpg … rowe-farms-11.jpg (shopper map extractLocationPhotos only accepts https:// or /uploads/ URLs). Portal vendorUuid is 57925765-0d4e-4f77-a047-783a80180889. Do not reuse JT Jewelry id abcefc40-da73-4346-8105-47d847c24a68. After editing run: node scripts/apply-published-listings.js",
   "locations": [
     {
       "id": "rowe-farms-4505",
@@ -25,7 +25,12 @@
         "/uploads/rowe-farms-3.jpg",
         "/uploads/rowe-farms-4.jpg",
         "/uploads/rowe-farms-5.jpg",
-        "/uploads/rowe-farms-6.jpg"
+        "/uploads/rowe-farms-6.jpg",
+        "/uploads/rowe-farms-7.jpg",
+        "/uploads/rowe-farms-8.jpg",
+        "/uploads/rowe-farms-9.jpg",
+        "/uploads/rowe-farms-10.jpg",
+        "/uploads/rowe-farms-11.jpg"
       ],
       "images": [
         "/uploads/rowe-farms-1.jpg",
@@ -33,7 +38,12 @@
         "/uploads/rowe-farms-3.jpg",
         "/uploads/rowe-farms-4.jpg",
         "/uploads/rowe-farms-5.jpg",
-        "/uploads/rowe-farms-6.jpg"
+        "/uploads/rowe-farms-6.jpg",
+        "/uploads/rowe-farms-7.jpg",
+        "/uploads/rowe-farms-8.jpg",
+        "/uploads/rowe-farms-9.jpg",
+        "/uploads/rowe-farms-10.jpg",
+        "/uploads/rowe-farms-11.jpg"
       ],
       "catalogStoreType": "product"
     }

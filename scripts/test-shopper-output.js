@@ -75,14 +75,19 @@ assert.strictEqual(rowe.lat, 32.5660368);
 assert.strictEqual(rowe.lng, -95.86080677);
 assert.notStrictEqual(rowe.id, jt.id, 'Rowe Farms must not reuse the JT Jewelry id');
 const rowePhotos = Array.isArray(rowe.photos) ? rowe.photos : [];
-assert.strictEqual(rowePhotos.length, 6, 'Rowe Farms must have 6 shopper photos');
+assert.strictEqual(rowePhotos.length, 11, 'Rowe Farms must have 11 shopper photos');
 assert.deepStrictEqual(rowePhotos, [
   '/uploads/rowe-farms-1.jpg',
   '/uploads/rowe-farms-2.jpg',
   '/uploads/rowe-farms-3.jpg',
   '/uploads/rowe-farms-4.jpg',
   '/uploads/rowe-farms-5.jpg',
-  '/uploads/rowe-farms-6.jpg'
+  '/uploads/rowe-farms-6.jpg',
+  '/uploads/rowe-farms-7.jpg',
+  '/uploads/rowe-farms-8.jpg',
+  '/uploads/rowe-farms-9.jpg',
+  '/uploads/rowe-farms-10.jpg',
+  '/uploads/rowe-farms-11.jpg'
 ]);
 for (const rel of rowePhotos) {
   const full = path.join(publicDir, rel.replace(/^\//, ''));
