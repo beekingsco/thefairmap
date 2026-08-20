@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>First Monday Finder</title>
+  <meta name="description" content="Open the First Monday Finder map for Canton, Texas. Search vendors, food, restrooms, ATMs, and event locations.">
+  <meta name="theme-color" content="#16543a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="First Monday Finder">
+  <meta property="og:description" content="Search the First Monday grounds, find vendors, and explore the live event map.">
+  <meta property="og:url" content="https://www.visitfirstmonday.com/first-monday-finder">
+  <meta property="og:image" content="/data/icons/first-monday-finder-logo.png">
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:title" content="First Monday Finder">
+  <meta property="twitter:description" content="Search the First Monday grounds, find vendors, and explore the live event map.">
+  <meta property="twitter:image" content="/data/icons/first-monday-finder-logo.png">
+  <link rel="icon" type="image/png" href="/data/icons/first-monday-finder-logo.png">
+  <style>
+    :root {
+      --pine: #16543a;
+      --pine-dark: #0e3a28;
+      --cream: #f6f1e6;
+      --sand: #efe4cf;
+      --ink: #1f241f;
+      --muted: #5f695f;
+      --line: rgba(22, 84, 58, 0.16);
+      --shadow: 0 18px 45px rgba(15, 40, 29, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--cream);
+      color: var(--ink);
+    }
+
+    body {
+      min-height: 100dvh;
+    }
+
+    .mobile-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      background:
+        linear-gradient(180deg, rgba(246, 241, 230, 0.96) 0%, rgba(246, 241, 230, 0) 20%),
+        linear-gradient(160deg, #f6f1e6 0%, #f3ead8 100%);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px 12px;
+      background: rgba(246, 241, 230, 0.94);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--pine), #2f7a58);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 20px rgba(22, 84, 58, 0.22);
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+
+    .brand-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .brand-copy {
+      min-width: 0;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .brand-subtitle {
+      margin: 2px 0 0;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stage-pill {
+      display: none;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(22, 84, 58, 0.1);
+      color: var(--pine);
+      border: 1px solid rgba(22, 84, 58, 0.16);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      flex: 0 0 auto;
+    }
+
+    .mobile-shell.is-staging .stage-pill {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .mobile-shell.is-embedded-preview {
+      background: #d9e1db;
+    }
+
+    .mobile-shell.is-embedded-preview .topbar,
+    .mobile-shell.is-embedded-preview .bottom-note {
+      display: none;
+    }
+
+    .iframe-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .map-frame {
+      display: block;
+      width: 100%;
+      height: calc(100dvh - 72px - env(safe-area-inset-top, 0px));
+      min-height: 560px;
+      border: 0;
+      background: #d9e1db;
+    }
+
+    .mobile-shell.is-embedded-preview .map-frame {
+      height: 100dvh;
+      min-height: 100dvh;
+    }
+
+    .bottom-note {
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid var(--line);
+      background: rgba(246, 241, 230, 0.94);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.79rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .bottom-note strong {
+      color: var(--pine-dark);
+    }
+
+    .desktop-shell {
+      display: none;
+      min-height: 100dvh;
+      padding: 44px 24px;
+      background:
+        radial-gradient(circle at top right, rgba(47, 122, 88, 0.14), transparent 40%),
+        linear-gradient(180deg, #f8f4ea 0%, #f2ead9 100%);
+    }
+
+    .desktop-card {
+      width: min(980px, 100%);
+      margin: auto;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(22, 84, 58, 0.12);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    }
+
+    .desktop-illustration {
+      padding: 34px 28px;
+      background: linear-gradient(160deg, var(--pine) 0%, var(--pine-dark) 100%);
+      color: #f8f4ea;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+    }
+
+    .desktop-badge {
+      width: fit-content;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .desktop-illustration h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 4vw, 3.7rem);
+      line-height: 0.92;
+    }
+
+    .desktop-illustration p {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.98rem;
+      line-height: 1.6;
+      color: rgba(248, 244, 234, 0.86);
+    }
+
+    .desktop-body {
+      padding: 38px 34px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+    }
+
+    .desktop-body h2 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 2.7rem);
+      line-height: 1.02;
+      color: var(--pine-dark);
+    }
+
+    .desktop-body p {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+      max-width: 42rem;
+    }
+
+    .desktop-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 8px;
+    }
+
+    .desktop-actions a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .desktop-actions a:hover {
+      transform: translateY(-1px);
+    }
+
+    .desktop-actions .primary {
+      color: #fff;
+      background: var(--pine);
+      box-shadow: 0 10px 22px rgba(22, 84, 58, 0.2);
+    }
+
+    .desktop-actions .secondary {
+      color: var(--pine);
+      background: rgba(22, 84, 58, 0.08);
+    }
+
+    .desktop-fineprint {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.83rem;
+      color: var(--muted);
+    }
+
+    @media (min-width: 771px) {
+      .mobile-shell {
+        display: none;
+      }
+
+      .desktop-shell {
+        display: flex;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .brand-title {
+        font-size: 0.92rem;
+      }
+
+      .brand-subtitle {
+        font-size: 0.7rem;
+      }
+
+      .stage-pill {
+        padding: 6px 8px;
+        font-size: 0.64rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="mobile-shell" id="mobile-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">
+          <img src="/data/icons/first-monday-finder-logo.png" alt="First Monday Finder logo">
+        </div>
+        <div class="brand-copy">
+          <p class="brand-title">First Monday Finder</p>
+          <p class="brand-subtitle">Canton, Texas live market map</p>
+        </div>
+      </div>
+      <div class="stage-pill" id="stage-pill">Staging</div>
+    </header>
+
+    <section class="iframe-wrap" aria-label="First Monday Finder Map">
+      <iframe
+        id="map"
+        class="map-frame"
+        title="First Monday Finder Map"
+        src="about:blank"
+        allow="geolocation"
+        allowfullscreen
+      ></iframe>
+    </section>
+
+    <footer class="bottom-note">
+      <strong>Locked app-entry route:</strong> this wrapper preserves the same map handoff behavior used by the app listings, while letting us replace ClickFunnels behind the scenes.
+    </footer>
+  </main>
+
+  <main class="desktop-shell">
+    <section class="desktop-card">
+      <div class="desktop-illustration">
+        <div class="desktop-badge">First Monday Finder</div>
+        <h1>Oops.</h1>
+        <p>This map entry page is designed for phones first so guests can launch the live market map the same way the app stores expect.</p>
+      </div>
+
+      <div class="desktop-body">
+        <h2>Best viewed on your phone in portrait mode.</h2>
+        <p>We are keeping this URL stable because the mobile apps depend on it. On mobile, the page loads the live FairMap experience directly. On desktop, this page stays a lightweight wrapper so the app-entry contract does not change.</p>
+        <div class="desktop-actions">
+          <a class="primary" href="/embed.html?tenant=firstmonday">Open The Live Map</a>
+          <a class="secondary" href="/map.html?tenant=firstmonday">Desktop Map View</a>
+        </div>
+        <p class="desktop-fineprint">Production URL target: <strong>www.visitfirstmonday.com/first-monday-finder</strong></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const shell = document.getElementById('mobile-shell');
+      const iframe = document.getElementById('map');
+      const path = window.location.pathname || '';
+      const isStaging = path.includes('staging');
+
+      shell.classList.add('is-embedded-preview');
+
+      if (isStaging) {
+        shell.classList.add('is-staging');
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const mapParams = new URLSearchParams();
+      mapParams.set('tenant', params.get('tenant') || 'firstmonday');
+
+      const handoff = params.get('location') || params.get('search') || params.get('q');
+      if (handoff) {
+        mapParams.set('q', handoff);
+      }
+
+      // Preserve campaign tagging so the new wrapper does not break attribution.
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach((key) => {
+        const value = params.get(key);
+        if (value) {
+          mapParams.set(key, value);
+        }
+      });
+
+      iframe.src = '/embed.html?' + mapParams.toString();
+    })();
+  </script>
+</body>
+</html>

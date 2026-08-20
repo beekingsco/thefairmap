@@ -3,16 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TheFairMap</title>
-  <meta name="description" content="Interactive vendor map">
+  <title>First Monday Finder — TheFairMap</title>
+  <meta name="description" content="Interactive 3D vendor map for First Monday Trade Days in Canton, TX. Find vendors, food, amenities and more.">
   <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=EB+Garamond:wght@400;500;600;700&family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&family=Permanent+Marker&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/maplibre-gl.css">
+  <link rel="stylesheet" href="/style.css?v=20260527-product-list-tighten">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#2f3d4d">
+
+  <style id="critical-mobile-map-fixes">
+    html, body, #app, #map { overscroll-behavior: none; }
+    #map, #map canvas, #map .maplibregl-canvas, #map .maplibregl-canvas-container { touch-action: none !important; }
+    .maplibregl-cooperative-gesture-screen, .maplibregl-mobile-message, #scroll-overlay { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+    @media (max-width: 960px) {
+      #detail-panel {
+        bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+        max-height: min(74dvh, calc(100dvh - 156px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))) !important;
+        transform: translateY(104%);
+      }
+      #detail-panel.is-open { transform: translateY(0) !important; }
+      #detail-content, .detail-content {
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+        touch-action: pan-y !important;
+        padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+      .detail-social-links { margin-bottom: 12px !important; padding-bottom: 8px !important; }
+    }
+  </style>
   <script>
     // Tenant-aware: pass tenant query param to API calls
     (function() {
@@ -34,6 +55,10 @@
       <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m20.7 4.7-1.4-1.4-4.2 4.2-1.1-1.1-3.8 3.8 1.1 1.1-2.4 2.4-1.6-.5-3.1 3.1 1.4 1.4 3.1-3.1-.5-1.6 2.4-2.4 1.1 1.1 3.8-3.8-1.1-1.1 4.2-4.2ZM7 18h2v2H7v-2Zm8-14h2v2h-2V4Zm3 3h2v2h-2V7Z"/></svg>
       <span>Satellite</span>
     </button>
+    <button id="venue-overlay-toggle" class="map-control-btn map-style-btn is-active" type="button" aria-pressed="true" title="Toggle pavilion overlay">
+      <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8-2h8v8h-8v-8Zm2 2v4h4v-4h-4Z"/></svg>
+      <span>Booths</span>
+    </button>
   </div>
 
   <header id="mobile-topbar" aria-label="Mobile search">
@@ -46,18 +71,25 @@
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
       </span>
+      <button class="mobile-expand-btn" type="button" aria-label="Expand map">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M7 14H5v5h5v-2H7v-3Zm-2-4h2V7h3V5H5v5Zm12 7h-3v2h5v-5h-2v3ZM14 5v2h3v3h2V5h-5Z"/></svg>
+      </button>
     </div>
+    <div id="mobile-search-results" class="search-results-panel search-results-panel-mobile" aria-live="polite" hidden></div>
   </header>
 
   <div id="app" class="sidebar-collapsed">
     <aside id="sidebar" aria-label="Overview">
-      <button id="mobile-sheet-collapse" type="button" aria-label="Collapse filters" hidden>v</button>
+      <button id="mobile-sheet-collapse" type="button" aria-label="Collapse filters" hidden>
+        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+      </button>
       <div class="sheet-handle-wrap" data-sheet-handle="sidebar" aria-hidden="true">
-        <span class="sheet-handle"></span>
+        <svg class="sheet-chevron" viewBox="0 0 30 14" width="30" height="14"><path d="M3 3l12 8 12-8" fill="none" stroke="#9ca3af" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
       <div class="sidebar-search-wrap">
         <label for="search-input" class="sr-only">Search</label>
         <input id="search-input" type="search" placeholder="Search" autocomplete="off">
+        <div id="sidebar-search-results" class="search-results-panel" aria-live="polite" hidden></div>
       </div>
       <button id="sidebar-filters-btn" class="sidebar-filters-btn" type="button">
         <span class="filters-glyph" aria-hidden="true">&#9776;</span>
@@ -78,6 +110,13 @@
         <img id="map-brand-img" src="/data/icons/first-monday-finder-logo.png" alt="Map" class="map-brand-img">
       </div>
       <div id="map" role="application" aria-label="Map"></div>
+      <button id="parking-btn" class="parking-btn-fixed" type="button" aria-label="Save my car location" title="Save my car location">P</button>
+      <button id="print-btn" class="print-btn-fixed" type="button" aria-label="Print map" title="Print map &amp; vendor directory" onclick="printMap()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+      </button>
+      <button id="export-img-btn" class="print-btn-fixed" type="button" aria-label="Export map image" title="Download map as PNG" onclick="exportMapImage()" style="bottom:90px;">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+      </button>
       <div id="map-controls">
         <button id="sidebar-toggle" class="map-control-btn chevron-btn" type="button" aria-label="Open filters" aria-expanded="false">
           <span class="map-btn-glyph">&gt;</span>
@@ -101,8 +140,188 @@
     <div id="mobile-scrim" hidden></div>
   </div>
 
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="/config.js"></script>
+  <!-- Tab pages (shown when bottom nav tabs are tapped) -->
+  <div id="tab-products" class="tab-page" hidden>
+    <div class="tab-page-inner products-page">
+      <h2 class="tips-subtitle">Shop</h2>
+      <h1 class="tips-title">PRODUCT SEARCH</h1>
+      <p class="tips-intro">Search by product and jump straight to vendors who have those items attached to their listing.</p>
+      <section class="products-search-shell">
+        <div class="products-search-stage">
+          <div class="products-search-stage-art">
+            <img src="/data/shop-search-banner.jpg?v=20260527-exact-shop-banner" alt="Shop search banner" loading="eager">
+          </div>
+          <div class="products-search-tabs" role="tablist" aria-label="Filter catalog by type">
+            <button type="button" class="products-search-tab active" id="product-search-tab-product" data-product-type="product" aria-selected="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <span>Shopping</span>
+            </button>
+            <button type="button" class="products-search-tab" id="product-search-tab-food" data-product-type="food" aria-selected="false">
+              <img class="products-search-tab-icon-image" src="/data/shop-food-button-icon.jpg?v=20260527-food-icon" alt="" aria-hidden="true" loading="eager">
+              <span>Food</span>
+            </button>
+          </div>
+        </div>
+        <div class="products-search-field">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input id="product-search-input" type="search" placeholder="Search products, flavors, gifts, decor..." autocomplete="off">
+        </div>
+        <div class="products-search-stage-art products-search-stage-art-below">
+          <img src="/data/shop-search-helper-strip.jpg?v=20260527-helper-strip" alt="Search both lanes from one place" loading="eager">
+        </div>
+        <div class="products-search-status">
+          <div id="product-results-count" class="products-search-count">Loading products...</div>
+        </div>
+        <div id="product-results" class="products-results"></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="tab-coupons" class="tab-page" hidden>
+    <div class="tab-page-inner">
+      <h2 class="tips-subtitle">Deals</h2>
+      <h1 class="tips-title">COUPONS</h1>
+      <p class="tips-intro">Tap an offer to see what a vendor is running right now, then jump straight back to the map to find that booth.</p>
+      <div id="coupon-list" class="coupon-list"></div>
+    </div>
+  </div>
+
+  <div id="coupon-detail-modal" class="coupon-detail-modal" hidden>
+    <div class="coupon-detail-backdrop" data-close-coupon-detail="1"></div>
+    <div class="coupon-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="coupon-detail-title">
+      <button type="button" class="coupon-detail-close" aria-label="Close coupon details" onclick="closeCouponDetail()">&times;</button>
+      <div id="coupon-detail-body" class="coupon-detail-body"></div>
+    </div>
+  </div>
+
+  <div id="tab-tips" class="tab-page" hidden>
+    <div class="tab-page-inner">
+      <h2 class="tips-subtitle">Tips</h2>
+      <h1 class="tips-title">APP SUPPORT</h1>
+      <p class="tips-intro">Below are a list of quick tips to help you get the most out of our Visit First Monday Finder App.</p>
+
+      <h3 class="tips-heading">SHOW WHERE <u>YOU</u> ARE</h3>
+      <div class="tips-section">
+        <p>Click the black navigation icon in the upper right of the map to activate and share your GPS location with the app. Be sure to tap "Allow" when your phone prompts you to share your location.</p>
+      </div>
+
+      <h3 class="tips-heading">SAVE TO FAVORITES</h3>
+      <div class="tips-section">
+        <p>When you find and tap a location dot or vendor space that you want to find again, save it to your favorites by tapping the star icon in the header. It will turn yellow and be saved to your favorites list in the shop categories drawer.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-contest" class="tab-page" hidden>
+    <div class="tab-page-inner contest-page" style="padding:0;max-width:none;width:100%;height:100%;margin:0;overflow:hidden;">
+      <iframe src="https://vfm.buzzonmarketing.com/contest/scratch-win-canton-cash" title="First Monday Scratch and Win" loading="lazy" style="display:block;width:100%;height:100%;min-height:calc(100dvh - 56px);border:none;background:transparent;overflow:hidden;"></iframe>
+    </div>
+  </div>
+
+  <div id="tab-links" class="tab-page" hidden>
+    <div class="tab-page-inner links-page links-ticket-page">
+      <div class="links-actions-card">
+        <h2 class="links-script">First Monday</h2>
+        <h1 class="links-title">LINKS + DEALS</h1>
+        <p class="links-follow">Follow &amp; Tag <strong>@VisitFirstMonday</strong></p>
+
+        <div class="links-socials">
+          <a href="https://www.facebook.com/VisitFirstMonday" target="_blank" rel="noopener" class="links-social-item">
+            <svg viewBox="0 0 24 24" width="44" height="44"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.99 3.66 9.12 8.44 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99C18.34 21.12 22 16.99 22 12z"/></svg>
+            <span>Facebook</span>
+          </a>
+          <a href="https://www.instagram.com/VisitFirstMonday" target="_blank" rel="noopener" class="links-social-item">
+            <svg viewBox="0 0 24 24" width="44" height="44"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10m0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+            <span>Instagram</span>
+          </a>
+          <a href="https://www.tiktok.com/@VisitFirstMonday" target="_blank" rel="noopener" class="links-social-item">
+            <svg viewBox="0 0 24 24" width="44" height="44"><path d="M16.6 5.82s.51.5 0 0A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z"/></svg>
+            <span>TikTok</span>
+          </a>
+        </div>
+
+        <div class="links-church">
+          <div class="links-church-info">
+            <span class="links-church-when">Sunday</span>
+            <span class="links-church-where">@ Food Court<br>Pavillion 4500</span>
+          </div>
+          <div class="links-church-label">
+            <strong>CHURCH<br>SERVICES</strong>
+          </div>
+          <span class="links-church-cross">&#10013;</span>
+        </div>
+
+        <a href="https://visitfirstmonday.com/vendor-listing-info" target="_blank" rel="noopener" class="links-btn links-btn-vendor">Vendor Map Listing Signup</a>
+        <a href="https://visitfirstmonday.com/app-download" target="_blank" rel="noopener" class="links-btn links-btn-qr">Download the App</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="contest-onboarding-modal" class="share-qr-modal" hidden>
+    <div class="share-qr-card contest-onboarding-card">
+      <button type="button" class="share-qr-close" aria-label="Close" onclick="closeContestOnboardingModal()">&times;</button>
+      <div class="share-qr-kicker">Guest Access</div>
+      <h3 class="share-qr-title">Ready to Scratch &amp; Win?</h3>
+      <p class="share-qr-copy">Start the game, complete quick registration, and we’ll save your reward, entries, and progress for later.</p>
+      <a id="contest-onboarding-link" class="share-qr-link" target="_blank" rel="noopener">Start the Game</a>
+    </div>
+  </div>
+
+  <!-- Rotating banner rail -->
+  <div id="vip-bar" class="vip-bar">
+    <div id="promo-banner-slot" class="promo-banner-slot">
+      <div id="promo-banner-link" class="promo-banner-link">
+        <div class="promo-vip-card">
+          <div class="promo-vip-title">VIP Alerts for Celebrity Visits + Events!</div>
+          <form id="promo-vip-form" class="promo-vip-form">
+            <input type="email" class="promo-vip-email" placeholder="Email" aria-label="Email for VIP alerts" required>
+            <button type="submit" class="promo-vip-submit">Sign Me Up!</button>
+          </form>
+          <div class="promo-vip-status" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav tabs -->
+  <nav id="bottom-nav" class="bottom-nav">
+    <a href="#" class="bottom-nav-tab is-active" data-tab="map">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5Z"/></svg>
+      <span>MAP</span>
+    </a>
+    <a href="#" class="bottom-nav-tab" data-tab="products">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M7 7V6a5 5 0 0 1 10 0v1h2a1 1 0 0 1 1 1l-1 11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 8a1 1 0 0 1 1-1h2Zm2 0h6V6a3 3 0 0 0-6 0v1Zm0 4a1 1 0 1 0 2 0V9H9v2Zm4 0a1 1 0 1 0 2 0V9h-2v2Z"/></svg>
+      <span>SHOP</span>
+    </a>
+    <a href="#" class="bottom-nav-tab" data-tab="contest">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg>
+      <span>CONTEST</span>
+    </a>
+    <a href="#" class="bottom-nav-tab" data-tab="links">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1ZM8 13h8v-2H8v2Zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5Z"/></svg>
+      <span>LINKS</span>
+    </a>
+    <a href="#" class="bottom-nav-tab" data-tab="coupons">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M21 7.5V6a2 2 0 0 0-2-2H5A2 2 0 0 0 3 6v3.5a2.5 2.5 0 0 1 0 5V18a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1.5a2.5 2.5 0 0 1 0-5ZM8.5 9A1.5 1.5 0 1 1 7 10.5 1.5 1.5 0 0 1 8.5 9Zm7 6A1.5 1.5 0 1 1 17 13.5 1.5 1.5 0 0 1 15.5 15ZM9 15.41 14.41 10 15.83 11.41 10.41 16.83Z"/></svg>
+      <span>COUPONS</span>
+    </a>
+    <a href="#" class="bottom-nav-tab" data-tab="tips">
+      <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1Zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7Z"/></svg>
+      <span>TIPS</span>
+    </a>
+  </nav>
+
+  <!-- Hidden print directory (visible only in print) -->
+  <div id="print-directory" style="display:none;"></div>
+
+  <script src="/maplibre-gl.js"></script>
+  <script src="/api/config.js"></script>
   <script>
     // Tenant-aware: update logo from tenant settings
     (async function setTenantBranding() {
@@ -120,6 +339,587 @@
       } catch(e) {}
     })();
   </script>
-  <script src="/map.js"></script>
+  <script src="/map.js?v=20260527-product-search-fix"></script>
+  <script>
+    const FIRST_MONDAY_SCRATCH_URL = 'https://vfm.buzzonmarketing.com/contest/scratch-win-canton-cash';
+    const FIRST_MONDAY_APP_DOWNLOAD_URL = 'https://visitfirstmonday.com/app-download';
+    const CONTEST_MODAL_DAY_KEY = 'vfmContestPromptDay';
+    const VFM_PROMOTIONS_URL = '/vfm-promotions.json';
+    const VIP_SIGNUP_SOURCE = 'map-vip-bar';
+    let vfmPromotions = { bannerSlots: [], coupons: [] };
+    let promoBannerIndex = 0;
+    let promoBannerTimer = null;
+    let promoBannerPauseDepth = 0;
+    let activeCouponIndex = -1;
+    let productSearchBound = false;
+    let activeProductSearchType = 'product';
+
+    function escapeCouponHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeMapTabHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function fairMapLocations() {
+      return Array.isArray(window.__FAIRMAP_STATE?.locations) ? window.__FAIRMAP_STATE.locations : [];
+    }
+
+    function normalizeProductSearchType(item, location) {
+      const storeType = String(
+        location?.catalogStoreType ||
+        location?.catalog_type ||
+        location?.catalogType ||
+        ''
+      ).trim().toLowerCase();
+      if (storeType === 'food') return 'food';
+      if (storeType === 'product' || storeType === 'shop') return 'product';
+      const raw = String(
+        item?.itemType ||
+        item?.item_type ||
+        item?.type ||
+        item?.category ||
+        ''
+      ).trim().toLowerCase();
+      if (['food', 'prepared-food', 'prepared_food', 'drink', 'beverage'].includes(raw)) return 'food';
+      if (['product', 'shop', 'shop-item', 'shop_item', 'retail'].includes(raw)) return 'product';
+      const locationCategory = String(location?.categoryName || location?.category || '').toLowerCase();
+      if (/\b(food|drink|beverage|snack|dessert|bakery)\b/.test(locationCategory)) return 'food';
+      return 'product';
+    }
+
+    function productSearchTypeLabel(type) {
+      return type === 'food' ? 'Food' : 'Shopping';
+    }
+
+    function getProductSearchCounts() {
+      const counts = { product: 0, food: 0 };
+      for (const location of fairMapLocations()) {
+        const catalog = Array.isArray(location?.catalog) ? location.catalog : [];
+        for (const item of catalog) {
+          counts[normalizeProductSearchType(item, location)] += 1;
+        }
+      }
+      return counts;
+    }
+
+    function buildProductResults(query) {
+      const q = String(query || '').trim().toLowerCase();
+      const rows = [];
+      for (const location of fairMapLocations()) {
+        const catalog = Array.isArray(location?.catalog) ? location.catalog : [];
+        if (!catalog.length) continue;
+        for (const item of catalog) {
+          const itemType = normalizeProductSearchType(item, location);
+          if (itemType !== activeProductSearchType) continue;
+          const haystack = `${item.name || ''} ${item.description || ''} ${item.price || ''} ${location.name || ''} ${location.categoryName || ''}`.toLowerCase();
+          if (q && !haystack.includes(q)) continue;
+          const name = String(item.name || '').toLowerCase();
+          const vendor = String(location.name || '').toLowerCase();
+          const score =
+            (name === q ? 500 : 0) +
+            (name.startsWith(q) ? 250 : 0) +
+            (vendor.startsWith(q) ? 80 : 0) +
+            (haystack.includes(q) ? 40 : 0);
+          rows.push({ location, item, score, itemType });
+        }
+      }
+      rows.sort((a, b) =>
+        b.score - a.score ||
+        String(a.item.name || '').localeCompare(String(b.item.name || '')) ||
+        String(a.location.name || '').localeCompare(String(b.location.name || ''))
+      );
+      return rows;
+    }
+
+    function renderProductSearchResults() {
+      const input = document.getElementById('product-search-input');
+      const wrap = document.getElementById('product-results');
+      const count = document.getElementById('product-results-count');
+      if (!wrap || !count) return;
+      const query = String(input?.value || '').trim();
+      const results = buildProductResults(query);
+      const counts = getProductSearchCounts();
+      const totalProducts = counts.product + counts.food;
+      const activeTotal = counts[activeProductSearchType] || 0;
+      const activeCountLabel = activeProductSearchType === 'food' ? 'Food Items' : 'Items';
+      const activeEmptyLabel = activeProductSearchType === 'food' ? 'food items' : 'items';
+      document.querySelectorAll('.products-search-tab').forEach((button) => {
+        const isActive = button.dataset.productType === activeProductSearchType;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+
+      if (!totalProducts) {
+        count.textContent = 'No products attached yet';
+        wrap.innerHTML = `
+          <div class="products-empty">
+            <strong>Product search will show up here as vendors add items.</strong>
+            <span>Right now there are no guest-facing product listings attached to the live map feed.</span>
+          </div>
+        `;
+        return;
+      }
+
+      count.textContent = query
+        ? `${results.length} match${results.length === 1 ? '' : 'es'}`
+        : `${activeTotal} ${activeCountLabel}`;
+
+      if (!results.length) {
+        wrap.innerHTML = `
+          <div class="products-empty">
+            <strong>No ${activeEmptyLabel} matched "${escapeMapTabHtml(query)}".</strong>
+            <span>Try a broader word or switch tabs. Shopping is for gifts and take-home goods. Food is for ready-to-eat items.</span>
+          </div>
+        `;
+        return;
+      }
+
+      wrap.innerHTML = results.map(({ location, item, itemType }) => `
+        <details class="products-result-card" data-location-id="${escapeMapTabHtml(String(location.id || ''))}" data-product-id="${escapeMapTabHtml(String(item.id || ''))}">
+          <summary class="products-result-summary">
+            <div class="products-result-thumb">
+              ${item.image ? `<img src="${escapeMapTabHtml(item.image)}" alt="${escapeMapTabHtml(item.name || 'Product')}" loading="lazy">` : 'Item'}
+            </div>
+            <div class="products-result-copy">
+              <div class="products-result-top">
+                <div class="products-result-title-wrap">
+                  <h3 class="products-result-name">${escapeMapTabHtml(item.name || 'Product')}</h3>
+                </div>
+                ${item.price ? `<span class="products-result-price">${escapeMapTabHtml(item.price)}</span>` : ''}
+              </div>
+              <p class="products-result-vendor">${escapeMapTabHtml(location.name || 'Vendor')}</p>
+              <p class="products-result-meta">${escapeMapTabHtml(location.categoryName || 'Vendor')} ${location.address ? `| ${escapeMapTabHtml(location.address)}` : ''}</p>
+            </div>
+            <span class="products-result-arrow" aria-hidden="true">&rsaquo;</span>
+          </summary>
+          <div class="products-result-expand">
+            ${item.description ? `<p class="products-result-desc">${escapeMapTabHtml(item.description)}</p>` : ''}
+            <div class="products-result-actions">
+              <button type="button" class="products-result-visit-btn" data-location-id="${escapeMapTabHtml(String(location.id || ''))}" data-product-id="${escapeMapTabHtml(String(item.id || ''))}">Visit Vendor Listing</button>
+            </div>
+          </div>
+        </details>
+      `).join('');
+
+      wrap.querySelectorAll('.products-result-card').forEach((card) => {
+        card.addEventListener('toggle', () => {
+          if (!card.open) return;
+          wrap.querySelectorAll('.products-result-card[open]').forEach((peer) => {
+            if (peer !== card) peer.open = false;
+          });
+        });
+      });
+
+      wrap.querySelectorAll('.products-result-visit-btn').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          openProductResult(button.dataset.locationId || '', button.dataset.productId || '');
+        });
+      });
+    }
+
+    function bindProductSearch() {
+      if (productSearchBound) return;
+      const input = document.getElementById('product-search-input');
+      if (!input) return;
+      input.addEventListener('input', renderProductSearchResults);
+      input.addEventListener('search', renderProductSearchResults);
+      document.querySelectorAll('.products-search-tab').forEach((button) => {
+        button.addEventListener('click', () => {
+          const nextType = button.dataset.productType === 'food' ? 'food' : 'product';
+          if (nextType === activeProductSearchType) return;
+          activeProductSearchType = nextType;
+          renderProductSearchResults();
+        });
+      });
+      productSearchBound = true;
+    }
+
+    function openProductResult(locationId, productId) {
+      const location = fairMapLocations().find((entry) => String(entry.id || '') === String(locationId || ''));
+      if (!location) return;
+      window.__FAIRMAP_PENDING_PRODUCT_ID = String(productId || '');
+      showTab('map');
+      requestAnimationFrame(() => {
+        if (typeof window.__FAIRMAP_OPEN_LOCATION === 'function') {
+          window.__FAIRMAP_OPEN_LOCATION(location, true);
+        }
+      });
+    }
+
+    window.openProductResult = openProductResult;
+
+    function renderCouponDetailCard(item) {
+      return `
+        <article class="coupon-card coupon-card-detail">
+          <div class="coupon-card-top">
+            <span class="coupon-vendor">${escapeCouponHtml(item.vendorName || 'Vendor')}</span>
+            <span class="coupon-booth">${escapeCouponHtml(item.booth || '')}</span>
+          </div>
+          <h3 id="coupon-detail-title">${escapeCouponHtml(item.title || 'Special offer')}</h3>
+          ${item.imageUrl ? `<div class="coupon-card-image"><img src="${escapeCouponHtml(item.imageUrl)}" alt="${escapeCouponHtml(item.title || 'Coupon image')}"></div>` : ''}
+          <p>${escapeCouponHtml(item.details || '')}</p>
+          <div class="coupon-card-meta">
+            ${item.code ? `<span><strong>Code:</strong> ${escapeCouponHtml(item.code)}</span>` : ''}
+            ${item.expiresOn ? `<span><strong>Expires:</strong> ${escapeCouponHtml(item.expiresOn)}</span>` : ''}
+          </div>
+          ${item.finePrint ? `<div class="coupon-fine-print">${escapeCouponHtml(item.finePrint)}</div>` : ''}
+          <a class="coupon-btn" href="${escapeCouponHtml(item.mapUrl || 'https://map.thefairmap.com/map.html?tenant=firstmonday')}">Find This Booth</a>
+        </article>
+      `;
+    }
+
+    function closeCouponDetail() {
+      const modal = document.getElementById('coupon-detail-modal');
+      if (!modal) return;
+      modal.hidden = true;
+      document.body.classList.remove('coupon-detail-open');
+      activeCouponIndex = -1;
+    }
+
+    function openCouponDetail(index) {
+      const coupons = Array.isArray(vfmPromotions?.coupons) ? vfmPromotions.coupons : [];
+      const item = coupons[index];
+      const modal = document.getElementById('coupon-detail-modal');
+      const body = document.getElementById('coupon-detail-body');
+      if (!item || !modal || !body) return;
+      body.innerHTML = renderCouponDetailCard(item);
+      activeCouponIndex = index;
+      modal.hidden = false;
+      document.body.classList.add('coupon-detail-open');
+    }
+
+    function getPromoRotationItems() {
+      const banners = Array.isArray(vfmPromotions?.bannerSlots) ? vfmPromotions.bannerSlots : [];
+      return [
+        {
+          type: 'vip-signup',
+          id: 'vip-signup',
+          title: 'VIP Alerts for Celebrity Visits + Events!',
+          copy: 'Get the latest First Monday updates, celebrity visits, and special event alerts by email.',
+          submitLabel: 'Sign Me Up!'
+        },
+        ...banners.map((item) => ({ ...item, type: 'vendor-banner' }))
+      ];
+    }
+
+    function bindPromoRailInteractionPause() {
+      const slot = document.getElementById('promo-banner-slot');
+      if (!slot || slot.dataset.pauseBound === '1') return;
+      const pause = () => {
+        promoBannerPauseDepth += 1;
+        if (promoBannerTimer) {
+          window.clearInterval(promoBannerTimer);
+          promoBannerTimer = null;
+        }
+      };
+      const resume = () => {
+        promoBannerPauseDepth = Math.max(0, promoBannerPauseDepth - 1);
+        if (!promoBannerPauseDepth) startPromoBannerRotation();
+      };
+      slot.addEventListener('mouseenter', pause);
+      slot.addEventListener('mouseleave', resume);
+      slot.addEventListener('focusin', pause);
+      slot.addEventListener('focusout', resume);
+      slot.dataset.pauseBound = '1';
+    }
+
+    async function submitVipPromoSignup(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const emailInput = form.querySelector('.promo-vip-email');
+      const status = form.querySelector('.promo-vip-status');
+      const submitBtn = form.querySelector('.promo-vip-submit');
+      const email = String(emailInput?.value || '').trim();
+      if (!email) {
+        if (status) {
+          status.textContent = 'Enter your email first.';
+          status.dataset.state = 'error';
+        }
+        emailInput?.focus();
+        return;
+      }
+      if (status) {
+        status.textContent = '';
+        status.dataset.state = '';
+      }
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Signing You Up...';
+      }
+      try {
+        const res = await fetch('/api/guest/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            source: VIP_SIGNUP_SOURCE,
+            tenantSlug: 'firstmonday'
+          })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save your signup.');
+        form.reset();
+        if (status) {
+          status.textContent = data.message || 'You are on the VIP alerts list.';
+          status.dataset.state = 'success';
+        }
+      } catch (error) {
+        if (status) {
+          status.textContent = error.message || 'Could not save your signup.';
+          status.dataset.state = 'error';
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Sign Me Up!';
+        }
+      }
+    }
+
+    function bindVipSignupForm() {
+      const form = document.getElementById('promo-vip-form');
+      if (!form || form.dataset.bound === '1') return;
+      form.addEventListener('submit', submitVipPromoSignup);
+      form.dataset.bound = '1';
+    }
+
+    function openContestOnboardingModal() {
+      const modal = document.getElementById('contest-onboarding-modal');
+      const link = document.getElementById('contest-onboarding-link');
+      link.href = FIRST_MONDAY_SCRATCH_URL;
+      modal.hidden = false;
+      document.body.classList.add('qr-modal-open');
+    }
+
+    function closeContestOnboardingModal() {
+      const modal = document.getElementById('contest-onboarding-modal');
+      if (!modal) return;
+      modal.hidden = true;
+      document.body.classList.remove('qr-modal-open');
+    }
+
+    function maybeShowContestOnboardingOncePerDay() {
+      return;
+    }
+
+    function renderCouponList() {
+      const wrap = document.getElementById('coupon-list');
+      if (!wrap) return;
+      const coupons = Array.isArray(vfmPromotions?.coupons) ? vfmPromotions.coupons : [];
+      if (!coupons.length) {
+        wrap.innerHTML = '<div class="coupon-empty">Fresh vendor coupons will show up here after approval.</div>';
+        return;
+      }
+      wrap.innerHTML = coupons.map((item, index) => `
+        <button type="button" class="coupon-listing" onclick="openCouponDetail(${index})" aria-label="Open coupon from ${escapeCouponHtml(item.vendorName || 'Vendor')}">
+          ${item.imageUrl ? `
+            <span class="coupon-listing-thumb">
+              <img src="${escapeCouponHtml(item.imageUrl)}" alt="${escapeCouponHtml(item.title || 'Coupon image')}">
+            </span>
+          ` : `
+            <span class="coupon-listing-thumb coupon-listing-thumb-fallback" aria-hidden="true">
+              <span>DEAL</span>
+            </span>
+          `}
+          <span class="coupon-listing-copy">
+            <span class="coupon-listing-top">
+              <span class="coupon-listing-vendor">${escapeCouponHtml(item.vendorName || 'Vendor')}</span>
+              <span class="coupon-listing-booth">${escapeCouponHtml(item.booth || '')}</span>
+            </span>
+            <span class="coupon-listing-title">${escapeCouponHtml(item.title || 'Special offer')}</span>
+            <span class="coupon-listing-meta">
+              ${item.code ? `<span class="coupon-listing-pill">Code ${escapeCouponHtml(item.code)}</span>` : ''}
+              ${item.expiresOn ? `<span class="coupon-listing-pill">Ends ${escapeCouponHtml(item.expiresOn)}</span>` : ''}
+              ${!item.code && !item.expiresOn ? '<span class="coupon-listing-pill">Tap for details</span>' : ''}
+            </span>
+          </span>
+        </button>
+      `).join('');
+    }
+
+    function renderPromoBanner() {
+      const wrap = document.getElementById('promo-banner-link');
+      if (!wrap) return;
+      const items = getPromoRotationItems();
+      const active = items[promoBannerIndex % items.length];
+      if (!active || active.type === 'vip-signup') {
+        wrap.innerHTML = `
+          <div class="promo-vip-card">
+            <div class="promo-vip-title">VIP Alerts for Celebrity Visits + Events!</div>
+            <form id="promo-vip-form" class="promo-vip-form">
+              <input type="email" class="promo-vip-email" placeholder="Email" aria-label="Email for VIP alerts" required>
+              <button type="submit" class="promo-vip-submit">Sign Me Up!</button>
+            </form>
+            <div class="promo-vip-status" aria-live="polite"></div>
+          </div>
+        `;
+        bindVipSignupForm();
+        return;
+      }
+      wrap.innerHTML = `<a class="promo-banner-anchor" href="${active.clickUrl || 'https://map.thefairmap.com/map.html?tenant=firstmonday'}"><img src="${active.imageUrl}" alt="${active.title || active.vendorName || 'Vendor banner'}"></a>`;
+    }
+
+    function startPromoBannerRotation() {
+      if (promoBannerTimer) window.clearInterval(promoBannerTimer);
+      bindPromoRailInteractionPause();
+      renderPromoBanner();
+      if (promoBannerPauseDepth) return;
+      const count = getPromoRotationItems().length;
+      if (count > 1) {
+        promoBannerTimer = window.setInterval(() => {
+          promoBannerIndex = (promoBannerIndex + 1) % count;
+          renderPromoBanner();
+        }, 4500);
+      }
+    }
+
+    async function loadVfmPromotions() {
+      try {
+        const res = await fetch(`${VFM_PROMOTIONS_URL}?cb=${Date.now()}`, { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error('Could not load promotions.');
+        vfmPromotions = {
+          bannerSlots: Array.isArray(data?.bannerSlots) ? data.bannerSlots : [],
+          coupons: Array.isArray(data?.coupons) ? data.coupons : []
+        };
+      } catch (_) {
+        vfmPromotions = { bannerSlots: [], coupons: [] };
+      }
+      renderCouponList();
+      promoBannerIndex = 0;
+      startPromoBannerRotation();
+    }
+
+    function showTab(target) {
+      document.querySelectorAll('.bottom-nav-tab').forEach(t => t.classList.toggle('is-active', t.dataset.tab === target));
+      document.querySelectorAll('.tab-page').forEach(p => p.hidden = true);
+      const app = document.getElementById('app');
+      const vipBar = document.getElementById('vip-bar');
+      const styleControls = document.querySelector('.style-controls');
+      const topbar = document.getElementById('mobile-topbar');
+      closeContestOnboardingModal();
+
+      if (target === 'map') {
+        app.style.display = '';
+        if (vipBar) vipBar.style.display = '';
+        if (styleControls) styleControls.style.display = '';
+        if (topbar) topbar.style.display = '';
+      } else {
+        app.style.display = 'none';
+        if (vipBar) vipBar.style.display = 'none';
+        if (styleControls) styleControls.style.display = 'none';
+        if (topbar) topbar.style.display = 'none';
+        const page = document.getElementById('tab-' + target);
+        if (page) page.hidden = false;
+        if (target === 'products') {
+          bindProductSearch();
+          renderProductSearchResults();
+          window.setTimeout(() => document.getElementById('product-search-input')?.focus(), 40);
+        }
+        if (target === 'contest') maybeShowContestOnboardingOncePerDay();
+      }
+    }
+
+    function forceMapVisible() {
+      const app = document.getElementById('app');
+      const vipBar = document.getElementById('vip-bar');
+      const styleControls = document.querySelector('.style-controls');
+      const topbar = document.getElementById('mobile-topbar');
+      if (app) app.style.display = '';
+      if (vipBar) vipBar.style.display = '';
+      if (styleControls) styleControls.style.display = '';
+      if (topbar) topbar.style.display = '';
+      document.querySelectorAll('.tab-page').forEach(p => p.hidden = true);
+      document.querySelectorAll('.bottom-nav-tab').forEach(t => t.classList.toggle('is-active', t.dataset.tab === 'map'));
+    }
+
+    document.querySelectorAll('.bottom-nav-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        showTab(tab.dataset.tab);
+      });
+    });
+
+    bindVipSignupForm();
+
+    window.addEventListener('load', () => {
+      forceMapVisible();
+      bindProductSearch();
+      renderProductSearchResults();
+      loadVfmPromotions();
+    });
+    window.addEventListener('pageshow', () => {
+      forceMapVisible();
+      renderProductSearchResults();
+      loadVfmPromotions();
+    });
+
+    document.getElementById('contest-onboarding-modal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'contest-onboarding-modal') closeContestOnboardingModal();
+    });
+    document.getElementById('coupon-detail-modal')?.addEventListener('click', (e) => {
+      if (e.target?.dataset?.closeCouponDetail === '1') closeCouponDetail();
+    });
+    window.addEventListener('fairmap:data-ready', () => {
+      renderProductSearchResults();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && activeCouponIndex >= 0) closeCouponDetail();
+    });
+  </script>
+
+  <script id="critical-mobile-map-js-fixes">
+    (function forceOneFingerAndVisibleCard(){
+      function apply(){
+        try {
+          var m = window.map;
+          var mapEl = document.getElementById('map');
+          if (m) {
+            if (m.cooperativeGestures && m.cooperativeGestures.disable) m.cooperativeGestures.disable();
+            if (m.dragPan && m.dragPan.enable) m.dragPan.enable();
+            if (m.touchZoomRotate && m.touchZoomRotate.enable) m.touchZoomRotate.enable();
+          }
+          if (mapEl) {
+            mapEl.style.touchAction = 'none';
+            mapEl.querySelectorAll('canvas,.maplibregl-canvas,.maplibregl-canvas-container').forEach(function(el){ el.style.touchAction = 'none'; });
+          }
+          document.querySelectorAll('.maplibregl-cooperative-gesture-screen,#scroll-overlay').forEach(function(el){ el.remove(); });
+          var panel = document.getElementById('detail-panel');
+          var content = document.getElementById('detail-content');
+          if (panel && window.innerWidth <= 960) {
+            panel.style.bottom = 'calc(112px + env(safe-area-inset-bottom, 0px))';
+            panel.style.maxHeight = 'calc(100dvh - 220px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))';
+          }
+          if (content) {
+            content.style.webkitOverflowScrolling = 'touch';
+            content.style.overscrollBehavior = 'contain';
+            content.style.touchAction = 'pan-y';
+            content.style.paddingBottom = 'calc(18px + env(safe-area-inset-bottom, 0px))';
+          }
+        } catch(e) {}
+      }
+      apply();
+      window.addEventListener('load', apply, { once: true });
+      window.addEventListener('touchstart', apply, { passive: true });
+      setInterval(apply, 800);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs){ regs.forEach(function(r){ r.update(); r.unregister(); }); }).catch(function(){});
+      }
+    })();
+  </script>
+
 </body>
 </html>

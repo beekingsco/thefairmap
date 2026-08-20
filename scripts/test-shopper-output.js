@@ -1,0 +1,81 @@
+#!/usr/bin/env node
+'use strict';
+
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const { spawnSync } = require('child_process');
+
+const root = path.join(__dirname, '..');
+const publicDir = path.join(root, 'public');
+const vercel = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
+
+assert.strictEqual(vercel.framework, null, 'framework must be null so Vercel does not treat this as Express-only');
+assert.strictEqual(vercel.outputDirectory, 'public', 'Git deploys must publish public/, matching the live CLI artifact');
+assert.ok(vercel.buildCommand && vercel.buildCommand.includes('prepare-vercel-shopper'), 'build must stage shopper files into public/');
+
+function hasRewrite(source, dest) {
+  return (vercel.rewrites || []).some((rule) => rule.source === source && rule.destination === dest);
+}
+
+assert.ok(hasRewrite('/first-monday-finder', '/first-monday-finder.html'), 'missing /first-monday-finder rewrite');
+assert.ok(hasRewrite('/api/locations', '/data/mapme-full-export.json'), 'missing /api/locations rewrite');
+assert.ok(hasRewrite('/embed', '/embed.html'), 'missing /embed rewrite');
+
+const requiredFiles = [
+  'first-monday-finder.html',
+  'embed.html',
+  'map.html',
+  'map.js',
+  'style.css',
+  'maplibre-gl.js',
+  'maplibre-gl.css',
+  path.join('data', 'mapme-full-export.json'),
+  path.join('data', 'icons', 'first-monday-finder-logo.png')
+];
+for (const rel of requiredFiles) {
+  const full = path.join(publicDir, rel);
+  assert.ok(fs.existsSync(full), `Vercel output missing ${rel}`);
+}
+
+const finder = fs.readFileSync(path.join(publicDir, 'first-monday-finder.html'), 'utf8');
+assert.ok(finder.includes('First Monday Finder'));
+assert.ok(finder.includes('/embed.html'));
+
+const embed = fs.readFileSync(path.join(publicDir, 'embed.html'), 'utf8');
+assert.ok(embed.includes('/map.html'), 'embed.html must hand off to the shopper map SPA');
+
+const data = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'mapme-full-export.json'), 'utf8'));
+assert.ok(Array.isArray(data.locations));
+assert.ok(data.locations.length >= 711, `expected >= 711 locations, got ${data.locations.length}`);
+
+const jt = data.locations.find((loc) => loc.id === 'abcefc40-da73-4346-8105-47d847c24a68');
+assert.ok(jt, 'JT Jewelry pin must remain');
+assert.strictEqual(jt.name, 'JT Jewelry');
+assert.strictEqual(jt.lat, 32.56605027);
+assert.strictEqual(jt.lng, -95.86080482);
+assert.strictEqual(jt.categoryName, 'Jewelry / Watches');
+assert.ok(String(jt.description || '').includes('PV45-4504-4505'));
+
+const rowe = data.locations.find((loc) => loc.id === 'rowe-farms-4505');
+assert.ok(rowe, 'Rowe Farms must be a new location');
+assert.strictEqual(rowe.name, 'Rowe Farms');
+assert.strictEqual(String(rowe.booth), '4505');
+assert.strictEqual(String(rowe.pavilion), '4500');
+assert.strictEqual(rowe.categoryName, 'Home');
+assert.strictEqual(rowe.lat, 32.5660368);
+assert.strictEqual(rowe.lng, -95.86080677);
+assert.notStrictEqual(rowe.id, jt.id, 'Rowe Farms must not reuse the JT Jewelry id');
+
+const prepared = spawnSync(process.execPath, [path.join(__dirname, 'prepare-vercel-shopper.js')], {
+  cwd: root,
+  encoding: 'utf8'
+});
+assert.strictEqual(prepared.status, 0, prepared.stderr || prepared.stdout);
+assert.ok(fs.existsSync(path.join(publicDir, 'data', 'mapme-full-export.json')));
+
+console.log('test-shopper-output: ok', {
+  locations: data.locations.length,
+  rowe: rowe.id,
+  jt: jt.id
+});
