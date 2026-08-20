@@ -14109,7 +14109,8 @@
       "bearing": 0,
       "photos": [],
       "images": [],
-      "catalogStoreType": "product"
+      "catalogStoreType": "product",
+      "vendorUuid": "57925765-0d4e-4f77-a047-783a80180889"
     }
   ]
 }

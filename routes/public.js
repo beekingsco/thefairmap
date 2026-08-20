@@ -3,7 +3,6 @@
 const express = require('express');
 const path = require('path');
 const { db, stmts } = require('../db');
-const { loadPublishedListings, mergeLocationList } = require('../lib/map-export');
 
 const router = express.Router();
 const ROOT = path.join(__dirname, '..');
@@ -14,27 +13,24 @@ router.get('/api/locations', (req, res) => {
   const tenant = req.tenant;
   if (!tenant) return res.status(400).json({ ok: false, error: 'No tenant context' });
 
-  const locations = mergeLocationList(
-    stmts.getLocationsByTenant.all(tenant.id).map(loc => ({
-      id: loc.id,
-      name: loc.name,
-      description: loc.description,
-      lat: loc.lat,
-      lng: loc.lng,
-      categoryId: loc.category_id,
-      categoryName: loc.category_name,
-      tier: loc.tier,
-      photos: JSON.parse(loc.photos || '[]'),
-      images: JSON.parse(loc.photos || '[]'),
-      logoUrl: loc.logo_url,
-      videoUrl: loc.video_url,
-      websiteUrl: loc.website_url,
-      socialLinks: JSON.parse(loc.social_links || '{}'),
-      approvalStatus: loc.approval_status,
-      vendorId: loc.vendor_id
-    })),
-    loadPublishedListings()
-  );
+  const locations = stmts.getLocationsByTenant.all(tenant.id).map(loc => ({
+    id: loc.id,
+    name: loc.name,
+    description: loc.description,
+    lat: loc.lat,
+    lng: loc.lng,
+    categoryId: loc.category_id,
+    categoryName: loc.category_name,
+    tier: loc.tier,
+    photos: JSON.parse(loc.photos || '[]'),
+    images: JSON.parse(loc.photos || '[]'),
+    logoUrl: loc.logo_url,
+    videoUrl: loc.video_url,
+    websiteUrl: loc.website_url,
+    socialLinks: JSON.parse(loc.social_links || '{}'),
+    approvalStatus: loc.approval_status,
+    vendorId: loc.vendor_id
+  }));
 
   const categories = stmts.getCategoriesByTenant.all(tenant.id).map(c => ({
     id: c.id,
