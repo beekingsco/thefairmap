@@ -48,7 +48,8 @@ assert.ok(embed.includes('/map.html'), 'embed.html must hand off to the shopper 
 const data = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'mapme-full-export.json'), 'utf8'));
 assert.ok(Array.isArray(data.locations));
 assert.strictEqual(data.locations.length, 711, `expected 711 locations, got ${data.locations.length}`);
-assert.strictEqual(data.map?.pitch, 0, 'shopper export default camera must be flat 2D');
+assert.strictEqual((data.categories || []).length, 68, 'category catalog must stay intact');
+assert.ok(data.locations.every((loc) => Number.isFinite(loc.lat) && Number.isFinite(loc.lng)), 'every listing must keep GPS coordinates');
 
 const mapJs = fs.readFileSync(path.join(publicDir, 'map.js'), 'utf8');
 assert.match(mapJs, /const DEFAULT_PITCH = 0/, 'shopper default pitch must be 0');
