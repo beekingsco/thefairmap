@@ -1000,12 +1000,13 @@ async function init() {
     pitch: 0,
     bearing: DEFAULT_BEARING,
     maxZoom: data.map?.maxZoom || 20,
-    maxPitch: 0,
+    maxPitch: 85,
     attributionControl: false,
     antialias: true,
     cooperativeGestures: false,
     dragPan: true,
     touchZoomRotate: true,
+    touchPitch: true,
     transformRequest: (url) => {
       // Route all MapTiler requests through our proxy to bypass referer restriction
       if (url && url.includes('api.maptiler.com/')) {
@@ -1026,7 +1027,7 @@ async function init() {
 
   // Only show zoom/compass on desktop — mobile uses pinch-to-zoom
   if (window.innerWidth > 960) {
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-right');
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
   }
 
   geolocateControl = new maplibregl.GeolocateControl({
@@ -1044,10 +1045,11 @@ async function init() {
   addImproveLocationControl();
   map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: '© <a href="https://www.maptiler.com/copyright/" target="_blank">MapTiler</a> | TheFairMap' }), 'bottom-left');
 
-  // Mobile-friendly map controls: one finger pans the map; two fingers still pinch/rotate/zoom.
+  // Mobile-friendly map controls: one finger pans; two fingers pinch/rotate/zoom/tilt.
   map.cooperativeGestures?.disable?.();
   map.dragPan?.enable?.();
   map.touchZoomRotate?.enable?.();
+  map.touchPitch?.enable?.();
 
   // Parking button — wired from HTML
   document.getElementById('parking-btn')?.addEventListener('click', promptSaveParking);
@@ -1084,9 +1086,6 @@ function flattenShopperMap() {
   } catch (_) {
     // Terrain may be unsupported or already unset.
   }
-  try {
-    if (typeof map.setPitch === 'function') map.setPitch(0);
-  } catch (_) {}
   const layers = map.getStyle?.()?.layers || [];
   for (const layer of layers) {
     if (layer?.type !== 'fill-extrusion') continue;
@@ -2504,7 +2503,6 @@ function openLocation(location, fly) {
     map.flyTo({
       center: [location.lng, location.lat],
       zoom: flyZoom,
-      pitch: 0,
       bearing: DEFAULT_BEARING,
       duration: 800
     });
@@ -3884,6 +3882,7 @@ function initSmartScrollOverlay() {
   if (map && map.cooperativeGestures) map.cooperativeGestures.disable();
   if (map && map.dragPan) map.dragPan.enable();
   if (map && map.touchZoomRotate) map.touchZoomRotate.enable();
+  if (map && map.touchPitch) map.touchPitch.enable();
   if (mapEl) mapEl.style.touchAction = 'none';
 }
 
