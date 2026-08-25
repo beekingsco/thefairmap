@@ -116,15 +116,95 @@ for (const rel of rowePhotos) {
   assert.deepStrictEqual(Array.from(magic), [0xff, 0xd8, 0xff], `${rel} must be a JPEG`);
 }
 
+const exportPaths = [
+  path.join(root, 'data', 'mapme-full-export.json'),
+  path.join(publicDir, 'data', 'mapme-full-export.json'),
+  path.join(root, 'data', 'locations.json')
+];
+const exportSnapshots = new Map(
+  exportPaths.map((file) => [file, fs.readFileSync(file)])
+);
+
+const GATES_CATEGORY_ID = '47008a43-b024-4c2b-aaac-9ea4312521f9';
+const iconManifest = JSON.parse(
+  fs.readFileSync(path.join(root, 'data', 'icons', 'manifest.json'), 'utf8')
+);
+const gatesIcon = iconManifest[GATES_CATEGORY_ID];
+assert.ok(gatesIcon, 'Gates category must be in the icon manifest');
+assert.strictEqual(gatesIcon.name, 'Gates');
+assert.strictEqual(gatesIcon.file, 'icons/gates.svg');
+assert.strictEqual(gatesIcon.bgColor, '#7d2553');
+assert.strictEqual(gatesIcon.fgColor, '#ffffff');
+
+const gatesSvgPath = path.join(root, 'data', 'icons', 'gates.svg');
+assert.ok(fs.existsSync(gatesSvgPath), 'missing data/icons/gates.svg');
+const gatesSvg = fs.readFileSync(gatesSvgPath, 'utf8');
+assert.ok(
+  /<svg[^>]*viewBox="0 0 100 100"/i.test(gatesSvg),
+  'gates.svg must use the nested MapMe 100×100 artwork wrapper'
+);
+const innerMatch = gatesSvg.match(/<svg[^>]*viewBox="0 0 100 100"[^>]*>([\s\S]*?)<\/svg>/i);
+assert.ok(innerMatch && innerMatch[1].includes('<path'), 'gates.svg must expose inner path art for compositing');
+
+assert.ok(/\bgate:\s+'<path fill="#fff"/.test(mapJs), 'ICON_SVGS must include a gate fallback glyph');
+assert.ok(
+  /value\.includes\('gate'\)\s*\|\|\s*value\.includes\('entrance'\)\)\s*return 'gate'/.test(mapJs),
+  'mapCategoryToIconType must map gate/entrance to gate, not pin'
+);
+
+const mapFnStart = mapJs.indexOf('function mapCategoryToIconType');
+const mapFnEnd = mapJs.indexOf('\nfunction iconTypeForCategory');
+assert.ok(mapFnStart >= 0 && mapFnEnd > mapFnStart, 'mapCategoryToIconType must be extractable');
+const mapCategoryToIconType = new Function(`${mapJs.slice(mapFnStart, mapFnEnd)}; return mapCategoryToIconType;`)();
+assert.strictEqual(mapCategoryToIconType('Gates'), 'gate');
+assert.strictEqual(mapCategoryToIconType('Entrance'), 'gate');
+assert.strictEqual(mapCategoryToIconType('East Gate Entrance'), 'gate');
+assert.strictEqual(mapCategoryToIconType('Restroom'), 'restroom');
+assert.notStrictEqual(mapCategoryToIconType('Gates'), 'pin');
+
+const gatesListings = data.locations.filter((loc) => loc.categoryId === GATES_CATEGORY_ID);
+assert.strictEqual(gatesListings.length, 8, 'Gates category must still have 8 listings');
+for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Entrance', 'Pavilion Entrance 1', 'Pavilion Entrance 2']) {
+  assert.ok(gatesListings.some((loc) => loc.name === name), `missing Gates listing ${name}`);
+}
+
+const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
+assert.ok(
+  mapHtml.includes('/map.js?v=20260825-gate-icons'),
+  'map.html must cache-bust map.js after the gate icon change'
+);
+assert.ok(
+  !mapHtml.includes('/map.js?v=20260825-shopper-tilt'),
+  'gate-icon cache-bust must replace the live tilt tag, not keep both'
+);
+
 const prepared = spawnSync(process.execPath, [path.join(__dirname, 'prepare-vercel-shopper.js')], {
   cwd: root,
   encoding: 'utf8'
 });
 assert.strictEqual(prepared.status, 0, prepared.stderr || prepared.stdout);
 assert.ok(fs.existsSync(path.join(publicDir, 'data', 'mapme-full-export.json')));
+assert.ok(
+  fs.existsSync(path.join(publicDir, 'data', 'icons', 'gates.svg')),
+  'prepare-vercel-shopper must copy gates.svg into public/data/icons'
+);
+const publicManifest = JSON.parse(
+  fs.readFileSync(path.join(publicDir, 'data', 'icons', 'manifest.json'), 'utf8')
+);
+assert.deepStrictEqual(publicManifest[GATES_CATEGORY_ID], gatesIcon);
+
+for (const [file, before] of exportSnapshots) {
+  const after = fs.readFileSync(file);
+  assert.ok(before.equals(after), `${path.relative(root, file)} must stay untouched`);
+}
+
+const afterExport = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'mapme-full-export.json'), 'utf8'));
+assert.strictEqual(afterExport.locations.length, 711);
+assert.ok(afterExport.locations.some((loc) => loc.id === 'rowe-farms-4505'), 'Rowe Farms must remain after icon staging');
 
 console.log('test-shopper-output: ok', {
   locations: data.locations.length,
   rowe: rowe.id,
-  jt: jt.id
+  jt: jt.id,
+  gatesIcon: gatesIcon.file
 });

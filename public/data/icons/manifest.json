@@ -340,5 +340,11 @@
     "file": "music.svg",
     "bgColor": "#000000",
     "fgColor": "#ffffff"
+  },
+  "47008a43-b024-4c2b-aaac-9ea4312521f9": {
+    "name": "Gates",
+    "file": "icons/gates.svg",
+    "bgColor": "#7d2553",
+    "fgColor": "#ffffff"
   }
 }
