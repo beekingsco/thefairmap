@@ -7,7 +7,7 @@
     ],
     "zoom": 17,
     "maxZoom": 20,
-    "pitch": 60,
+    "pitch": 0,
     "bearing": 0,
     "style": "maptiler"
   },

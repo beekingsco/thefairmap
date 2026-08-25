@@ -49,7 +49,7 @@ router.get('/api/locations', (req, res) => {
       center: settings.mapCenter || [-95.8624, 32.5585],
       zoom: settings.mapZoom || 17,
       maxZoom: 20,
-      pitch: settings.mapPitch || 60,
+      pitch: settings.mapPitch || 0,
       bearing: 0,
       style: 'maptiler'
     },

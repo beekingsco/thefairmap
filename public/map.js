@@ -733,7 +733,7 @@ async function promptSaveParking() {
   }
 }
 
-// MapTiler custom style — satellite/vector hybrid with 3D buildings
+// MapTiler custom style (shopper view flattens 3D buildings / pitch after load)
 const MAPTILER_CUSTOM_STYLE = 'https://api.maptiler.com/maps/daff07a7-1b27-4d4e-bdc0-c18601af5067/style.json';
 const STYLE_FALLBACK = 'https://tiles.openfreemap.org/styles/liberty';
 const SATELLITE_STYLE_FALLBACK = {
@@ -749,10 +749,11 @@ const SATELLITE_STYLE_FALLBACK = {
   layers: [{ id: 'esri-imagery', type: 'raster', source: 'esri' }]
 };
 const BEEKINGS_LOCATION_ID = '758aad31-099f-4ece-bee7-4b22eb202334';
-const DEFAULT_CENTER = [-95.86136425, 32.56100677]; // Bee King's Honey — Arbor 1, Booth 66
-const DEFAULT_ZOOM = 18;
-const DEFAULT_PITCH = 60;
+const DEFAULT_CENTER = [-95.86486, 32.5625]; // First Monday grounds midpoint
+const DEFAULT_ZOOM = 15.25;
+const DEFAULT_PITCH = 0;
 const DEFAULT_BEARING = 0;
+const SHOPPER_OVERVIEW_MAX_ZOOM = 16;
 const SOURCE_ID = 'locations';
 const LAYER_MARKERS = 'location-markers';
 const LAYER_ICONS = 'location-icons';
@@ -836,6 +837,7 @@ const appState = {
   hoverPopup: null,
   popupPinned: false,
   lastSearchFitSignature: '',
+  shopperOverviewFitted: false,
   sidebarView: 'categories',
   selectedCategoryId: null,
   stallDebugData: null,
@@ -995,10 +997,10 @@ async function init() {
     style: appState.venueStyleUrl,
     center: initialMapView.center,
     zoom: initialMapView.zoom,
-    pitch: initialMapView.pitch,
+    pitch: 0,
     bearing: DEFAULT_BEARING,
     maxZoom: data.map?.maxZoom || 20,
-    maxPitch: 85,
+    maxPitch: 0,
     attributionControl: false,
     antialias: true,
     cooperativeGestures: false,
@@ -1024,7 +1026,7 @@ async function init() {
 
   // Only show zoom/compass on desktop — mobile uses pinch-to-zoom
   if (window.innerWidth > 960) {
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-right');
   }
 
   geolocateControl = new maplibregl.GeolocateControl({
@@ -1051,7 +1053,7 @@ async function init() {
   document.getElementById('parking-btn')?.addEventListener('click', promptSaveParking);
 
   map.on('load', async () => {
-    addTerrain();
+    flattenShopperMap();
     // Resolve venue overlay tileset metadata before building layers
     appState.venueOverlayConfig = await resolveVenueOverlay();
     await hydrateStyleContent();
@@ -1071,18 +1073,28 @@ async function init() {
   });
 }
 
-function addTerrain() {
-  if (!window.MAPTILER_KEY || !map) return;
+function flattenShopperMap() {
+  if (!map) return;
   try {
-    if (!map.getSource('maptiler-terrain')) {
-      map.addSource('maptiler-terrain', {
-        type: 'raster-dem',
-        url: `https://api.maptiler.com/tiles/terrain-rgb/tiles.json?key=${window.MAPTILER_KEY}`
-      });
+    if (typeof map.getTerrain === 'function' && map.getTerrain()) {
+      map.setTerrain(null);
+    } else if (typeof map.setTerrain === 'function') {
+      map.setTerrain(null);
     }
-    map.setTerrain({ source: 'maptiler-terrain', exaggeration: 1.2 });
-  } catch (e) {
-    console.warn('[map] terrain not available:', e.message);
+  } catch (_) {
+    // Terrain may be unsupported or already unset.
+  }
+  try {
+    if (typeof map.setPitch === 'function') map.setPitch(0);
+  } catch (_) {}
+  const layers = map.getStyle?.()?.layers || [];
+  for (const layer of layers) {
+    if (layer?.type !== 'fill-extrusion') continue;
+    try {
+      map.setLayoutProperty(layer.id, 'visibility', 'none');
+    } catch (_) {
+      // Layer may have been removed during a style swap.
+    }
   }
 }
 
@@ -1837,7 +1849,7 @@ async function ensureCompositeImages(locations) {
           map.addImage(logoId, imageData, { pixelRatio: 2 });
         } catch (_) { /* fall through to category icon */ }
       }
-      continue;
+      if (map.hasImage(logoId)) continue;
     }
 
     const color = loc.color || '#7a7a7a';
@@ -1895,9 +1907,8 @@ function loadImageByUrl(url) {
 
 function findFirstSymbolLayer() {
   // Find the first symbol (label) layer in the base map style so we can
-  // insert the venue raster overlay beneath it.  This keeps road names,
-  // POI labels, and 3D-building extrusions rendered on top of the
-  // coloured pavilion tiles — matching MapMe's visual hierarchy.
+  // insert the venue raster overlay beneath it. Road names stay readable
+  // above the coloured pavilion tiles. 3D building extrusions are hidden.
   const layers = map.getStyle().layers || [];
   for (const layer of layers) {
     if (layer.type === 'symbol') return layer.id;
@@ -1964,9 +1975,7 @@ function buildLayers() {
     type: 'geojson',
     data: toFeatureCollection([]),
     generateId: true,
-    cluster: true,
-    clusterRadius: 30,
-    clusterMaxZoom: 13
+    cluster: false
   });
 
   map.addLayer({
@@ -2020,8 +2029,9 @@ function buildLayers() {
       'symbol-sort-key': ['to-number', ['id'], 0],
       'icon-size':
         ['interpolate', ['linear'], ['zoom'],
-          14, 0.55,
-          16, 0.7,
+          13, 0.48,
+          15, 0.62,
+          16, 0.72,
           17, 0.8,
           18, 0.9,
           20, 1.05
@@ -2489,14 +2499,12 @@ function openLocation(location, fly) {
   renderDetail(location);
 
   if (fly) {
-    const flyZoom = Number.isFinite(location.zoom) ? location.zoom : 20;
-    const flyPitch = Number.isFinite(location.pitch) ? location.pitch : 60;
-    const flyBearing = Number.isFinite(location.bearing) ? location.bearing : 0;
+    const flyZoom = Number.isFinite(location.zoom) ? Math.min(location.zoom, 18.5) : 18;
     map.flyTo({
       center: [location.lng, location.lat],
       zoom: flyZoom,
-      pitch: flyPitch,
-      bearing: flyBearing,
+      pitch: 0,
+      bearing: DEFAULT_BEARING,
       duration: 800
     });
   }
@@ -3211,14 +3219,16 @@ async function renderStallDebugLayer() {
 }
 
 async function hydrateStyleContent() {
-  addTerrain();
+  flattenShopperMap();
   await loadMarkerIcons();
   await ensureCompositeImages(appState.locations);
   buildLayers();
+  flattenShopperMap();
   ensureRouteLayers();
   await renderStallDebugLayer();
   appState.hoveredFeatureId = null;
   applyFilters();
+  fitShopperGroundsOverview();
   scheduleFilterCountRefresh(120, 'hydrateStyleContent');
   syncSelectedLayer();
   if (appState.activeRoute?.routeCoords?.length) {
@@ -3366,7 +3376,8 @@ function resolveStyleUrl(rawStyle) {
       : rawStyle;
   }
 
-  // Use custom MapTiler style (satellite/vector hybrid with 3D buildings)
+  // Prefer a working 2D style. The custom MapTiler style includes 3D buildings
+  // and is flattened after load; OpenFreeMap is the no-key fallback.
   if (window.MAPTILER_KEY) {
     return `${MAPTILER_CUSTOM_STYLE}?key=${window.MAPTILER_KEY}`;
   }
@@ -3413,15 +3424,63 @@ function resolveSatelliteStyleUrl() {
   return SATELLITE_STYLE_FALLBACK;
 }
 
-function resolveInitialMapView(data) {
-  const beeKings = (data?.locations || []).find(loc => String(loc.id || '') === BEEKINGS_LOCATION_ID || /bee king/i.test(String(loc.name || '')));
-  const lng = Number(beeKings?.lng);
-  const lat = Number(beeKings?.lat);
-  const center = Number.isFinite(lng) && Number.isFinite(lat) ? [lng, lat] : DEFAULT_CENTER;
-  const zoom = Number(beeKings?.zoom) || DEFAULT_ZOOM;
-  const pitch = Number(beeKings?.pitch) || DEFAULT_PITCH;
+function resolveShopperBounds(locations) {
+  const pts = (locations || []).filter((loc) => Number.isFinite(Number(loc.lng)) && Number.isFinite(Number(loc.lat)));
+  if (!pts.length) return null;
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+  for (const loc of pts) {
+    const lng = Number(loc.lng);
+    const lat = Number(loc.lat);
+    if (lng < minLng) minLng = lng;
+    if (lat < minLat) minLat = lat;
+    if (lng > maxLng) maxLng = lng;
+    if (lat > maxLat) maxLat = lat;
+  }
+  return { minLng, minLat, maxLng, maxLat };
+}
 
-  return { center, zoom, pitch };
+function resolveInitialMapView(data) {
+  // Shopper default is a flat grounds overview — never inherit a booth's
+  // 3D pitch/zoom (Bee King's Honey is stored at zoom 20 / pitch 60).
+  const bounds = resolveShopperBounds(data?.locations);
+  const hasCenter = Array.isArray(data?.map?.center) && data.map.center.length === 2;
+  const center = bounds
+    ? [(bounds.minLng + bounds.maxLng) / 2, (bounds.minLat + bounds.maxLat) / 2]
+    : (hasCenter ? [Number(data.map.center[0]), Number(data.map.center[1])] : DEFAULT_CENTER);
+  return { center, zoom: DEFAULT_ZOOM, pitch: DEFAULT_PITCH };
+}
+
+function fitShopperGroundsOverview() {
+  if (!map || appState.shopperOverviewFitted) return;
+  if (getDeepLinkedLocationId()) {
+    appState.shopperOverviewFitted = true;
+    return;
+  }
+  const locations = (appState.filteredLocations.length ? appState.filteredLocations : appState.locations)
+    .filter((loc) => Number.isFinite(loc.lng) && Number.isFinite(loc.lat));
+  if (locations.length < 2) {
+    appState.shopperOverviewFitted = true;
+    return;
+  }
+  const bounds = new maplibregl.LngLatBounds(
+    [locations[0].lng, locations[0].lat],
+    [locations[0].lng, locations[0].lat]
+  );
+  for (const loc of locations.slice(1)) {
+    bounds.extend([loc.lng, loc.lat]);
+  }
+  map.fitBounds(bounds, {
+    padding: getSearchFitPadding(),
+    maxZoom: SHOPPER_OVERVIEW_MAX_ZOOM,
+    duration: 0,
+    pitch: 0,
+    essential: true
+  });
+  flattenShopperMap();
+  appState.shopperOverviewFitted = true;
 }
 
 function escapeHtml(value) {

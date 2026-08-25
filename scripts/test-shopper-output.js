@@ -48,6 +48,15 @@ assert.ok(embed.includes('/map.html'), 'embed.html must hand off to the shopper 
 const data = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'mapme-full-export.json'), 'utf8'));
 assert.ok(Array.isArray(data.locations));
 assert.strictEqual(data.locations.length, 711, `expected 711 locations, got ${data.locations.length}`);
+assert.strictEqual(data.map?.pitch, 0, 'shopper export default camera must be flat 2D');
+
+const mapJs = fs.readFileSync(path.join(publicDir, 'map.js'), 'utf8');
+assert.match(mapJs, /const DEFAULT_PITCH = 0/, 'shopper default pitch must be 0');
+assert.match(mapJs, /function flattenShopperMap/, 'must hide 3D buildings / terrain');
+assert.match(mapJs, /cluster:\s*false/, 'vendor pins must not cluster into one pile');
+assert.match(mapJs, /maxPitch:\s*0/, 'default shopper camera must not pitch into 3D');
+assert.doesNotMatch(mapJs, /setTerrain\(\{\s*source:/, 'must not enable 3D terrain on the shopper map');
+assert.doesNotMatch(mapJs, /beeKings\?\.pitch/, 'must not inherit Bee King 3D booth pitch');
 const garden = (data.categories || []).find((cat) => cat.id === '5dd4803e-9cff-4d80-99a1-98d86ef1c1af');
 const plants = (data.categories || []).find((cat) => cat.id === 'b8f1b4b4-9d3e-4c66-96d3-4f1d53e3d4f4');
 assert.ok(garden, 'Garden / Patio category must remain');
