@@ -1919,14 +1919,15 @@ function findFirstSymbolLayer() {
 function addVenueOverlay() {
   // Only add venue overlay when in venue map mode (not satellite)
   if (appState.activeMapStyle === 'satellite') return;
-  // Raster overlay from MapMe's custom MapTiler tileset, proxied via /api/venue-tile/
+  // Raster overlay from MapMe's custom MapTiler tileset, proxied via /api/tile
+  // (the live /api/mt and /api/venue-tile paths 404; /api/tile returns image/png)
   // Shows colored pavilion rows and booth numbers matching MapMe viewer
   if (map.getSource('venue-overlay')) return;
   const cfg = appState.venueOverlayConfig;
   const defaultBounds = [-95.87783605142862, 32.55078690554766, -95.85260241651899, 32.57611879608321];
   map.addSource('venue-overlay', {
     type: 'raster',
-    tiles: [`${window.location.origin}/api/mt?path=tiles/0196a1e2-92d2-7ed9-9540-2191fb00a1af/{z}/{x}/{y}.png`],
+    tiles: [`${window.location.origin}/api/tile?z={z}&x={x}&y={y}`],
     tileSize: 256,
     minzoom: cfg?.minzoom ?? 14,
     maxzoom: cfg?.maxzoom ?? 22,

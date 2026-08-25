@@ -58,6 +58,9 @@ assert.match(mapJs, /cluster:\s*false/, 'vendor pins must not cluster into one p
 assert.match(mapJs, /maxPitch:\s*0/, 'default shopper camera must not pitch into 3D');
 assert.doesNotMatch(mapJs, /setTerrain\(\{\s*source:/, 'must not enable 3D terrain on the shopper map');
 assert.doesNotMatch(mapJs, /beeKings\?\.pitch/, 'must not inherit Bee King 3D booth pitch');
+assert.match(mapJs, /\/api\/tile\?z=\{z\}&x=\{x\}&y=\{y\}/, 'venue overlay must use the working /api/tile proxy');
+assert.doesNotMatch(mapJs, /\/api\/mt\?path=tiles\//, 'venue overlay must not request /api/mt tiles (404s on production)');
+assert.ok(hasRewrite('/api/tile', '/api/tile'), 'Vercel must keep /api/tile on the local tile proxy');
 const garden = (data.categories || []).find((cat) => cat.id === '5dd4803e-9cff-4d80-99a1-98d86ef1c1af');
 const plants = (data.categories || []).find((cat) => cat.id === 'b8f1b4b4-9d3e-4c66-96d3-4f1d53e3d4f4');
 assert.ok(garden, 'Garden / Patio category must remain');
