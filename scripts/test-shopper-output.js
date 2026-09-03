@@ -207,7 +207,7 @@ const RAE_ID = '64592d71-7a78-43cd-8ea8-0d5ce152c47e';
 const TEAK_ID = '98933c18-defa-4333-be8e-6de416070ea4';
 const rae = data.locations.find((loc) => loc.id === RAE_ID);
 assert.ok(rae, 'Rae Sterling listing must remain');
-assert.match(rae.name, /Rae Sterling/i);
+assert.strictEqual(rae.name, 'Rae Sterling at White Cottage Mercantile');
 assert.strictEqual(rae.lat, 32.56124371);
 assert.strictEqual(rae.lng, -95.86078502);
 assert.strictEqual(String(rae.booth), '361-364');
