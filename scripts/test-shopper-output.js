@@ -170,12 +170,12 @@ for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Ent
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.ok(
-  mapHtml.includes('/map.js?v=20260903-rae-sterling'),
-  'map.html must cache-bust map.js after the Rae Sterling booth move'
+  mapHtml.includes('/map.js?v=20260903-rae-sterling-pin'),
+  'map.html must cache-bust map.js after the Rae Sterling pin nudge'
 );
 assert.ok(
-  !mapHtml.includes('/map.js?v=20260825-gate-icons'),
-  'Rae Sterling cache-bust must replace the gate-icon tag, not keep both'
+  !mapHtml.includes('/map.js?v=20260903-rae-sterling"'),
+  'pin-nudge cache-bust must replace the Arbor 3 booth-move tag, not keep both'
 );
 assert.match(mapJs, /loc\.hidden === true/, 'shopper map must skip hidden leftover icons');
 
@@ -208,8 +208,8 @@ const TEAK_ID = '98933c18-defa-4333-be8e-6de416070ea4';
 const rae = data.locations.find((loc) => loc.id === RAE_ID);
 assert.ok(rae, 'Rae Sterling listing must remain');
 assert.strictEqual(rae.name, 'Rae Sterling at White Cottage Mercantile');
-assert.strictEqual(rae.lat, 32.56124371);
-assert.strictEqual(rae.lng, -95.86078502);
+assert.strictEqual(rae.lat, 32.5613006);
+assert.strictEqual(rae.lng, -95.8607431);
 assert.strictEqual(String(rae.booth), '361-364');
 assert.strictEqual(String(rae.pavilion), 'Arbor 3');
 assert.ok(/Arbor\s*3/i.test(String(rae.description)), 'Rae Sterling description must say Arbor 3');
@@ -221,16 +221,32 @@ assert.notStrictEqual(rae.hidden, true, 'Rae Sterling pin must stay visible');
 const teak = data.locations.find((loc) => loc.id === TEAK_ID);
 assert.ok(teak, 'Teak 22 listing must stay in the export (do not delete the vendor record)');
 assert.strictEqual(teak.hidden, true, 'Teak 22 leftover icon on Arbor 3 361-364 must be hidden');
+assert.strictEqual(
+  data.locations.filter((loc) => loc.hidden !== true).length,
+  710,
+  '711 listings with Teak 22 hidden leaves 710 visible pins'
+);
 
 const visibleOnRaeSpot = data.locations.filter((loc) => {
   if (loc.hidden === true) return false;
-  return Math.abs(Number(loc.lat) - rae.lat) < 0.00004 && Math.abs(Number(loc.lng) - rae.lng) < 0.00004;
+  return Math.abs(Number(loc.lat) - rae.lat) < 0.000015 && Math.abs(Number(loc.lng) - rae.lng) < 0.000015;
 });
 assert.deepStrictEqual(
   visibleOnRaeSpot.map((loc) => loc.id),
   [RAE_ID],
-  'only Rae Sterling may keep a visible icon on Arbor 3 361-364'
+  'only Rae Sterling may keep a visible icon on the marked 362/363 spot'
 );
+
+const neighborPins = [
+  { id: '335e3e69-88b4-40c2-b07a-caa59459c2ea', name: '368' },
+  { id: '1bffeac9-1996-4d9f-991c-64da5c417321', name: 'Pish Posh T-Shirts' },
+  { id: '58eea7d3-fdcb-4134-b09d-bbb96c40ca64', name: 'Silver Spoons' }
+];
+for (const neighbor of neighborPins) {
+  const loc = data.locations.find((item) => item.id === neighbor.id);
+  assert.ok(loc, `${neighbor.name} listing must remain`);
+  assert.notStrictEqual(loc.hidden, true, `${neighbor.name} pin must stay visible`);
+}
 
 const leftoverBoothPins = data.locations.filter((loc) => {
   if (loc.hidden === true) return false;
