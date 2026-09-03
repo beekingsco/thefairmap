@@ -6582,11 +6582,11 @@
     {
       "id": "64592d71-7a78-43cd-8ea8-0d5ce152c47e",
       "externalId": "af52a0b0-b3f7-4020-8454-94c1589add84",
-      "name": "Rae Sterling @ White cottage Mercantile",
-      "description": "<p><b>Arbor2 162-166A</b></p><p>Arbor ll booth # 162-166A \nRae Sterling is tucked inside our shared Canton booth with White Cottage Mercantile, a handcrafted furniture and home decor shop. Come browse effortless graphic tees, curated apparel, and cozy home finds made for everyday living.</p><p><a href=\"Raesterling.com\" target=\"_blank\" rel=\"noopener\">Raesterling.com</a></p>",
-      "address": "32.560432,-95.861693",
-      "lat": 32.560432,
-      "lng": -95.861693,
+      "name": "Rae Sterling at White Cottage Mercantile",
+      "description": "<p><b>Arbor 3: 361-364</b></p><p>Arbor III booths # 361-364\nRae Sterling offers effortless graphic tees, curated apparel, and cozy home finds made for everyday living.</p><p><a href=\"Raesterling.com\" target=\"_blank\" rel=\"noopener\">Raesterling.com</a></p>",
+      "address": "Arbor 3: 361-364",
+      "lat": 32.56124371,
+      "lng": -95.86078502,
       "categoryId": "e12b96e6-81b4-4594-b3ed-3ec9a8b10429",
       "categoryName": "Furniture",
       "inactive": {
@@ -6646,7 +6646,9 @@
           "image": "https://vfm.buzzonmarketing.com/vendor-catalog/2c69c881-c939-4171-b7b5-86abce83bcab/1780085854602-76a7b3f2-7c80-4ea2-a540-0bd310443867.webp",
           "link": "https://www.facebook.com/whitecottagemercantiletexas"
         }
-      ]
+      ],
+      "booth": "361-364",
+      "pavilion": "Arbor 3"
     },
     {
       "id": "1642a8be-f9b0-4dc5-9618-07e5668ff2eb",
@@ -7120,7 +7122,8 @@
         "https://vfm.buzzonmarketing.com/vendor-photos/f2cf117e-646e-4042-a3a3-c7cadf0e3313/1775339265107.jpg",
         "https://vfm.buzzonmarketing.com/vendor-photos/f2cf117e-646e-4042-a3a3-c7cadf0e3313/1775339274220.jpg"
       ],
-      "catalogStoreType": "product"
+      "catalogStoreType": "product",
+      "hidden": true
     },
     {
       "id": "7ff5036a-7ce5-41db-89ed-2edf11582651",

@@ -170,13 +170,14 @@ for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Ent
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.ok(
-  mapHtml.includes('/map.js?v=20260825-gate-icons'),
-  'map.html must cache-bust map.js after the gate icon change'
+  mapHtml.includes('/map.js?v=20260903-rae-sterling'),
+  'map.html must cache-bust map.js after the Rae Sterling booth move'
 );
 assert.ok(
-  !mapHtml.includes('/map.js?v=20260825-shopper-tilt'),
-  'gate-icon cache-bust must replace the live tilt tag, not keep both'
+  !mapHtml.includes('/map.js?v=20260825-gate-icons'),
+  'Rae Sterling cache-bust must replace the gate-icon tag, not keep both'
 );
+assert.match(mapJs, /loc\.hidden === true/, 'shopper map must skip hidden leftover icons');
 
 const prepared = spawnSync(process.execPath, [path.join(__dirname, 'prepare-vercel-shopper.js')], {
   cwd: root,
@@ -202,9 +203,49 @@ const afterExport = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'map
 assert.strictEqual(afterExport.locations.length, 711);
 assert.ok(afterExport.locations.some((loc) => loc.id === 'rowe-farms-4505'), 'Rowe Farms must remain after icon staging');
 
+const RAE_ID = '64592d71-7a78-43cd-8ea8-0d5ce152c47e';
+const TEAK_ID = '98933c18-defa-4333-be8e-6de416070ea4';
+const rae = data.locations.find((loc) => loc.id === RAE_ID);
+assert.ok(rae, 'Rae Sterling listing must remain');
+assert.strictEqual(rae.name, 'Rae Sterling at White Cottage Mercantile');
+assert.strictEqual(rae.lat, 32.56124371);
+assert.strictEqual(rae.lng, -95.86078502);
+assert.strictEqual(String(rae.booth), '361-364');
+assert.strictEqual(String(rae.pavilion), 'Arbor 3');
+assert.ok(/Arbor\s*3/i.test(String(rae.description)), 'Rae Sterling description must say Arbor 3');
+assert.ok(/361-364/.test(String(rae.description)), 'Rae Sterling description must list booths 361-364');
+assert.ok(/361-364/.test(String(rae.address)), 'Rae Sterling address must list Arbor 3 361-364');
+assert.ok(!/Arbor2 162-166A/.test(String(rae.description)), 'old Arbor 2 booth text must be gone');
+assert.notStrictEqual(rae.hidden, true, 'Rae Sterling pin must stay visible');
+
+const teak = data.locations.find((loc) => loc.id === TEAK_ID);
+assert.ok(teak, 'Teak 22 listing must stay in the export (do not delete the vendor record)');
+assert.strictEqual(teak.hidden, true, 'Teak 22 leftover icon on Arbor 3 361-364 must be hidden');
+
+const visibleOnRaeSpot = data.locations.filter((loc) => {
+  if (loc.hidden === true) return false;
+  return Math.abs(Number(loc.lat) - rae.lat) < 0.00004 && Math.abs(Number(loc.lng) - rae.lng) < 0.00004;
+});
+assert.deepStrictEqual(
+  visibleOnRaeSpot.map((loc) => loc.id),
+  [RAE_ID],
+  'only Rae Sterling may keep a visible icon on Arbor 3 361-364'
+);
+
+const leftoverBoothPins = data.locations.filter((loc) => {
+  if (loc.hidden === true) return false;
+  if (loc.id === RAE_ID) return false;
+  const blob = `${loc.name || ''} ${loc.description || ''} ${loc.address || ''} ${loc.booth || ''}`;
+  return /\b36[1-4]\b/.test(blob) && /arbor\s*3|ar3|ab3/i.test(blob);
+});
+assert.deepStrictEqual(leftoverBoothPins, [], 'no leftover visible booth/POI icons may remain on Arbor 3 361-364');
+
 console.log('test-shopper-output: ok', {
   locations: data.locations.length,
+  visible: data.locations.filter((loc) => loc.hidden !== true).length,
   rowe: rowe.id,
   jt: jt.id,
+  rae: rae.id,
+  teakHidden: teak.hidden,
   gatesIcon: gatesIcon.file
 });

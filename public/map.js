@@ -1231,6 +1231,7 @@ function normalizeData(data) {
 
   appState.locations = (data.locations || [])
     .map((loc, idx) => {
+      if (loc && loc.hidden === true) return null;
       const name = String(loc.name || '').trim();
       if (!name) return null;
       const categoryId = String(loc.categoryId || loc.category || 'uncategorized');
