@@ -174,12 +174,12 @@ for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Ent
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.ok(
-  mapHtml.includes('/map.js?v=20260904-acorn-vine-oak-pin'),
-  'map.html must cache-bust map.js after moving Acorn onto Vine & Oak’s spot'
+  mapHtml.includes('/map.js?v=20260904-acorn-blurb'),
+  'map.html must cache-bust map.js after the Acorn shopper blurb'
 );
 assert.ok(
-  !mapHtml.includes('/map.js?v=20260904-acorn-game-parlor'),
-  'Vine & Oak hide cache-bust must replace the original Acorn booth-68 tag, not keep both'
+  !mapHtml.includes('/map.js?v=20260904-acorn-vine-oak-pin'),
+  'blurb cache-bust must replace the Vine & Oak pin-move tag, not keep both'
 );
 assert.match(mapJs, /loc\.hidden === true/, 'shopper map must skip hidden leftover icons');
 
@@ -270,10 +270,20 @@ assert.strictEqual(String(acorn.booth), '68');
 assert.strictEqual(String(acorn.pavilion), 'Arbor 1');
 assert.ok(/Arbor\s*1:\s*68/.test(String(acorn.address)), 'Acorn address must use Arbor 1: 68 colon style');
 assert.ok(/Arbor\s*1:\s*68/.test(String(acorn.description)), 'Acorn description must list Arbor 1: 68');
-assert.ok(/mahjong/i.test(String(acorn.description)), 'Acorn description must mention mahjong');
-assert.ok(/vintage board games/i.test(String(acorn.description)), 'Acorn description must mention vintage board games');
-assert.ok(/replacement game pieces/i.test(String(acorn.description)), 'Acorn description must mention replacement game pieces');
-assert.ok(/totes and bags/i.test(String(acorn.description)), 'Acorn description must mention totes and bags');
+assert.ok(String(acorn.description || '').replace(/<[^>]+>/g, ' ').trim().length > 40, 'Acorn description must not be blank');
+assert.doesNotMatch(
+  String(acorn.description),
+  /Mahjong mats, mahjong gifts, mahjong totes and bags, vintage board games, replacement game pieces, mahjong tiles/,
+  'Acorn description must not ship the keyword dump'
+);
+assert.ok(/Building memories one game at a time/.test(String(acorn.description)), 'Acorn blurb must use the shopper tagline');
+assert.ok(/Mahjong mats, gifts, and totes/.test(String(acorn.description)), 'Acorn blurb must mention mahjong mats, gifts, and totes');
+assert.ok(/vintage board games/.test(String(acorn.description)), 'Acorn description must mention vintage board games');
+assert.ok(/replacement pieces/.test(String(acorn.description)), 'Acorn description must mention replacement pieces');
+assert.ok(/mahjong tiles/.test(String(acorn.description)), 'Acorn description must mention mahjong tiles');
+assert.ok(/cozy game-shop browse/.test(String(acorn.description)), 'Acorn blurb must invite a cozy browse');
+assert.ok(/Canton First Monday/.test(String(acorn.description)), 'Acorn blurb must name Canton First Monday');
+assert.ok(!(acorn.photos || []).length, 'do not wire Acorn photo paths until public/uploads/acorn-1.jpg … acorn-6.jpg exist');
 assert.strictEqual(acorn.categoryId, '46c82a58-7236-4d60-af2c-bb329173029b');
 assert.strictEqual(acorn.categoryName, 'Toys / Games / Puzzles');
 assert.strictEqual(acorn.lat, 32.56093612, 'Acorn lat must reuse Vine & Oak’s previous coordinates');
@@ -332,6 +342,7 @@ console.log('test-shopper-output: ok', {
   acorn: acorn.id,
   acornLat: acorn.lat,
   acornLng: acorn.lng,
+  acornPhotos: (acorn.photos || []).length,
   vineOakHidden: vineOak.hidden,
   beeKing: beeKing.id,
   gatesIcon: gatesIcon.file

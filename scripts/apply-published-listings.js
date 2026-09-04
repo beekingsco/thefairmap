@@ -32,7 +32,8 @@ if (teak) {
   console.log(`Teak 22 id=${teak.id} hidden=${Boolean(teak.hidden)} (leftover 361-364 icon)`);
 }
 if (acorn) {
-  console.log(`Acorn Game Parlor id=${acorn.id} booth=${acorn.booth || ''} category=${acorn.categoryName} lat=${acorn.lat} lng=${acorn.lng} hidden=${Boolean(acorn.hidden)}`);
+  console.log(`Acorn Game Parlor id=${acorn.id} booth=${acorn.booth || ''} category=${acorn.categoryName} lat=${acorn.lat} lng=${acorn.lng} hidden=${Boolean(acorn.hidden)} photos=${(acorn.photos || []).length}`);
+  console.log(`Acorn description=${String(acorn.description || '').replace(/\s+/g, ' ').trim()}`);
 } else {
   console.warn('Acorn Game Parlor was not present after publish.');
   process.exitCode = 1;
