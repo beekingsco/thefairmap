@@ -138,7 +138,7 @@
       "color": "#9a00ffff",
       "shape": "circle",
       "icon": "svg",
-      "count": 15
+      "count": 16
     },
     {
       "id": "4a159478-fa17-4607-8025-12bde09f4730",
@@ -14138,6 +14138,24 @@
       ],
       "catalogStoreType": "product",
       "vendorUuid": "57925765-0d4e-4f77-a047-783a80180889"
+    },
+    {
+      "id": "4e0c4de9-e7e9-4ce5-929f-842f73538dc6",
+      "name": "Acorn Game Parlor",
+      "description": "<p><b>Arbor 1: 68</b></p><p>Mahjong mats, mahjong gifts, mahjong totes and bags, vintage board games, replacement game pieces, mahjong tiles</p>",
+      "address": "Arbor 1: 68",
+      "booth": "68",
+      "pavilion": "Arbor 1",
+      "lat": 32.5609714,
+      "lng": -95.86139895,
+      "categoryId": "46c82a58-7236-4d60-af2c-bb329173029b",
+      "categoryName": "Toys / Games / Puzzles",
+      "inactive": {
+        "address": true
+      },
+      "zoom": 20.02,
+      "pitch": 60,
+      "bearing": 0
     }
   ]
 }

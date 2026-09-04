@@ -47,7 +47,7 @@ assert.ok(embed.includes('/map.html'), 'embed.html must hand off to the shopper 
 
 const data = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'mapme-full-export.json'), 'utf8'));
 assert.ok(Array.isArray(data.locations));
-assert.strictEqual(data.locations.length, 711, `expected 711 locations, got ${data.locations.length}`);
+assert.strictEqual(data.locations.length, 712, `expected 712 locations, got ${data.locations.length}`);
 assert.strictEqual((data.categories || []).length, 68, 'category catalog must stay intact');
 assert.ok(data.locations.every((loc) => Number.isFinite(loc.lat) && Number.isFinite(loc.lng)), 'every listing must keep GPS coordinates');
 
@@ -74,6 +74,10 @@ assert.ok(garden, 'Garden / Patio category must remain');
 assert.strictEqual(garden.name, 'Garden / Patio');
 assert.strictEqual(garden.count, 26, 'Rowe Farms moves Garden / Patio from 25 to 26');
 assert.strictEqual(plants && plants.count, 0, 'unused Plants category must stay empty');
+const toys = (data.categories || []).find((cat) => cat.id === '46c82a58-7236-4d60-af2c-bb329173029b');
+assert.ok(toys, 'Toys / Games / Puzzles category must remain');
+assert.strictEqual(toys.name, 'Toys / Games / Puzzles');
+assert.strictEqual(toys.count, 16, 'Acorn Game Parlor moves Toys / Games / Puzzles from 15 to 16');
 
 const jt = data.locations.find((loc) => loc.id === 'abcefc40-da73-4346-8105-47d847c24a68');
 assert.ok(jt, 'JT Jewelry pin must remain');
@@ -170,12 +174,12 @@ for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Ent
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.ok(
-  mapHtml.includes('/map.js?v=20260903-rae-sterling-pin'),
-  'map.html must cache-bust map.js after the Rae Sterling pin nudge'
+  mapHtml.includes('/map.js?v=20260904-acorn-game-parlor'),
+  'map.html must cache-bust map.js after adding Acorn Game Parlor'
 );
 assert.ok(
-  !mapHtml.includes('/map.js?v=20260903-rae-sterling"'),
-  'pin-nudge cache-bust must replace the Arbor 3 booth-move tag, not keep both'
+  !mapHtml.includes('/map.js?v=20260903-rae-sterling-pin'),
+  'Acorn cache-bust must replace the Rae Sterling pin-nudge tag, not keep both'
 );
 assert.match(mapJs, /loc\.hidden === true/, 'shopper map must skip hidden leftover icons');
 
@@ -200,8 +204,9 @@ for (const [file, before] of exportSnapshots) {
 }
 
 const afterExport = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'mapme-full-export.json'), 'utf8'));
-assert.strictEqual(afterExport.locations.length, 711);
+assert.strictEqual(afterExport.locations.length, 712);
 assert.ok(afterExport.locations.some((loc) => loc.id === 'rowe-farms-4505'), 'Rowe Farms must remain after icon staging');
+assert.ok(afterExport.locations.some((loc) => loc.id === '4e0c4de9-e7e9-4ce5-929f-842f73538dc6'), 'Acorn Game Parlor must remain after icon staging');
 
 const RAE_ID = '64592d71-7a78-43cd-8ea8-0d5ce152c47e';
 const TEAK_ID = '98933c18-defa-4333-be8e-6de416070ea4';
@@ -223,8 +228,8 @@ assert.ok(teak, 'Teak 22 listing must stay in the export (do not delete the vend
 assert.strictEqual(teak.hidden, true, 'Teak 22 leftover icon on Arbor 3 361-364 must be hidden');
 assert.strictEqual(
   data.locations.filter((loc) => loc.hidden !== true).length,
-  710,
-  '711 listings with Teak 22 hidden leaves 710 visible pins'
+  711,
+  '712 listings with Teak 22 hidden leaves 711 visible pins'
 );
 
 const visibleOnRaeSpot = data.locations.filter((loc) => {
@@ -256,6 +261,45 @@ const leftoverBoothPins = data.locations.filter((loc) => {
 });
 assert.deepStrictEqual(leftoverBoothPins, [], 'no leftover visible booth/POI icons may remain on Arbor 3 361-364');
 
+const ACORN_ID = '4e0c4de9-e7e9-4ce5-929f-842f73538dc6';
+const BEE_KING_ID = '758aad31-099f-4ece-bee7-4b22eb202334';
+const acorn = data.locations.find((loc) => loc.id === ACORN_ID);
+assert.ok(acorn, 'Acorn Game Parlor listing must exist');
+assert.strictEqual(acorn.name, 'Acorn Game Parlor');
+assert.strictEqual(String(acorn.booth), '68');
+assert.strictEqual(String(acorn.pavilion), 'Arbor 1');
+assert.ok(/Arbor\s*1:\s*68/.test(String(acorn.address)), 'Acorn address must use Arbor 1: 68 colon style');
+assert.ok(/Arbor\s*1:\s*68/.test(String(acorn.description)), 'Acorn description must list Arbor 1: 68');
+assert.ok(/mahjong/i.test(String(acorn.description)), 'Acorn description must mention mahjong');
+assert.ok(/vintage board games/i.test(String(acorn.description)), 'Acorn description must mention vintage board games');
+assert.ok(/replacement game pieces/i.test(String(acorn.description)), 'Acorn description must mention replacement game pieces');
+assert.ok(/totes and bags/i.test(String(acorn.description)), 'Acorn description must mention totes and bags');
+assert.strictEqual(acorn.categoryId, '46c82a58-7236-4d60-af2c-bb329173029b');
+assert.strictEqual(acorn.categoryName, 'Toys / Games / Puzzles');
+assert.ok(Math.abs(Number(acorn.lat) - 32.5609714) < 0.00002, `Acorn lat ${acorn.lat} must sit on booth 68`);
+assert.ok(Math.abs(Number(acorn.lng) - -95.86139895) < 0.00002, `Acorn lng ${acorn.lng} must sit on booth 68`);
+assert.notStrictEqual(acorn.hidden, true, 'Acorn Game Parlor pin must stay visible');
+assert.notStrictEqual(acorn.id, BEE_KING_ID, 'Acorn must be a new listing, not a rewrite of Bee King’s Honey');
+
+const beeKing = data.locations.find((loc) => loc.id === BEE_KING_ID);
+assert.ok(beeKing, 'Bee King’s Honey listing must remain');
+assert.strictEqual(beeKing.name, 'Bee King’s Honey');
+assert.strictEqual(beeKing.address, 'Arbor 1, 65-68');
+assert.strictEqual(beeKing.lat, 32.56100669);
+assert.strictEqual(beeKing.lng, -95.86136341);
+assert.ok(String(beeKing.description).includes('Arbor 1, 65-68'), 'Bee King description address must stay');
+assert.ok(/Honey Dust/i.test(String(beeKing.description)), 'Bee King honey copy must stay');
+assert.strictEqual(beeKing.categoryName, 'Gourmet Food / Seasonings');
+assert.notStrictEqual(beeKing.hidden, true, 'Bee King’s Honey pin must stay visible');
+
+const leftoverBooth68 = data.locations.filter((loc) => {
+  if (loc.hidden === true) return false;
+  if (loc.id === ACORN_ID || loc.id === BEE_KING_ID) return false;
+  const blob = `${loc.name || ''} ${loc.description || ''} ${loc.address || ''} ${loc.booth || ''}`;
+  return /\b68\b/.test(blob) && /arbor\s*1|ab1|ar1/i.test(blob) && !/65-68|69B-70|71-76/.test(blob);
+});
+assert.deepStrictEqual(leftoverBooth68, [], 'no leftover visible booth/POI icons may remain on only Arbor 1 booth 68');
+
 console.log('test-shopper-output: ok', {
   locations: data.locations.length,
   visible: data.locations.filter((loc) => loc.hidden !== true).length,
@@ -263,5 +307,7 @@ console.log('test-shopper-output: ok', {
   jt: jt.id,
   rae: rae.id,
   teakHidden: teak.hidden,
+  acorn: acorn.id,
+  beeKing: beeKing.id,
   gatesIcon: gatesIcon.file
 });
