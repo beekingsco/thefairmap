@@ -174,12 +174,12 @@ for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Ent
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.ok(
-  mapHtml.includes('/map.js?v=20260904-acorn-blurb'),
-  'map.html must cache-bust map.js after the Acorn shopper blurb'
+  mapHtml.includes('/map.js?v=20260904-acorn-vine-oak-photos'),
+  'map.html must cache-bust map.js after wiring Acorn photos'
 );
 assert.ok(
-  !mapHtml.includes('/map.js?v=20260904-acorn-vine-oak-pin'),
-  'blurb cache-bust must replace the Vine & Oak pin-move tag, not keep both'
+  !mapHtml.includes('/map.js?v=20260904-acorn-blurb'),
+  'photo cache-bust must replace the blurb-only tag, not keep both'
 );
 assert.match(mapJs, /loc\.hidden === true/, 'shopper map must skip hidden leftover icons');
 
@@ -283,7 +283,23 @@ assert.ok(/replacement pieces/.test(String(acorn.description)), 'Acorn descripti
 assert.ok(/mahjong tiles/.test(String(acorn.description)), 'Acorn description must mention mahjong tiles');
 assert.ok(/cozy game-shop browse/.test(String(acorn.description)), 'Acorn blurb must invite a cozy browse');
 assert.ok(/Canton First Monday/.test(String(acorn.description)), 'Acorn blurb must name Canton First Monday');
-assert.ok(!(acorn.photos || []).length, 'do not wire Acorn photo paths until public/uploads/acorn-1.jpg … acorn-6.jpg exist');
+const acornPhotos = Array.isArray(acorn.photos) ? acorn.photos : [];
+assert.strictEqual(acornPhotos.length, 6, 'Acorn Game Parlor must have 6 shopper photos');
+assert.deepStrictEqual(acornPhotos, [
+  '/uploads/acorn-1.jpg',
+  '/uploads/acorn-2.jpg',
+  '/uploads/acorn-3.jpg',
+  '/uploads/acorn-4.jpg',
+  '/uploads/acorn-5.jpg',
+  '/uploads/acorn-6.jpg'
+]);
+assert.deepStrictEqual(acorn.images, acornPhotos, 'Acorn images must mirror photos');
+for (const rel of acornPhotos) {
+  const full = path.join(publicDir, rel.replace(/^\//, ''));
+  assert.ok(fs.existsSync(full), `missing shopper photo ${rel}`);
+  const magic = fs.readFileSync(full).subarray(0, 3);
+  assert.deepStrictEqual(Array.from(magic), [0xff, 0xd8, 0xff], `${rel} must be a JPEG`);
+}
 assert.strictEqual(acorn.categoryId, '46c82a58-7236-4d60-af2c-bb329173029b');
 assert.strictEqual(acorn.categoryName, 'Toys / Games / Puzzles');
 assert.strictEqual(acorn.lat, 32.56093612, 'Acorn lat must reuse Vine & Oak’s previous coordinates');

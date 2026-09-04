@@ -14156,7 +14156,23 @@
       },
       "zoom": 20.02,
       "pitch": 60,
-      "bearing": 0
+      "bearing": 0,
+      "photos": [
+        "/uploads/acorn-1.jpg",
+        "/uploads/acorn-2.jpg",
+        "/uploads/acorn-3.jpg",
+        "/uploads/acorn-4.jpg",
+        "/uploads/acorn-5.jpg",
+        "/uploads/acorn-6.jpg"
+      ],
+      "images": [
+        "/uploads/acorn-1.jpg",
+        "/uploads/acorn-2.jpg",
+        "/uploads/acorn-3.jpg",
+        "/uploads/acorn-4.jpg",
+        "/uploads/acorn-5.jpg",
+        "/uploads/acorn-6.jpg"
+      ]
     }
   ]
 }
