@@ -1965,7 +1965,8 @@
         "https://vfm.buzzonmarketing.com/vendor-photos/f77f5e66-3316-4a30-b5dc-5869fd38ec4d/1783007315617.jpg",
         "https://vfm.buzzonmarketing.com/vendor-photos/f77f5e66-3316-4a30-b5dc-5869fd38ec4d/1783007353977.jpg"
       ],
-      "catalogStoreType": "product"
+      "catalogStoreType": "product",
+      "hidden": true
     },
     {
       "id": "097d50dc-eb32-4573-9580-c74fd40f5672",
@@ -14142,12 +14143,12 @@
     {
       "id": "4e0c4de9-e7e9-4ce5-929f-842f73538dc6",
       "name": "Acorn Game Parlor",
-      "description": "<p><b>Arbor 1: 68</b></p><p>Mahjong mats, mahjong gifts, mahjong totes and bags, vintage board games, replacement game pieces, mahjong tiles</p>",
+      "description": "<p><b>Arbor 1: 68</b></p><p>Building memories one game at a time. Mahjong mats, gifts, and totes; vintage board games; replacement pieces and mahjong tiles. Stop by Acorn Game Parlor for a cozy game-shop browse at Canton First Monday.</p>",
       "address": "Arbor 1: 68",
       "booth": "68",
       "pavilion": "Arbor 1",
-      "lat": 32.5609714,
-      "lng": -95.86139895,
+      "lat": 32.56093612,
+      "lng": -95.86143448,
       "categoryId": "46c82a58-7236-4d60-af2c-bb329173029b",
       "categoryName": "Toys / Games / Puzzles",
       "inactive": {
@@ -14155,7 +14156,23 @@
       },
       "zoom": 20.02,
       "pitch": 60,
-      "bearing": 0
+      "bearing": 0,
+      "photos": [
+        "/uploads/acorn-1.jpg",
+        "/uploads/acorn-2.jpg",
+        "/uploads/acorn-3.jpg",
+        "/uploads/acorn-4.jpg",
+        "/uploads/acorn-5.jpg",
+        "/uploads/acorn-6.jpg"
+      ],
+      "images": [
+        "/uploads/acorn-1.jpg",
+        "/uploads/acorn-2.jpg",
+        "/uploads/acorn-3.jpg",
+        "/uploads/acorn-4.jpg",
+        "/uploads/acorn-5.jpg",
+        "/uploads/acorn-6.jpg"
+      ]
     }
   ]
 }

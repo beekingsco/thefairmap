@@ -174,12 +174,12 @@ for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Ent
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.ok(
-  mapHtml.includes('/map.js?v=20260904-acorn-game-parlor'),
-  'map.html must cache-bust map.js after adding Acorn Game Parlor'
+  mapHtml.includes('/map.js?v=20260904-acorn-vine-oak-photos'),
+  'map.html must cache-bust map.js after wiring Acorn photos'
 );
 assert.ok(
-  !mapHtml.includes('/map.js?v=20260903-rae-sterling-pin'),
-  'Acorn cache-bust must replace the Rae Sterling pin-nudge tag, not keep both'
+  !mapHtml.includes('/map.js?v=20260904-acorn-blurb'),
+  'photo cache-bust must replace the blurb-only tag, not keep both'
 );
 assert.match(mapJs, /loc\.hidden === true/, 'shopper map must skip hidden leftover icons');
 
@@ -228,8 +228,8 @@ assert.ok(teak, 'Teak 22 listing must stay in the export (do not delete the vend
 assert.strictEqual(teak.hidden, true, 'Teak 22 leftover icon on Arbor 3 361-364 must be hidden');
 assert.strictEqual(
   data.locations.filter((loc) => loc.hidden !== true).length,
-  711,
-  '712 listings with Teak 22 hidden leaves 711 visible pins'
+  710,
+  '712 listings with Teak 22 and Vine & Oak hidden leaves 710 visible pins'
 );
 
 const visibleOnRaeSpot = data.locations.filter((loc) => {
@@ -270,16 +270,64 @@ assert.strictEqual(String(acorn.booth), '68');
 assert.strictEqual(String(acorn.pavilion), 'Arbor 1');
 assert.ok(/Arbor\s*1:\s*68/.test(String(acorn.address)), 'Acorn address must use Arbor 1: 68 colon style');
 assert.ok(/Arbor\s*1:\s*68/.test(String(acorn.description)), 'Acorn description must list Arbor 1: 68');
-assert.ok(/mahjong/i.test(String(acorn.description)), 'Acorn description must mention mahjong');
-assert.ok(/vintage board games/i.test(String(acorn.description)), 'Acorn description must mention vintage board games');
-assert.ok(/replacement game pieces/i.test(String(acorn.description)), 'Acorn description must mention replacement game pieces');
-assert.ok(/totes and bags/i.test(String(acorn.description)), 'Acorn description must mention totes and bags');
+assert.ok(String(acorn.description || '').replace(/<[^>]+>/g, ' ').trim().length > 40, 'Acorn description must not be blank');
+assert.doesNotMatch(
+  String(acorn.description),
+  /Mahjong mats, mahjong gifts, mahjong totes and bags, vintage board games, replacement game pieces, mahjong tiles/,
+  'Acorn description must not ship the keyword dump'
+);
+assert.ok(/Building memories one game at a time/.test(String(acorn.description)), 'Acorn blurb must use the shopper tagline');
+assert.ok(/Mahjong mats, gifts, and totes/.test(String(acorn.description)), 'Acorn blurb must mention mahjong mats, gifts, and totes');
+assert.ok(/vintage board games/.test(String(acorn.description)), 'Acorn description must mention vintage board games');
+assert.ok(/replacement pieces/.test(String(acorn.description)), 'Acorn description must mention replacement pieces');
+assert.ok(/mahjong tiles/.test(String(acorn.description)), 'Acorn description must mention mahjong tiles');
+assert.ok(/cozy game-shop browse/.test(String(acorn.description)), 'Acorn blurb must invite a cozy browse');
+assert.ok(/Canton First Monday/.test(String(acorn.description)), 'Acorn blurb must name Canton First Monday');
+const acornPhotos = Array.isArray(acorn.photos) ? acorn.photos : [];
+assert.strictEqual(acornPhotos.length, 6, 'Acorn Game Parlor must have 6 shopper photos');
+assert.deepStrictEqual(acornPhotos, [
+  '/uploads/acorn-1.jpg',
+  '/uploads/acorn-2.jpg',
+  '/uploads/acorn-3.jpg',
+  '/uploads/acorn-4.jpg',
+  '/uploads/acorn-5.jpg',
+  '/uploads/acorn-6.jpg'
+]);
+assert.deepStrictEqual(acorn.images, acornPhotos, 'Acorn images must mirror photos');
+for (const rel of acornPhotos) {
+  const full = path.join(publicDir, rel.replace(/^\//, ''));
+  assert.ok(fs.existsSync(full), `missing shopper photo ${rel}`);
+  const magic = fs.readFileSync(full).subarray(0, 3);
+  assert.deepStrictEqual(Array.from(magic), [0xff, 0xd8, 0xff], `${rel} must be a JPEG`);
+}
 assert.strictEqual(acorn.categoryId, '46c82a58-7236-4d60-af2c-bb329173029b');
 assert.strictEqual(acorn.categoryName, 'Toys / Games / Puzzles');
-assert.ok(Math.abs(Number(acorn.lat) - 32.5609714) < 0.00002, `Acorn lat ${acorn.lat} must sit on booth 68`);
-assert.ok(Math.abs(Number(acorn.lng) - -95.86139895) < 0.00002, `Acorn lng ${acorn.lng} must sit on booth 68`);
+assert.strictEqual(acorn.lat, 32.56093612, 'Acorn lat must reuse Vine & Oak’s previous coordinates');
+assert.strictEqual(acorn.lng, -95.86143448, 'Acorn lng must reuse Vine & Oak’s previous coordinates');
+assert.notStrictEqual(acorn.lat, 32.5609714, 'Acorn must leave the original halfway booth-68 coords');
+assert.notStrictEqual(acorn.lng, -95.86139895, 'Acorn must leave the original halfway booth-68 coords');
 assert.notStrictEqual(acorn.hidden, true, 'Acorn Game Parlor pin must stay visible');
 assert.notStrictEqual(acorn.id, BEE_KING_ID, 'Acorn must be a new listing, not a rewrite of Bee King’s Honey');
+
+const VINE_OAK_ID = '1c577da0-5720-43b6-92ec-db389069e470';
+const vineOak = data.locations.find((loc) => loc.id === VINE_OAK_ID);
+assert.ok(vineOak, 'Vine & Oak listing must stay in the export (do not delete the vendor record)');
+assert.strictEqual(vineOak.name, 'Vine & Oak');
+assert.strictEqual(vineOak.address, 'AB1-69B-70');
+assert.strictEqual(vineOak.categoryName, 'Woodcraft');
+assert.strictEqual(vineOak.hidden, true, 'Vine & Oak leftover icon on AB1-69B-70 must be hidden');
+assert.strictEqual(vineOak.lat, 32.56093612);
+assert.strictEqual(vineOak.lng, -95.86143448);
+
+const visibleOnVineOakSpot = data.locations.filter((loc) => {
+  if (loc.hidden === true) return false;
+  return Math.abs(Number(loc.lat) - 32.56093612) < 0.000015 && Math.abs(Number(loc.lng) - -95.86143448) < 0.000015;
+});
+assert.deepStrictEqual(
+  visibleOnVineOakSpot.map((loc) => loc.id),
+  [ACORN_ID],
+  'only Acorn Game Parlor may keep a visible icon on Vine & Oak’s previous spot'
+);
 
 const beeKing = data.locations.find((loc) => loc.id === BEE_KING_ID);
 assert.ok(beeKing, 'Bee King’s Honey listing must remain');
@@ -308,6 +356,10 @@ console.log('test-shopper-output: ok', {
   rae: rae.id,
   teakHidden: teak.hidden,
   acorn: acorn.id,
+  acornLat: acorn.lat,
+  acornLng: acorn.lng,
+  acornPhotos: (acorn.photos || []).length,
+  vineOakHidden: vineOak.hidden,
   beeKing: beeKing.id,
   gatesIcon: gatesIcon.file
 });
