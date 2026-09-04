@@ -1965,7 +1965,8 @@
         "https://vfm.buzzonmarketing.com/vendor-photos/f77f5e66-3316-4a30-b5dc-5869fd38ec4d/1783007315617.jpg",
         "https://vfm.buzzonmarketing.com/vendor-photos/f77f5e66-3316-4a30-b5dc-5869fd38ec4d/1783007353977.jpg"
       ],
-      "catalogStoreType": "product"
+      "catalogStoreType": "product",
+      "hidden": true
     },
     {
       "id": "097d50dc-eb32-4573-9580-c74fd40f5672",
@@ -14146,8 +14147,8 @@
       "address": "Arbor 1: 68",
       "booth": "68",
       "pavilion": "Arbor 1",
-      "lat": 32.5609714,
-      "lng": -95.86139895,
+      "lat": 32.56093612,
+      "lng": -95.86143448,
       "categoryId": "46c82a58-7236-4d60-af2c-bb329173029b",
       "categoryName": "Toys / Games / Puzzles",
       "inactive": {

@@ -1,5 +1,5 @@
 {
-  "photoHook": "Rowe Farms photos live at public/uploads/rowe-farms-1.jpg … rowe-farms-11.jpg (shopper map extractLocationPhotos only accepts https:// or /uploads/ URLs). Portal vendorUuid is 57925765-0d4e-4f77-a047-783a80180889. Do not reuse JT Jewelry id abcefc40-da73-4346-8105-47d847c24a68. Rae Sterling (64592d71-7a78-43cd-8ea8-0d5ce152c47e) is Arbor 3 361-364 at 32.5613006,-95.8607431 (refined from the Teak 22 pin 32.56124371,-95.86078502 onto the marked 362/363 spot). Teak 22 (98933c18-defa-4333-be8e-6de416070ea4) stays in the export but hidden. Neighboring 368 / Pish Posh / Silver Spoons pins stay visible. Acorn Game Parlor (4e0c4de9-e7e9-4ce5-929f-842f73538dc6) is a NEW Arbor 1 booth 68 pin at 32.5609714,-95.86139895 (halfway Bee King 65-68 → Vine & Oak 69B-70, verified on painted booth-68 overlay). Do NOT rewrite Bee King’s Honey (758aad31-099f-4ece-bee7-4b22eb202334) which still claims Arbor 1, 65-68. No leftover empty/POI pin occupied only booth 68. After editing run: node scripts/apply-published-listings.js",
+  "photoHook": "Rowe Farms photos live at public/uploads/rowe-farms-1.jpg … rowe-farms-11.jpg (shopper map extractLocationPhotos only accepts https:// or /uploads/ URLs). Portal vendorUuid is 57925765-0d4e-4f77-a047-783a80180889. Do not reuse JT Jewelry id abcefc40-da73-4346-8105-47d847c24a68. Rae Sterling (64592d71-7a78-43cd-8ea8-0d5ce152c47e) is Arbor 3 361-364 at 32.5613006,-95.8607431 (refined from the Teak 22 pin 32.56124371,-95.86078502 onto the marked 362/363 spot). Teak 22 (98933c18-defa-4333-be8e-6de416070ea4) stays in the export but hidden. Neighboring 368 / Pish Posh / Silver Spoons pins stay visible. Acorn Game Parlor (4e0c4de9-e7e9-4ce5-929f-842f73538dc6) stays named Arbor 1: 68 / booth 68, but the map pin now sits on Vine & Oak’s previous coords 32.56093612,-95.86143448. Vine & Oak (1c577da0-5720-43b6-92ec-db389069e470) stays in the export but hidden. Do NOT rewrite Bee King’s Honey (758aad31-099f-4ece-bee7-4b22eb202334) which still claims Arbor 1, 65-68. After editing run: node scripts/apply-published-listings.js",
   "locations": [
     {
       "id": "4e0c4de9-e7e9-4ce5-929f-842f73538dc6",
@@ -8,8 +8,8 @@
       "address": "Arbor 1: 68",
       "booth": "68",
       "pavilion": "Arbor 1",
-      "lat": 32.5609714,
-      "lng": -95.86139895,
+      "lat": 32.56093612,
+      "lng": -95.86143448,
       "categoryId": "46c82a58-7236-4d60-af2c-bb329173029b",
       "categoryName": "Toys / Games / Puzzles",
       "inactive": {
@@ -31,6 +31,10 @@
     },
     {
       "id": "98933c18-defa-4333-be8e-6de416070ea4",
+      "hidden": true
+    },
+    {
+      "id": "1c577da0-5720-43b6-92ec-db389069e470",
       "hidden": true
     },
     {
