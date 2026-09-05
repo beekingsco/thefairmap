@@ -64,6 +64,9 @@ const required = [
   'map.html',
   'map.js',
   'style.css',
+  'app-download.html',
+  'vfm-home.html',
+  'marketing.html',
   path.join('data', 'mapme-full-export.json')
 ];
 const missing = required.filter((rel) => !fs.existsSync(path.join(publicDir, rel)));
