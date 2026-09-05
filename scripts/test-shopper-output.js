@@ -176,12 +176,12 @@ for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Ent
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.ok(
-  mapHtml.includes('/map.js?v=20260904-acorn-vine-oak-photos'),
-  'map.html must cache-bust map.js after wiring Acorn photos'
+  mapHtml.includes('/map.js?v=20260905-lids-tees-hidden'),
+  'map.html must cache-bust map.js after hiding Lids & Tees'
 );
 assert.ok(
-  !mapHtml.includes('/map.js?v=20260904-acorn-blurb'),
-  'photo cache-bust must replace the blurb-only tag, not keep both'
+  !mapHtml.includes('/map.js?v=20260904-acorn-vine-oak-photos'),
+  'Lids & Tees cache-bust must replace the Acorn photos tag, not keep both'
 );
 assert.match(mapJs, /loc\.hidden === true/, 'shopper map must skip hidden leftover icons');
 
@@ -230,8 +230,8 @@ assert.ok(teak, 'Teak 22 listing must stay in the export (do not delete the vend
 assert.strictEqual(teak.hidden, true, 'Teak 22 leftover icon on Arbor 3 361-364 must be hidden');
 assert.strictEqual(
   data.locations.filter((loc) => loc.hidden !== true).length,
-  710,
-  '712 listings with Teak 22 and Vine & Oak hidden leaves 710 visible pins'
+  709,
+  '712 listings with Teak 22, Vine & Oak, and Lids & Tees hidden leaves 709 visible pins'
 );
 
 const visibleOnRaeSpot = data.locations.filter((loc) => {
@@ -321,6 +321,17 @@ assert.strictEqual(vineOak.hidden, true, 'Vine & Oak leftover icon on AB1-69B-70
 assert.strictEqual(vineOak.lat, 32.56093612);
 assert.strictEqual(vineOak.lng, -95.86143448);
 
+const LIDS_TEES_ID = 'a912a873-3204-4685-8169-90d5b5112bc7';
+const lidsTees = data.locations.find((loc) => loc.id === LIDS_TEES_ID);
+assert.ok(lidsTees, 'Lids & Tees listing must stay in the export (do not delete the vendor record)');
+assert.strictEqual(lidsTees.name, 'Lids & Tees');
+assert.strictEqual(lidsTees.address, 'PV 4000 - Booth 4313-14');
+assert.strictEqual(lidsTees.hidden, true, 'Lids & Tees leftover icon on PV 4000 booth 4313-14 must be hidden');
+assert.ok(
+  !data.locations.some((loc) => loc.hidden !== true && loc.name === 'Lids & Tees'),
+  'Lids & Tees must not appear in the shopper pin set'
+);
+
 const visibleOnVineOakSpot = data.locations.filter((loc) => {
   if (loc.hidden === true) return false;
   return Math.abs(Number(loc.lat) - 32.56093612) < 0.000015 && Math.abs(Number(loc.lng) - -95.86143448) < 0.000015;
@@ -362,6 +373,7 @@ console.log('test-shopper-output: ok', {
   acornLng: acorn.lng,
   acornPhotos: (acorn.photos || []).length,
   vineOakHidden: vineOak.hidden,
+  lidsTeesHidden: lidsTees.hidden,
   beeKing: beeKing.id,
   gatesIcon: gatesIcon.file
 });
