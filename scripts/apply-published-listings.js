@@ -10,6 +10,7 @@ const rae = (data.locations || []).find((loc) => loc.id === '64592d71-7a78-43cd-
 const teak = (data.locations || []).find((loc) => loc.id === '98933c18-defa-4333-be8e-6de416070ea4');
 const acorn = (data.locations || []).find((loc) => loc.id === '4e0c4de9-e7e9-4ce5-929f-842f73538dc6' || /acorn\s*game\s*parlor/i.test(loc.name || ''));
 const vineOak = (data.locations || []).find((loc) => loc.id === '1c577da0-5720-43b6-92ec-db389069e470');
+const lidsTees = (data.locations || []).find((loc) => loc.id === 'a912a873-3204-4685-8169-90d5b5112bc7');
 const beeKing = (data.locations || []).find((loc) => loc.id === '758aad31-099f-4ece-bee7-4b22eb202334');
 
 console.log(`Applied ${result.count} published listing(s) to:`);
@@ -40,6 +41,9 @@ if (acorn) {
 }
 if (vineOak) {
   console.log(`Vine & Oak id=${vineOak.id} hidden=${Boolean(vineOak.hidden)} (leftover AB1-69B-70 icon)`);
+}
+if (lidsTees) {
+  console.log(`Lids & Tees id=${lidsTees.id} hidden=${Boolean(lidsTees.hidden)} (leftover PV 4000 booth 4313-14 icon)`);
 }
 if (beeKing) {
   console.log(`Bee King’s Honey id=${beeKing.id} address=${beeKing.address} lat=${beeKing.lat} lng=${beeKing.lng} hidden=${Boolean(beeKing.hidden)} (left unchanged)`);

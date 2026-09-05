@@ -13082,7 +13082,8 @@
       "pitch": 60,
       "bearing": 0,
       "photos": [],
-      "catalogStoreType": "product"
+      "catalogStoreType": "product",
+      "hidden": true
     },
     {
       "id": "17f58af2-8ff9-40b9-8d96-4c06a79709ed",
