@@ -3,6 +3,7 @@
 const express = require('express');
 const path = require('path');
 const { db, stmts } = require('../db');
+const { isVisitFirstMondayHost, VFM_VENDOR_PORTAL_URL } = require('../lib/vfm-host');
 
 const router = express.Router();
 const ROOT = path.join(__dirname, '..');
@@ -101,13 +102,27 @@ router.get('/map', (req, res) => {
   res.sendFile(path.join(ROOT, 'public', 'map.html'));
 });
 
-// Tenant root shows the map
+router.get('/vendor-listing-info', (req, res) => {
+  res.redirect(302, VFM_VENDOR_PORTAL_URL);
+});
+
+router.get('/app-download', (req, res) => {
+  res.sendFile(path.join(ROOT, 'public', 'app-download.html'));
+});
+
+router.get('/vfm-home', (req, res) => {
+  res.sendFile(path.join(ROOT, 'public', 'vfm-home.html'));
+});
+
+// Tenant root shows the map. visitfirstmonday.com is VFM guest content.
 router.get('/', (req, res) => {
   if (req.tenant) {
     return res.sendFile(path.join(ROOT, 'public', 'map.html'));
   }
-  // No tenant — marketing page
-  res.sendFile(path.join(ROOT, 'public', 'index.html'));
+  if (isVisitFirstMondayHost(req.hostname || req.headers.host)) {
+    return res.sendFile(path.join(ROOT, 'public', 'vfm-home.html'));
+  }
+  res.sendFile(path.join(ROOT, 'public', 'marketing.html'));
 });
 
 module.exports = router;

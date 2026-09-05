@@ -3,7 +3,20 @@
   "installCommand": "echo skip-install",
   "buildCommand": "node scripts/prepare-vercel-shopper.js",
   "outputDirectory": "public",
+  "redirects": [
+    { "source": "/vendor-listing-info", "destination": "https://vfm.buzzonmarketing.com/vendors", "permanent": false },
+    { "source": "/vendor-listing-info/", "destination": "https://vfm.buzzonmarketing.com/vendors", "permanent": false }
+  ],
   "rewrites": [
+    { "source": "/", "has": [{ "type": "host", "value": "www.visitfirstmonday.com" }], "destination": "/vfm-home.html" },
+    { "source": "/", "has": [{ "type": "host", "value": "visitfirstmonday.com" }], "destination": "/vfm-home.html" },
+    { "source": "/index.html", "has": [{ "type": "host", "value": "www.visitfirstmonday.com" }], "destination": "/vfm-home.html" },
+    { "source": "/index.html", "has": [{ "type": "host", "value": "visitfirstmonday.com" }], "destination": "/vfm-home.html" },
+    { "source": "/", "destination": "/marketing.html" },
+    { "source": "/index.html", "destination": "/marketing.html" },
+    { "source": "/app-download", "destination": "/app-download.html" },
+    { "source": "/app-download/", "destination": "/app-download.html" },
+    { "source": "/vfm-home", "destination": "/vfm-home.html" },
     { "source": "/first-monday-finder", "destination": "/first-monday-finder.html" },
     { "source": "/api/locations", "destination": "/data/mapme-full-export.json" },
     { "source": "/api/config.js", "destination": "/api/config.js" },

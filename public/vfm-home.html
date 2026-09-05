@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>First Monday Trade Days in Canton, Texas | Visit First Monday</title>
+  <meta name="description" content="Maps, market dates, vendor highlights, parking tips, and the official First Monday Finder app for Canton, Texas.">
+  <link rel="canonical" href="https://www.visitfirstmonday.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="First Monday Trade Days in Canton, Texas | Visit First Monday">
+  <meta property="og:description" content="Find the best of First Monday before you even arrive. Search vendors, plan parking, and download the map app.">
+  <meta property="og:url" content="https://www.visitfirstmonday.com/">
+  <meta property="og:site_name" content="Visit First Monday">
+  <meta property="og:image" content="/data/icons/first-monday-finder-logo.png">
+  <link rel="icon" type="image/png" href="/data/icons/first-monday-finder-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/vfm-guest.css">
+</head>
+<body data-vfm-page="home">
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/" aria-label="Visit First Monday home">
+        <img src="/data/icons/first-monday-finder-logo.png" alt="Visit First Monday">
+        <span>Visit First Monday</span>
+      </a>
+      <nav class="nav" aria-label="Guest">
+        <a href="/" aria-current="page">Home</a>
+        <a href="/first-monday-finder">Map</a>
+        <a href="/app-download">Download the App</a>
+        <a href="https://vfm.buzzonmarketing.com/vendors" rel="noopener">Vendor Portal</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <p class="kicker">Official guest guide</p>
+      <h1>Find the best of First Monday before you even arrive.</h1>
+      <p class="lede">VisitFirstMonday.com is your shopper and vendor guide to First Monday Trade Days in Canton, Texas — the largest and longest-running flea market in the USA. Search booths by keyword, grab the official app, and claim a map listing if you already have a booth.</p>
+      <p class="market-chip" id="next-market">Next market dates load here</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="/first-monday-finder">Open the Live Map</a>
+        <a class="btn btn-secondary" href="/app-download">Download First Monday Finder</a>
+      </div>
+    </section>
+
+    <section class="wrap">
+      <article class="panel">
+        <h2>What Makes First Monday So Special?</h2>
+        <p>Canton First Monday Trade Days is more than a market — it is an experience. Treasure hunters, makers, and deal-seekers explore thousands of vendors offering antiques, handmade goods, boutique fashion, collectibles, and food. Every visit is a chance to uncover hidden gems and be part of a tradition that has drawn guests for more than 150 years.</p>
+        <div class="grid" style="margin-top:18px;">
+          <div class="card"><strong>450+ acres</strong><span>Vintage treasures, handmade goods, and new fashion across the grounds.</span></div>
+          <div class="card"><strong>Up to 100,000 guests</strong><span>Shoppers come each market to hunt, eat, and soak up the show.</span></div>
+          <div class="card"><strong>5,000+ vendor spaces</strong><span>Search by keyword so you spend less time wandering aisle to aisle.</span></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <h2>First Monday Finder</h2>
+        <p>Click through to search by keyword and navigate the grounds. Find favorite vendors, food, restrooms, ATMs, and new treasures.</p>
+        <ul>
+          <li>Interactive vendor map with booth photos and keywords</li>
+          <li>Shopping by category: vintage, handmade, antiques, food, apparel, and more</li>
+          <li>Parking tips and a live backup map if the app is not installed yet</li>
+        </ul>
+        <div class="actions" style="margin-top:16px;">
+          <a class="btn btn-primary" href="/first-monday-finder">Search the Grounds</a>
+          <a class="btn btn-secondary" href="https://vfm.buzzonmarketing.com/vendors" rel="noopener">Vendor Map Listing Signup</a>
+        </div>
+        <p class="fact">First Monday fact: the market is Thursday through Sunday before the first Monday — never open on Monday. Visit First Monday highlights the Lewis side, including $5 parking and closer shopper access. <a href="https://www.google.com/maps/search/?api=1&amp;query=801+N+Trades+Day+Blvd+Canton+TX+75103" rel="noopener">Open the Lewis First Monday Google Maps location</a>.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div>Tag <strong>@VisitFirstMonday</strong> on Facebook, Instagram, and TikTok.</div>
+      <div>
+        <a href="https://www.facebook.com/VisitFirstMonday" rel="noopener">Facebook</a> ·
+        <a href="https://www.instagram.com/VisitFirstMonday" rel="noopener">Instagram</a> ·
+        <a href="https://www.tiktok.com/@VisitFirstMonday" rel="noopener">TikTok</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      function firstMonday(year, monthIndex) {
+        const first = new Date(year, monthIndex, 1);
+        const offset = (1 - first.getDay() + 7) % 7;
+        return new Date(year, monthIndex, 1 + offset);
+      }
+      function formatRange(thursday, sunday) {
+        const opts = { month: 'short', day: 'numeric' };
+        return thursday.toLocaleDateString('en-US', opts) + ' – ' + sunday.toLocaleDateString('en-US', opts);
+      }
+      const now = new Date();
+      let label = '';
+      for (let i = 0; i < 3; i += 1) {
+        const cursor = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const monday = firstMonday(cursor.getFullYear(), cursor.getMonth());
+        const thursday = new Date(monday);
+        thursday.setDate(monday.getDate() - 4);
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() - 1);
+        if (now <= sunday) {
+          const inMarket = now >= thursday;
+          label = (inMarket ? 'This market: ' : 'Next market: ') + formatRange(thursday, sunday);
+          break;
+        }
+      }
+      const el = document.getElementById('next-market');
+      if (el) el.textContent = label || 'Market days are Thursday through Sunday before the first Monday.';
+    })();
+  </script>
+</body>
+</html>

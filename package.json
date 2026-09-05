@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node scripts/test-map-export.js && node scripts/test-shopper-output.js",
+    "test": "node scripts/test-map-export.js && node scripts/test-shopper-output.js && node scripts/test-vfm-guest-pages.js",
     "ensure-map-export": "node scripts/ensure-map-export.js",
     "prepare-vercel-shopper": "node scripts/prepare-vercel-shopper.js",
     "apply-published-listings": "node scripts/apply-published-listings.js",

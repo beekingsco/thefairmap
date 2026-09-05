@@ -8,6 +8,7 @@ const fs      = require('fs');
 
 // Initialize database (runs schema + seed on first load)
 const { db, stmts } = require('./db');
+const { isVisitFirstMondayHost } = require('./lib/vfm-host');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -232,12 +233,15 @@ app.use(express.static(ROOT, {
   extensions: ['html']
 }));
 
-// ── Fallback: marketing landing page for bare domain ────────────────────────
+// ── Fallback: host-aware landing page ───────────────────────────────────────
 app.get('/', (req, res) => {
   if (req.tenant) {
     return res.sendFile(path.join(ROOT, 'public', 'map.html'));
   }
-  res.sendFile(path.join(ROOT, 'public', 'index.html'));
+  if (isVisitFirstMondayHost(req.hostname || req.headers.host)) {
+    return res.sendFile(path.join(ROOT, 'public', 'vfm-home.html'));
+  }
+  res.sendFile(path.join(ROOT, 'public', 'marketing.html'));
 });
 
 // ── 404 ─────────────────────────────────────────────────────────────────────
