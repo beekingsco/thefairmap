@@ -32,6 +32,7 @@ assert.strictEqual(VFM_APP_DOWNLOAD_URL, 'https://visitfirstmonday.com/app-downl
 assert.ok(VFM_APP_STORE_URL.includes(VFM_APP_STORE_ID));
 assert.ok(VFM_PLAY_STORE_URL.includes(VFM_PLAY_STORE_ID));
 
+assert.ok(!fs.existsSync(path.join(root, 'natively.json')), 'Natively app config is not in this repo');
 assert.ok(!fs.existsSync(path.join(publicDir, 'index.html')), 'index.html must not exist so Vercel cannot serve Fair Map marketing as /');
 assert.ok(fs.existsSync(path.join(publicDir, 'marketing.html')), 'Fair Map marketing must live at marketing.html');
 assert.ok(fs.existsSync(path.join(publicDir, 'vfm-home.html')));
@@ -108,12 +109,13 @@ assert.strictEqual(resolveHome('thefairmap.vercel.app'), '/marketing.html');
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.match(mapHtml, /LINKS \+ DEALS/);
+assert.match(mapHtml, /Natively builder/);
 assert.match(mapHtml, /href="https:\/\/vfm\.buzzonmarketing\.com\/vendors"/);
 assert.match(mapHtml, /Vendor Map Listing Signup/);
 assert.match(mapHtml, /href="https:\/\/visitfirstmonday\.com\/app-download"/);
 assert.match(mapHtml, /Download the App/);
 assert.doesNotMatch(mapHtml, /visitfirstmonday\.com\/vendor-listing-info/);
-assert.doesNotMatch(mapHtml, /thefairmap\.com\/signup/);
+assert.doesNotMatch(mapHtml, /href="[^"]*thefairmap\.com\/signup/);
 
 assert.ok(fs.existsSync(path.join(publicDir, 'first-monday-finder.html')));
 assert.ok(fs.existsSync(path.join(publicDir, 'embed.html')));
