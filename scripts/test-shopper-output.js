@@ -21,6 +21,8 @@ function hasRewrite(source, dest) {
 assert.ok(hasRewrite('/first-monday-finder', '/first-monday-finder.html'), 'missing /first-monday-finder rewrite');
 assert.ok(hasRewrite('/api/locations', '/data/mapme-full-export.json'), 'missing /api/locations rewrite');
 assert.ok(hasRewrite('/embed', '/embed.html'), 'missing /embed rewrite');
+assert.ok(hasRewrite('/location/:path*', '/map.html'), 'missing /location/:path* booth-share rewrite');
+assert.ok(hasRewrite('/location/:path*/', '/map.html'), 'missing trailing-slash /location rewrite');
 
 const requiredFiles = [
   'first-monday-finder.html',

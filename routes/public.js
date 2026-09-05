@@ -102,6 +102,13 @@ router.get('/map', (req, res) => {
   res.sendFile(path.join(ROOT, 'public', 'map.html'));
 });
 
+// Vendor booth share links: /location/<id> (MapMe-compat). Serve the shopper
+// map so getDeepLinkedLocationId() can open the pin. Must not 404 on Vercel
+// or Railway after the VFM homepage no longer falls through to index.html.
+router.get(['/location', '/location/*'], (req, res) => {
+  res.sendFile(path.join(ROOT, 'public', 'map.html'));
+});
+
 router.get('/vendor-listing-info', (req, res) => {
   res.redirect(302, VFM_VENDOR_PORTAL_URL);
 });

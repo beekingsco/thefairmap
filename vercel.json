@@ -27,6 +27,8 @@
     { "source": "/embed", "destination": "/embed.html" },
     { "source": "/signup", "destination": "/signup.html" },
     { "source": "/map", "destination": "/map.html" },
+    { "source": "/location/:path*", "destination": "/map.html" },
+    { "source": "/location/:path*/", "destination": "/map.html" },
     { "source": "/platform/login", "destination": "/vendor-login.html" },
     { "source": "/vendor-login", "destination": "/vendor-login.html" },
     { "source": "/vendors/login", "destination": "/vendor-login.html" },
