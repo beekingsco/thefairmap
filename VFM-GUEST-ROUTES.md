@@ -9,6 +9,7 @@
 | `visitfirstmonday.com/app-download` | VFM download landing (`public/app-download.html`) |
 | `visitfirstmonday.com/vendor-listing-info` | 302 → `https://vfm.buzzonmarketing.com/vendors` |
 | `/first-monday-finder`, `/map.html`, `/embed`, `/api/locations` | Shopper map (do not break) |
+| `/location/<id>` (any host on this project) | Shopper map (`public/map.html`). Vendor share links from `shareLocation()` use `${origin}/location/${locId}`. |
 
 Store links on `/app-download`:
 

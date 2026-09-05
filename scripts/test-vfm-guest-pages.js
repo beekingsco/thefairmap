@@ -81,6 +81,8 @@ assert.ok(hasRewrite('/vfm-home', '/vfm-home.html'));
 assert.ok(hasRewrite('/first-monday-finder', '/first-monday-finder.html'), 'must keep shopper finder rewrite');
 assert.ok(hasRewrite('/api/locations', '/data/mapme-full-export.json'), 'must keep shopper locations rewrite');
 assert.ok(hasRewrite('/embed', '/embed.html'), 'must keep embed rewrite');
+assert.ok(hasRewrite('/location/:path*', '/map.html'), 'must rewrite booth share links to the shopper map');
+assert.ok(hasRewrite('/location/:path*/', '/map.html'), 'must rewrite trailing-slash booth share links');
 assert.ok(hasRedirect('/vendor-listing-info', VFM_VENDOR_PORTAL_URL));
 
 const firstAppDownload = (vercel.rewrites || []).findIndex((rule) => rule.source === '/app-download');
@@ -121,11 +123,86 @@ assert.ok(fs.existsSync(path.join(publicDir, 'first-monday-finder.html')));
 assert.ok(fs.existsSync(path.join(publicDir, 'embed.html')));
 assert.ok(fs.existsSync(path.join(publicDir, 'map.js')));
 
-console.log('test-vfm-guest-pages: ok', {
-  vendorPortal: VFM_VENDOR_PORTAL_URL,
-  appDownload: VFM_APP_DOWNLOAD_URL,
-  appStore: VFM_APP_STORE_ID,
-  playStore: VFM_PLAY_STORE_ID,
-  vfmHome: resolveHome('www.visitfirstmonday.com'),
-  fairMapHome: resolveHome('thefairmap.com')
+const mapJs = fs.readFileSync(path.join(publicDir, 'map.js'), 'utf8');
+assert.match(
+  mapJs,
+  /const shareUrl = `\$\{window\.location\.origin\}\/location\/\$\{encodeURIComponent\(locId\)\}`/,
+  'shareLocation() must keep the /location/<id> permalink'
+);
+assert.match(
+  mapJs,
+  /pathname\.match\(\/\^\\\/location\\\/\(\[\^\/\?#\]\+\)\/\)/,
+  'getDeepLinkedLocationId() must read /location/<id> from the pathname'
+);
+assert.match(mapHtml, /src="\/map\.js/, 'map.html must load map.js so the rewrite can open the booth');
+
+const CHRIS_SHARE_ID = 'b47d47ea-99be-4774-9534-fc9dc016c39b';
+const exportData = JSON.parse(fs.readFileSync(path.join(publicDir, 'data', 'mapme-full-export.json'), 'utf8'));
+const chris = exportData.locations.find((loc) => loc.id === CHRIS_SHARE_ID);
+assert.ok(chris, 'Chris vendor share UUID must remain in the shopper export');
+assert.match(String(chris.name), /Avon/i);
+
+const locationRules = (vercel.rewrites || []).filter((rule) => String(rule.source || '').startsWith('/location/'));
+assert.ok(locationRules.length >= 2, 'need /location/:path* and trailing-slash rewrites');
+assert.ok(
+  locationRules.every((rule) => rule.destination === '/map.html' && !rule.has),
+  'location share rewrites must serve map.html on every host, including map.thefairmap.com'
+);
+assert.ok(
+  !(vercel.rewrites || []).some((rule) => rule.source === '/' && rule.destination === '/map.html'),
+  'must not put the shopper map on visitfirstmonday.com /'
+);
+
+const http = require('http');
+const { URL } = require('url');
+
+function destinationForSharePath(pathname) {
+  if (/^\/location\/.+/.test(pathname)) return '/map.html';
+  return null;
+}
+
+async function fetchLocalShare(pathname) {
+  const server = http.createServer((req, res) => {
+    const dest = destinationForSharePath(new URL(req.url, 'http://127.0.0.1').pathname);
+    if (!dest) {
+      res.writeHead(404);
+      res.end('NOT_FOUND');
+      return;
+    }
+    const body = fs.readFileSync(path.join(publicDir, dest.slice(1)));
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(body);
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}${pathname}`);
+    const text = await res.text();
+    return { status: res.status, text };
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+(async () => {
+  const served = await fetchLocalShare(`/location/${CHRIS_SHARE_ID}`);
+  assert.strictEqual(served.status, 200, 'rewritten /location/<uuid> must be 200');
+  assert.match(served.text, /First Monday Finder — TheFairMap/);
+  assert.match(served.text, /src="\/map\.js/);
+  const slash = await fetchLocalShare(`/location/${CHRIS_SHARE_ID}/`);
+  assert.strictEqual(slash.status, 200, 'trailing-slash share URL must also be 200');
+
+  console.log('test-vfm-guest-pages: ok', {
+    vendorPortal: VFM_VENDOR_PORTAL_URL,
+    appDownload: VFM_APP_DOWNLOAD_URL,
+    appStore: VFM_APP_STORE_ID,
+    playStore: VFM_PLAY_STORE_ID,
+    vfmHome: resolveHome('www.visitfirstmonday.com'),
+    fairMapHome: resolveHome('thefairmap.com'),
+    chrisShareId: CHRIS_SHARE_ID,
+    chrisShareName: chris.name
+  });
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
