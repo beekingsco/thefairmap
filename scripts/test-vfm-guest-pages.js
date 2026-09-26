@@ -36,20 +36,42 @@ assert.ok(!fs.existsSync(path.join(root, 'natively.json')), 'Natively app config
 assert.ok(!fs.existsSync(path.join(publicDir, 'index.html')), 'index.html must not exist so Vercel cannot serve Fair Map marketing as /');
 assert.ok(fs.existsSync(path.join(publicDir, 'marketing.html')), 'Fair Map marketing must live at marketing.html');
 assert.ok(fs.existsSync(path.join(publicDir, 'vfm-home.html')));
+assert.ok(fs.existsSync(path.join(publicDir, 'vfm-home-simple.html')));
+assert.ok(fs.existsSync(path.join(publicDir, 'vfm-market-dates.js')));
 assert.ok(fs.existsSync(path.join(publicDir, 'app-download.html')));
 assert.ok(fs.existsSync(path.join(publicDir, 'vfm-guest.css')));
+assert.ok(fs.existsSync(path.join(publicDir, 'blog-native.css')));
+assert.ok(fs.existsSync(path.join(publicDir, 'marketing-pages.css')));
 
 const marketing = fs.readFileSync(path.join(publicDir, 'marketing.html'), 'utf8');
 assert.match(marketing, FAIR_MAP_SALES, 'marketing.html remains The Fair Map sales page');
 
 const home = fs.readFileSync(path.join(publicDir, 'vfm-home.html'), 'utf8');
-assert.match(home, /data-vfm-page="home"/);
 assert.match(home, /Visit First Monday/);
 assert.match(home, /First Monday Trade Days/);
 assert.match(home, /\/first-monday-finder/);
 assert.match(home, /\/app-download/);
-assert.match(home, /vfm\.buzzonmarketing\.com\/vendors/);
+assert.match(home, /youtube-nocookie\.com\/embed\/EVeQ_EC3zdg/);
+assert.match(home, /id="countdown-title"/);
+assert.match(home, /Next Market: October 1-4, 2026/);
+assert.match(home, /src="\/vfm-market-dates\.js"/);
+assert.match(home, /rel="canonical" href="https:\/\/www\.visitfirstmonday\.com\/"/);
+assert.match(home, /application\/ld\+json/);
+assert.match(home, /--green-950:\s*#0d3028/);
 assert.doesNotMatch(home, FAIR_MAP_SALES);
+assert.doesNotMatch(home, /vfm-home-simple/);
+
+const simple = fs.readFileSync(path.join(publicDir, 'vfm-home-simple.html'), 'utf8');
+assert.match(simple, /data-vfm-page="home"/);
+assert.match(simple, /vfm\.buzzonmarketing\.com\/vendors/);
+assert.doesNotMatch(simple, FAIR_MAP_SALES);
+assert.doesNotMatch(home, /data-vfm-page="home"/);
+
+const datesPage = fs.readFileSync(path.join(publicDir, 'dates-first-monday.html'), 'utf8');
+assert.match(datesPage, /rel="canonical" href="https:\/\/www\.visitfirstmonday\.com\/dates-first-monday"/);
+assert.match(datesPage, /id="upcoming-market"/);
+assert.match(datesPage, /October 1-4, 2026/);
+assert.match(datesPage, /src="\/vfm-market-dates\.js"/);
 
 const download = fs.readFileSync(path.join(publicDir, 'app-download.html'), 'utf8');
 assert.match(download, /data-vfm-page="app-download"/);
@@ -78,6 +100,22 @@ assert.ok(hasRewrite('/', '/vfm-home.html', 'visitfirstmonday.com'));
 assert.ok(hasRewrite('/', '/marketing.html'));
 assert.ok(hasRewrite('/app-download', '/app-download.html'));
 assert.ok(hasRewrite('/vfm-home', '/vfm-home.html'));
+assert.ok(!hasRewrite('/vfm-home-simple', '/vfm-home-simple.html'), 'retired stopgap page stays unlinked');
+assert.ok(hasRewrite('/blog', '/blog/index.html'));
+assert.ok(hasRewrite('/blog/', '/blog/index.html'));
+assert.ok(hasRewrite('/dates-first-monday', '/dates-first-monday.html'));
+assert.ok(hasRewrite('/first-monday-canton-parking', '/first-monday-canton-parking.html'));
+assert.ok(hasRewrite('/lewis-first-monday-parking', '/lewis-first-monday-parking.html'));
+assert.ok(hasRewrite('/sell-at-first-monday', '/sell-at-first-monday.html'));
+assert.ok(hasRewrite('/shop-at-first-monday', '/shop-at-first-monday.html'));
+assert.ok(hasRewrite('/stay', '/stay.html'));
+assert.ok(hasRewrite('/the-story-of-first-monday', '/the-story-of-first-monday.html'));
+assert.ok(hasRewrite('/blog/getting-started-with-your-blog', '/blog/getting-started-with-your-blog.html'));
+assert.ok(hasRewrite('/blog/another-example-article', '/blog/another-example-article.html'));
+assert.ok(hasRewrite(
+  '/blog/red-white-and-shop-fourth-of-july-at-first-monday-canton',
+  '/blog/red-white-and-shop-fourth-of-july-at-first-monday-canton.html'
+));
 assert.ok(hasRewrite('/first-monday-finder', '/first-monday-finder.html'), 'must keep shopper finder rewrite');
 assert.ok(hasRewrite('/api/locations', '/data/mapme-full-export.json'), 'must keep shopper locations rewrite');
 assert.ok(hasRewrite('/embed', '/embed.html'), 'must keep embed rewrite');
@@ -108,6 +146,33 @@ assert.strictEqual(resolveHome('www.visitfirstmonday.com'), '/vfm-home.html');
 assert.strictEqual(resolveHome('visitfirstmonday.com'), '/vfm-home.html');
 assert.strictEqual(resolveHome('thefairmap.com'), '/marketing.html');
 assert.strictEqual(resolveHome('thefairmap.vercel.app'), '/marketing.html');
+
+const marketDates = require(path.join(publicDir, 'vfm-market-dates.js'));
+const sep26 = new Date('2026-09-26T17:00:00Z');
+const sepWindow = marketDates.getActiveWindow(sep26);
+assert.strictEqual(marketDates.chicagoParts(sep26).day, 26);
+assert.strictEqual(marketDates.formatRange(sepWindow.open, sepWindow.close), 'October 1-4');
+assert.strictEqual(sepWindow.open.year, 2026);
+assert.strictEqual(sepWindow.open.month, 10);
+assert.strictEqual(sepWindow.open.day, 1);
+assert.strictEqual(sepWindow.close.day, 4);
+assert.strictEqual(marketDates.weekdayIndex(2026, 10, 1), 4, 'Oct 1 2026 is Thursday');
+assert.strictEqual(marketDates.weekdayIndex(2026, 10, 5), 1, 'Oct 5 2026 is the first Monday');
+assert.ok(sep26.getTime() < sepWindow.openMs, 'Sep 26 counts down to Thursday gates');
+const during = marketDates.getActiveWindow(new Date('2026-10-01T13:00:00Z'));
+assert.ok(new Date('2026-10-01T13:00:00Z').getTime() >= during.openMs);
+assert.strictEqual(marketDates.formatRange(during.open, during.close), 'October 1-4');
+const after = marketDates.getActiveWindow(new Date('2026-10-04T21:01:00Z'));
+assert.strictEqual(marketDates.formatRange(after.open, after.close), 'October 29-November 1');
+for (let i = 0; i < 18; i += 1) {
+  const year = 2026 + Math.floor(i / 12);
+  const month = (i % 12) + 1;
+  const window = marketDates.marketWindow(year, month);
+  assert.strictEqual(marketDates.weekdayIndex(window.open.year, window.open.month, window.open.day), 4);
+  assert.strictEqual(marketDates.weekdayIndex(window.close.year, window.close.month, window.close.day), 0);
+  assert.strictEqual(marketDates.weekdayIndex(window.monday.year, window.monday.month, window.monday.day), 1);
+  assert.notStrictEqual(window.open.day, window.monday.day);
+}
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.match(mapHtml, /LINKS \+ DEALS/);
