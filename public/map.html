@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>First Monday Finder — TheFairMap</title>
-  <meta name="description" content="Interactive vendor map for First Monday Trade Days in Canton, TX. Find vendors, food, amenities and more.">
+  <meta name="description" content="Interactive 3D vendor map for First Monday Trade Days in Canton, TX. Find vendors, food, amenities and more.">
   <link rel="icon" type="image/png" sizes="192x192" href="/data/icons/fairmap-icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -257,19 +257,7 @@
           <span class="links-church-cross">&#10013;</span>
         </div>
 
-        <!--
-          In-repo LINKS + DEALS destinations (this web map / webview tab):
-          Vendor Map Listing Signup → https://vfm.buzzonmarketing.com/vendors
-          Download the App → https://visitfirstmonday.com/app-download
-          Never Fair Map product /signup marketing.
-
-          The Visit First Monday store app is a Natively build
-          (App Store 6746057595, Play com.TnCzkYTWJRzX.natively).
-          This repo has no Natively project. If the app has native LINKS
-          buttons that are not a webview of this tab, those URLs live in
-          the Natively builder and will not change with this deploy.
-        -->
-        <a href="https://vfm.buzzonmarketing.com/vendors" target="_blank" rel="noopener" class="links-btn links-btn-vendor">Vendor Map Listing Signup</a>
+        <a href="https://visitfirstmonday.com/vendor-listing-info" target="_blank" rel="noopener" class="links-btn links-btn-vendor">Vendor Map Listing Signup</a>
         <a href="https://visitfirstmonday.com/app-download" target="_blank" rel="noopener" class="links-btn links-btn-qr">Download the App</a>
       </div>
     </div>
@@ -351,7 +339,7 @@
       } catch(e) {}
     })();
   </script>
-  <script src="/map.js?v=20260905-lids-tees-hidden"></script>
+  <script src="/map.js?v=20260527-product-search-fix"></script>
   <script>
     const FIRST_MONDAY_SCRATCH_URL = 'https://vfm.buzzonmarketing.com/contest/scratch-win-canton-cash';
     const FIRST_MONDAY_APP_DOWNLOAD_URL = 'https://visitfirstmonday.com/app-download';
@@ -615,14 +603,8 @@
 
     function getPromoRotationItems() {
       const banners = Array.isArray(vfmPromotions?.bannerSlots) ? vfmPromotions.bannerSlots : [];
+      // VIP email signup removed from rotation (Chris 2026-10-27): vendor banners only
       return [
-        {
-          type: 'vip-signup',
-          id: 'vip-signup',
-          title: 'VIP Alerts for Celebrity Visits + Events!',
-          copy: 'Get the latest First Monday updates, celebrity visits, and special event alerts by email.',
-          submitLabel: 'Sign Me Up!'
-        },
         ...banners.map((item) => ({ ...item, type: 'vendor-banner' }))
       ];
     }
@@ -634,6 +616,7 @@
         promoBannerPauseDepth += 1;
         if (promoBannerTimer) {
           window.clearInterval(promoBannerTimer);
+          window.clearTimeout(promoBannerTimer);
           promoBannerTimer = null;
         }
       };
@@ -767,34 +750,29 @@
       if (!wrap) return;
       const items = getPromoRotationItems();
       const active = items[promoBannerIndex % items.length];
-      if (!active || active.type === 'vip-signup') {
-        wrap.innerHTML = `
-          <div class="promo-vip-card">
-            <div class="promo-vip-title">VIP Alerts for Celebrity Visits + Events!</div>
-            <form id="promo-vip-form" class="promo-vip-form">
-              <input type="email" class="promo-vip-email" placeholder="Email" aria-label="Email for VIP alerts" required>
-              <button type="submit" class="promo-vip-submit">Sign Me Up!</button>
-            </form>
-            <div class="promo-vip-status" aria-live="polite"></div>
-          </div>
-        `;
-        bindVipSignupForm();
+      if (!active) {
+        wrap.innerHTML = '';
         return;
       }
       wrap.innerHTML = `<a class="promo-banner-anchor" href="${active.clickUrl || 'https://map.thefairmap.com/map.html?tenant=firstmonday'}"><img src="${active.imageUrl}" alt="${active.title || active.vendorName || 'Vendor banner'}"></a>`;
     }
 
     function startPromoBannerRotation() {
-      if (promoBannerTimer) window.clearInterval(promoBannerTimer);
+      if (promoBannerTimer) { window.clearInterval(promoBannerTimer); window.clearTimeout(promoBannerTimer); }
       bindPromoRailInteractionPause();
       renderPromoBanner();
       if (promoBannerPauseDepth) return;
-      const count = getPromoRotationItems().length;
+      const items = getPromoRotationItems();
+      const count = items.length;
       if (count > 1) {
-        promoBannerTimer = window.setInterval(() => {
+        const active = items[promoBannerIndex % count] || {};
+        const isAAA = active.vendorUuid === '93ef5e14-98b4-4347-8486-7d59dc9af215' || /\bAAA\b/i.test(`${active.vendorName || ''} ${active.title || ''}`);
+        const dwell = isAAA ? 8000 : 4500; // AAA priority dwell
+        promoBannerTimer = window.setTimeout(() => {
+          promoBannerTimer = null;
           promoBannerIndex = (promoBannerIndex + 1) % count;
-          renderPromoBanner();
-        }, 4500);
+          startPromoBannerRotation();
+        }, dwell);
       }
     }
 
