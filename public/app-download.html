@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>First Monday Finder Map App | Visit First Monday</title>
-  <meta name="description" content="Download the official Visit First Monday app for iPhone and Android, or open the live online map for Canton First Monday Trade Days.">
+  <title>Download the First Monday App | Play to Win $250</title>
+  <meta name="description" content="Download the First Monday app to play to win $250, win instant prizes, get free coupons, and navigate the market. App Store and Google Play, plus an online map backup.">
   <link rel="canonical" href="https://www.visitfirstmonday.com/app-download">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="First Monday Finder Map App | Visit First Monday">
-  <meta property="og:description" content="Get the map, search vendors by keyword, and keep a live backup option ready before you arrive in Canton.">
+  <meta property="og:title" content="Download the First Monday App | Play to Win $250">
+  <meta property="og:description" content="Play to win $250. Win instant prizes, grab free coupons, and navigate the market in the official Visit First Monday app.">
   <meta property="og:url" content="https://www.visitfirstmonday.com/app-download">
   <meta property="og:site_name" content="Visit First Monday">
   <meta property="og:image" content="/data/icons/first-monday-finder-logo.png">
@@ -17,6 +17,120 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/vfm-guest.css">
+  <style>
+    .play-hero { padding: 22px 0 4px; }
+    .play-top {
+      display: grid;
+      grid-template-columns: 1fr 132px;
+      gap: 12px 16px;
+      align-items: end;
+    }
+    .play-kicker {
+      background: #f2bc57;
+      color: #1c160d;
+      letter-spacing: 0.06em;
+    }
+    .play-hero h1 { max-width: 12ch; }
+    .play-hero .lede { margin-bottom: 0; }
+    .mascot {
+      width: 132px;
+      height: auto;
+      justify-self: end;
+      filter: drop-shadow(0 14px 18px rgba(22, 84, 58, 0.22));
+    }
+    .prize-banner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 18px 0 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #16543a 0%, #0e3a28 70%);
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+    .prize-amount {
+      font-size: clamp(2.4rem, 8vw, 3.4rem);
+      font-weight: 800;
+      line-height: 0.9;
+      letter-spacing: -0.04em;
+      color: #f2bc57;
+    }
+    .prize-copy { display: flex; flex-direction: column; gap: 2px; }
+    .prize-copy strong {
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .prize-copy span { color: rgba(255, 255, 255, 0.86); font-size: 0.92rem; }
+    .perk-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0 0 16px;
+      padding: 0;
+      list-style: none;
+    }
+    .perk-row li {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      min-height: 108px;
+      padding: 12px;
+      border-radius: 16px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 20px rgba(15, 40, 29, 0.06);
+      font-weight: 800;
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }
+    .perk-icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: #e7f3ea;
+      color: var(--pine);
+    }
+    .perk-icon svg { width: 22px; height: 22px; display: block; }
+    .play-stores { margin: 4px 0 22px; }
+    .play-stores .btn { min-height: 52px; }
+    .perk-panel { margin-top: 8px; }
+    .perk-panel .grid { margin-top: 16px; }
+    .perk-panel .card span { display: block; color: var(--muted); font-weight: 600; line-height: 1.5; }
+    .map-fallback {
+      margin: 0 0 28px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: transparent;
+      border: 1px dashed rgba(22, 84, 58, 0.28);
+    }
+    .map-fallback p { margin: 0 0 8px; color: var(--muted); }
+    .map-fallback a { font-weight: 800; color: var(--pine-dark); }
+    @media (min-width: 800px) {
+      .play-hero { padding-top: 42px; }
+      .play-top { grid-template-columns: 1fr 240px; align-items: center; }
+      .mascot { width: 240px; }
+      .play-hero h1 { max-width: 14ch; }
+      .perk-row li { font-size: 1rem; min-height: 118px; padding: 16px; }
+    }
+    @media (max-width: 560px) {
+      .play-top { grid-template-columns: 1fr 92px; }
+      .mascot { width: 92px; }
+      .play-hero h1 { font-size: 1.85rem; }
+      .perk-row li {
+        min-height: 0;
+        padding: 10px 8px;
+        font-size: 0.78rem;
+        gap: 6px;
+      }
+      .play-stores { gap: 8px; }
+      .play-stores .btn { width: 100%; min-height: 48px; }
+    }
+  </style>
 </head>
 <body data-vfm-page="app-download">
   <header class="site-header">
@@ -35,43 +149,74 @@
   </header>
 
   <main>
-    <section class="hero wrap">
-      <p class="kicker">Official First Monday map app</p>
-      <h1>Download First Monday Finder.</h1>
-      <p class="lede">You found it, Buckaroo! The fastest and smartest way to shop First Monday. Pick your platform, then keep the online map handy as a backup before you arrive in Canton.</p>
+    <section class="play-hero wrap">
+      <div class="play-top">
+        <div>
+          <p class="kicker play-kicker">Play to Win $250</p>
+          <h1>Download the First Monday App</h1>
+          <p class="lede">You scanned the slip. The app is where you play to win $250, pick up instant prizes and free coupons, and navigate the market.</p>
+        </div>
+        <img class="mascot" src="https://statics.myclickfunnels.com/workspace/eOQKpZ/image/14197950/file/b02ba34f642535688d775be501a284c6.png" alt="Visit First Monday cowboy mascot waving you in">
+      </div>
+
+      <div class="prize-banner" aria-label="Play to Win $250">
+        <div class="prize-amount">$250</div>
+        <div class="prize-copy">
+          <strong>Play to Win</strong>
+          <span>Same promise as the slip in your hand.</span>
+        </div>
+      </div>
+
+      <ul class="perk-row">
+        <li>
+          <span class="perk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.2 4.6L19 8.2l-3.5 3.4.8 4.9L12 14.8 7.7 16.5l.8-4.9L5 8.2l4.8-.6L12 3z"/><path d="M8 19h8"/></svg>
+          </span>
+          Win Instant Prizes
+        </li>
+        <li>
+          <span class="perk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z"/><path d="M4 8l2.2-3h11.6L20 8"/><path d="M9 8v12M15 8v12M9 8c0-1.7 1.3-3 3-3s3 1.3 3 3"/></svg>
+          </span>
+          Free Coupons
+        </li>
+        <li>
+          <span class="perk-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+          </span>
+          Navigate the Market
+        </li>
+      </ul>
+
+      <div class="store-row play-stores">
+        <a class="btn btn-primary btn-store" href="https://apps.apple.com/us/app/visit-first-monday/id6746057595" rel="noopener">Download on the App Store</a>
+        <a class="btn btn-secondary btn-store" href="https://play.google.com/store/apps/details?id=com.TnCzkYTWJRzX.natively" rel="noopener">Get it on Google Play</a>
+      </div>
     </section>
 
     <section class="wrap">
-      <article class="panel">
-        <h2>Get the map your way</h2>
-        <p>The cleanest way to use the First Monday map is through the official Visit First Monday app. Open it on iPhone or Android, search vendors by keyword, and keep the grounds map with you while you walk.</p>
-        <div class="store-row">
-          <a class="btn btn-primary btn-store" href="https://apps.apple.com/us/app/visit-first-monday/id6746057595" rel="noopener">Download on the App Store</a>
-          <a class="btn btn-secondary btn-store" href="https://play.google.com/store/apps/details?id=com.TnCzkYTWJRzX.natively" rel="noopener">Get it on Google Play</a>
-        </div>
-        <div class="backup">
-          <strong>Backup option</strong>
-          <p>Can't get the app? Don't worry — while it still looks better in the app, the online version lets you search by keyword, spot vendors faster, and keep moving through the grounds.</p>
-          <a class="btn btn-primary" href="/first-monday-finder">Open the Online Map</a>
-        </div>
-      </article>
-
-      <article class="panel">
-        <h2>Useful features at your fingertips</h2>
+      <article class="panel perk-panel">
+        <h2>What you came for</h2>
+        <p>Download the First Monday app first. The slip in your hand is the same list you’ll find inside.</p>
         <div class="grid">
-          <div class="card"><strong>Keyword search</strong><span>Find booths, products, and categories without wandering aisle to aisle.</span></div>
-          <div class="card"><strong>Grounds navigation</strong><span>See where you are and where you need to go next.</span></div>
-          <div class="card"><strong>Food and essentials</strong><span>Spot food, restrooms, ATMs, and support areas faster.</span></div>
-          <div class="card"><strong>Live backup</strong><span>If the install is delayed, the online map still gets you onto the grounds.</span></div>
+          <div class="card"><strong>Play to Win $250</strong><span>Open the app and play. The $250 prize is the reason the slip sent you here.</span></div>
+          <div class="card"><strong>Win Instant Prizes</strong><span>Instant prizes are part of the visit, not a separate signup page.</span></div>
+          <div class="card"><strong>Free Coupons</strong><span>Grab coupons in the app while you walk the grounds.</span></div>
+          <div class="card"><strong>Navigate the Market</strong><span>Search vendors and find your way around First Monday Trade Days.</span></div>
         </div>
         <p class="fact">First Monday fact: the market is Thursday through Sunday before the first Monday — never open on Monday. Visit First Monday highlights the Lewis side, including $5 parking and closer shopper access.</p>
       </article>
+
+      <aside class="map-fallback">
+        <p><strong>Can’t install the app right now?</strong> The online map is only a backup. It still lets you search by keyword and keep moving through the grounds.</p>
+        <a href="/first-monday-finder">Open the online map</a>
+      </aside>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
-      <div>Visit First Monday guest download page — not The Fair Map product sales.</div>
+      <div>Visit First Monday guest download page.</div>
       <div>
         <a href="https://vfm.buzzonmarketing.com/vendors" rel="noopener">Vendor Map Listing Signup</a>
       </div>
