@@ -176,13 +176,46 @@ for (const name of ['Historic Main Gate', 'East Gate', 'North Gate', 'Arbors Ent
 
 const mapHtml = fs.readFileSync(path.join(publicDir, 'map.html'), 'utf8');
 assert.ok(
-  mapHtml.includes('/map.js?v=20260905-lids-tees-hidden'),
-  'map.html must cache-bust map.js after hiding Lids & Tees'
+  mapHtml.includes('/map.js?v=20261031-default-camera'),
+  'map.html must cache-bust map.js after the default camera change'
 );
 assert.ok(
-  !mapHtml.includes('/map.js?v=20260904-acorn-vine-oak-photos'),
-  'Lids & Tees cache-bust must replace the Acorn photos tag, not keep both'
+  !mapHtml.includes('/map.js?v=20260527-product-search-fix'),
+  'default-camera cache-bust must replace the previous map.js tag'
 );
+assert.match(mapJs, /const DEFAULT_CENTER = \[-95\.86090, 32\.56191\]/, 'shopper default center must frame the east grounds');
+assert.match(mapJs, /const DEFAULT_ZOOM = 15\.9/, 'shopper default zoom must match the mobile east-grounds frame');
+assert.match(mapJs, /center: DEFAULT_CENTER,\s*\n\s*zoom: DEFAULT_ZOOM/, 'initial camera must use the fixed center and zoom');
+assert.doesNotMatch(mapJs, /SHOPPER_OVERVIEW_MAX_ZOOM/, 'initial load must not refit every pin');
+
+function projectShopperPixel(lng, lat, centerLng, centerLat, zoom, width, height) {
+  const world = 512 * (2 ** zoom);
+  const mercX = (value) => (value + 180) / 360;
+  const mercY = (value) => {
+    const radians = value * Math.PI / 180;
+    return (1 - Math.log(Math.tan(radians) + 1 / Math.cos(radians)) / Math.PI) / 2;
+  };
+  const cx = mercX(centerLng) * world;
+  const cy = mercY(centerLat) * world;
+  return [
+    width / 2 + (mercX(lng) * world - cx),
+    height / 2 + (mercY(lat) * world - cy)
+  ];
+}
+
+const [frameLng, frameLat] = [-95.86090, 32.56191];
+const frameZoom = 15.9;
+const phone = { width: 390, height: 844 };
+const potatoPx = projectShopperPixel(-95.862454, 32.559695, frameLng, frameLat, frameZoom, phone.width, phone.height);
+const restroomPx = projectShopperPixel(-95.860212, 32.560924, frameLng, frameLat, frameZoom, phone.width, phone.height);
+const parkingPx = projectShopperPixel(-95.858738, 32.564199, frameLng, frameLat, frameZoom, phone.width, phone.height);
+const creekPx = projectShopperPixel(-95.860146, 32.563547, frameLng, frameLat, frameZoom, phone.width, phone.height);
+const roadPx = projectShopperPixel(-95.85952, 32.5620, frameLng, frameLat, frameZoom, phone.width, phone.height);
+assert.ok(potatoPx[0] > 30 && potatoPx[0] < 110 && potatoPx[1] > 600 && potatoPx[1] < 700, 'Baked Potato stays lower-left above the banner');
+assert.ok(restroomPx[0] > 200 && restroomPx[0] < 320 && restroomPx[1] > 450 && restroomPx[1] < 600, 'Restrooms stay mid-right');
+assert.ok(parkingPx[0] > 300 && parkingPx[0] < 400 && parkingPx[1] > 120 && parkingPx[1] < 260, '$5 Parking stays upper-right');
+assert.ok(creekPx[1] > 180 && creekPx[1] < 360, 'Dry Creek stays in the upper half');
+assert.ok(roadPx[0] > 280, 'North Trade Days Boulevard stays on the right');
 assert.match(mapJs, /loc\.hidden === true/, 'shopper map must skip hidden leftover icons');
 
 const prepared = spawnSync(process.execPath, [path.join(__dirname, 'prepare-vercel-shopper.js')], {
