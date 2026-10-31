@@ -40,6 +40,9 @@ assert.ok(fs.existsSync(path.join(publicDir, 'vfm-home-simple.html')));
 assert.ok(fs.existsSync(path.join(publicDir, 'vfm-market-dates.js')));
 assert.ok(fs.existsSync(path.join(publicDir, 'app-download.html')));
 assert.ok(fs.existsSync(path.join(publicDir, 'vfm-guest.css')));
+const guestCss = fs.readFileSync(path.join(publicDir, 'vfm-guest.css'), 'utf8');
+assert.doesNotMatch(guestCss, /\.brand img\s*\{[^}]*object-fit:\s*cover/);
+assert.match(guestCss, /\.brand img\s*\{[^}]*width:\s*168px/);
 assert.ok(fs.existsSync(path.join(publicDir, 'blog-native.css')));
 assert.ok(fs.existsSync(path.join(publicDir, 'marketing-pages.css')));
 
@@ -88,6 +91,8 @@ assert.match(download, /Navigate the Market/);
 assert.match(download, /id6746057595/);
 assert.match(download, /com\.TnCzkYTWJRzX\.natively/);
 assert.match(download, /\/first-monday-finder/);
+assert.match(download, /\/data\/icons\/visit-first-monday-logo\.png/);
+assert.doesNotMatch(download, /first-monday-finder-logo\.png" alt="Visit First Monday">\s*<span>Visit First Monday<\/span>/);
 assert.doesNotMatch(download, /Buckaroo/);
 assert.doesNotMatch(download, FAIR_MAP_SALES);
 assert.doesNotMatch(download, /thefairmap\.com\/signup/);
@@ -97,6 +102,7 @@ assert.match(parking, /data-vfm-page="freeparking"/);
 assert.match(parking, /Where to park/);
 assert.match(parking, /Exit 527/);
 assert.match(parking, /\/video\/first-monday-where-to-park\.mp4/);
+assert.match(parking, /\/data\/icons\/visit-first-monday-logo\.png/);
 assert.ok(fs.existsSync(path.join(publicDir, 'video', 'first-monday-where-to-park.mp4')));
 assert.doesNotMatch(parking, FAIR_MAP_SALES);
 
