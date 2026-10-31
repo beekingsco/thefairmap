@@ -749,11 +749,13 @@ const SATELLITE_STYLE_FALLBACK = {
   layers: [{ id: 'esri-imagery', type: 'raster', source: 'esri' }]
 };
 const BEEKINGS_LOCATION_ID = '758aad31-099f-4ece-bee7-4b22eb202334';
-const DEFAULT_CENTER = [-95.86486, 32.5625]; // First Monday grounds midpoint
-const DEFAULT_ZOOM = 15.25;
+// Fresh mobile load (about 390×844): North Trade Days Boulevard along the right,
+// Dry Creek across the upper half, $5 Parking upper-right, The Baked Potato
+// toward the lower left. MapLibre zoom uses a 512px world.
+const DEFAULT_CENTER = [-95.86090, 32.56191];
+const DEFAULT_ZOOM = 15.9;
 const DEFAULT_PITCH = 0;
 const DEFAULT_BEARING = 0;
-const SHOPPER_OVERVIEW_MAX_ZOOM = 16;
 const SOURCE_ID = 'locations';
 const LAYER_MARKERS = 'location-markers';
 const LAYER_ICONS = 'location-icons';
@@ -3426,63 +3428,23 @@ function resolveSatelliteStyleUrl() {
   return SATELLITE_STYLE_FALLBACK;
 }
 
-function resolveShopperBounds(locations) {
-  const pts = (locations || []).filter((loc) => Number.isFinite(Number(loc.lng)) && Number.isFinite(Number(loc.lat)));
-  if (!pts.length) return null;
-  let minLng = Infinity;
-  let minLat = Infinity;
-  let maxLng = -Infinity;
-  let maxLat = -Infinity;
-  for (const loc of pts) {
-    const lng = Number(loc.lng);
-    const lat = Number(loc.lat);
-    if (lng < minLng) minLng = lng;
-    if (lat < minLat) minLat = lat;
-    if (lng > maxLng) maxLng = lng;
-    if (lat > maxLat) maxLat = lat;
-  }
-  return { minLng, minLat, maxLng, maxLat };
-}
-
-function resolveInitialMapView(data) {
-  // Shopper default is a flat grounds overview — never inherit a booth's
-  // 3D pitch/zoom (Bee King's Honey is stored at zoom 20 / pitch 60).
-  const bounds = resolveShopperBounds(data?.locations);
-  const hasCenter = Array.isArray(data?.map?.center) && data.map.center.length === 2;
-  const center = bounds
-    ? [(bounds.minLng + bounds.maxLng) / 2, (bounds.minLat + bounds.maxLat) / 2]
-    : (hasCenter ? [Number(data.map.center[0]), Number(data.map.center[1])] : DEFAULT_CENTER);
-  return { center, zoom: DEFAULT_ZOOM, pitch: DEFAULT_PITCH };
+function resolveInitialMapView(_data) {
+  // Never inherit a booth camera (Bee King's Honey is stored at zoom 20 / pitch 60)
+  // or the midpoint of every pin. A fresh load uses the east-grounds frame.
+  return { center: DEFAULT_CENTER, zoom: DEFAULT_ZOOM, pitch: DEFAULT_PITCH };
 }
 
 function fitShopperGroundsOverview() {
   if (!map || appState.shopperOverviewFitted) return;
-  if (getDeepLinkedLocationId()) {
-    appState.shopperOverviewFitted = true;
-    return;
-  }
-  const locations = (appState.filteredLocations.length ? appState.filteredLocations : appState.locations)
-    .filter((loc) => Number.isFinite(loc.lng) && Number.isFinite(loc.lat));
-  if (locations.length < 2) {
-    appState.shopperOverviewFitted = true;
-    return;
-  }
-  const bounds = new maplibregl.LngLatBounds(
-    [locations[0].lng, locations[0].lat],
-    [locations[0].lng, locations[0].lat]
-  );
-  for (const loc of locations.slice(1)) {
-    bounds.extend([loc.lng, loc.lat]);
-  }
-  map.fitBounds(bounds, {
-    padding: getSearchFitPadding(),
-    maxZoom: SHOPPER_OVERVIEW_MAX_ZOOM,
-    duration: 0,
-    pitch: 0,
-    essential: true
+  appState.shopperOverviewFitted = true;
+  if (getDeepLinkedLocationId()) return;
+  map.jumpTo({
+    center: DEFAULT_CENTER,
+    zoom: DEFAULT_ZOOM,
+    bearing: DEFAULT_BEARING,
+    pitch: 0
   });
   flattenShopperMap();
-  appState.shopperOverviewFitted = true;
 }
 
 function escapeHtml(value) {
