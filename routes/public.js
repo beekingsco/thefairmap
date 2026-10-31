@@ -117,6 +117,10 @@ router.get('/app-download', (req, res) => {
   res.sendFile(path.join(ROOT, 'public', 'app-download.html'));
 });
 
+router.get('/freeparking', (req, res) => {
+  res.sendFile(path.join(ROOT, 'public', 'freeparking.html'));
+});
+
 router.get('/vfm-home', (req, res) => {
   res.sendFile(path.join(ROOT, 'public', 'vfm-home.html'));
 });

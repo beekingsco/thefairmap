@@ -16,6 +16,8 @@
     { "source": "/index.html", "destination": "/marketing.html" },
     { "source": "/app-download", "destination": "/app-download.html" },
     { "source": "/app-download/", "destination": "/app-download.html" },
+    { "source": "/freeparking", "destination": "/freeparking.html" },
+    { "source": "/freeparking/", "destination": "/freeparking.html" },
     { "source": "/vfm-home", "destination": "/vfm-home.html" },
     { "source": "/blog", "destination": "/blog/index.html" },
     { "source": "/blog/", "destination": "/blog/index.html" },
@@ -64,7 +66,8 @@
       "source": "/(.*)",
       "headers": [
         { "key": "X-Frame-Options", "value": "ALLOWALL" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     },
     {

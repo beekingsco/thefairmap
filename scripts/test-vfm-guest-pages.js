@@ -51,7 +51,12 @@ assert.match(home, /Visit First Monday/);
 assert.match(home, /First Monday Trade Days/);
 assert.match(home, /\/first-monday-finder/);
 assert.match(home, /\/app-download/);
-assert.match(home, /youtube-nocookie\.com\/embed\/EVeQ_EC3zdg/);
+assert.match(home, /EVeQ_EC3zdg/);
+assert.match(home, /youtube\.com\/iframe_api/);
+assert.match(home, /autoplay:\s*1/);
+assert.match(home, /mute:\s*1/);
+assert.match(home, /playsinline:\s*1/);
+assert.match(home, /Referrer-Policy|referrer" content="strict-origin-when-cross-origin"/);
 assert.match(home, /id="countdown-title"/);
 assert.match(home, /Next Market: October 1-4, 2026/);
 assert.match(home, /src="\/vfm-market-dates\.js"/);
@@ -75,13 +80,25 @@ assert.match(datesPage, /src="\/vfm-market-dates\.js"/);
 
 const download = fs.readFileSync(path.join(publicDir, 'app-download.html'), 'utf8');
 assert.match(download, /data-vfm-page="app-download"/);
-assert.match(download, /Download First Monday Finder/);
-assert.match(download, /Buckaroo/);
+assert.match(download, /Download the First Monday App/);
+assert.match(download, /Play to Win \$250/);
+assert.match(download, /Win Instant Prizes/);
+assert.match(download, /Free Coupons/);
+assert.match(download, /Navigate the Market/);
 assert.match(download, /id6746057595/);
 assert.match(download, /com\.TnCzkYTWJRzX\.natively/);
 assert.match(download, /\/first-monday-finder/);
+assert.doesNotMatch(download, /Buckaroo/);
 assert.doesNotMatch(download, FAIR_MAP_SALES);
 assert.doesNotMatch(download, /thefairmap\.com\/signup/);
+
+const parking = fs.readFileSync(path.join(publicDir, 'freeparking.html'), 'utf8');
+assert.match(parking, /data-vfm-page="freeparking"/);
+assert.match(parking, /Where to park/);
+assert.match(parking, /Exit 527/);
+assert.match(parking, /\/video\/first-monday-where-to-park\.mp4/);
+assert.ok(fs.existsSync(path.join(publicDir, 'video', 'first-monday-where-to-park.mp4')));
+assert.doesNotMatch(parking, FAIR_MAP_SALES);
 
 function hasRewrite(source, dest, host) {
   return (vercel.rewrites || []).some((rule) => {
@@ -99,6 +116,8 @@ assert.ok(hasRewrite('/', '/vfm-home.html', 'www.visitfirstmonday.com'));
 assert.ok(hasRewrite('/', '/vfm-home.html', 'visitfirstmonday.com'));
 assert.ok(hasRewrite('/', '/marketing.html'));
 assert.ok(hasRewrite('/app-download', '/app-download.html'));
+assert.ok(hasRewrite('/freeparking', '/freeparking.html'));
+assert.ok(hasRewrite('/freeparking/', '/freeparking.html'));
 assert.ok(hasRewrite('/vfm-home', '/vfm-home.html'));
 assert.ok(!hasRewrite('/vfm-home-simple', '/vfm-home-simple.html'), 'retired stopgap page stays unlinked');
 assert.ok(hasRewrite('/blog', '/blog/index.html'));
