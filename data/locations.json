@@ -5431,31 +5431,6 @@
     "catalogStoreType": "product"
   },
   {
-    "id": "84cfa5e9-ebce-4b87-a185-8355d57170ff",
-    "externalId": "302545b7-3940-4c5f-8391-d2f665e2aa31",
-    "name": "Fiddlesticks Plant Boutique",
-    "description": "<p><b>Pavillion2 85-88</b></p><p>Fiddlesticks Plant Boutique is your local destination for houseplants, tropical plants, rare plants, plant pots, planters, fertilizer, plant food, and curated boutique gifts. We blend a modern plant shop with a cozy boutique experience, offering everything from SWIG cups and Cotril hair products to home décor, accessories, and unique finds you won’t see anywhere else.\nWhether you’re a new plant parent or a seasoned collector, we carry a wide selection of easy‑care plants, pet‑friendly plants, indoor foliage, succulents, aroids, and seasonal favorites. Our shelves are stocked with quality soil mixes, fertilizers, pest‑care essentials, and plant nutrition to help your greenery thrive.\nAt Fiddlesticks, we believe plants should feel personal — that’s why we pair our greenery with stylish pots, handmade goods, boutique items, and thoughtful gifts that make your home feel warm and alive. Come explore a shop where plants, style, and personality meet.\nKeywords: plant shop, plant boutique, houseplants, tropical plants, rare plants, plant pots, planters, fertilizer, plant food, indoor plants, SWIG cups, Cotril hair products, boutique gifts, home décor, plant care, soil mix, aroids, succulents, pet‑friendly plants.</p><p><a href=\"Fiddlesticksplants.shop\" target=\"_blank\" rel=\"noopener\">Fiddlesticksplants.shop</a></p>",
-    "address": "Pavillion2 85-88",
-    "lat": 32.56320441,
-    "lng": -95.86085832,
-    "categoryId": "5dd4803e-9cff-4d80-99a1-98d86ef1c1af",
-    "categoryName": "Garden / Patio",
-    "inactive": {
-      "address": true
-    },
-    "zoom": 20.02,
-    "pitch": 60,
-    "bearing": 0,
-    "photos": [
-      "https://vfm.buzzonmarketing.com/vendor-photos/c586d558-b6e5-4f0a-bd1f-1f0b639d8699/1777817096814.jpeg",
-      "https://vfm.buzzonmarketing.com/vendor-photos/c586d558-b6e5-4f0a-bd1f-1f0b639d8699/1777817109885.jpeg",
-      "https://vfm.buzzonmarketing.com/vendor-photos/c586d558-b6e5-4f0a-bd1f-1f0b639d8699/1777817122348.jpeg",
-      "https://vfm.buzzonmarketing.com/vendor-photos/c586d558-b6e5-4f0a-bd1f-1f0b639d8699/1777817134843.jpeg",
-      "https://vfm.buzzonmarketing.com/vendor-photos/c586d558-b6e5-4f0a-bd1f-1f0b639d8699/1777817150410.jpeg"
-    ],
-    "catalogStoreType": "product"
-  },
-  {
     "id": "9e00a60b-8e73-4985-9366-1388213f1b65",
     "externalId": "c137d844-1f5a-4ed7-864f-b9ee52fb75d7",
     "name": "Monkey Doodle",
@@ -13008,12 +12983,12 @@
     "id": "69c6f68c-6ff9-43ac-98d1-f2ea03f9e95b",
     "externalId": "a8fc619f-11d1-4f5f-84ab-26883103031b",
     "name": "Mitchabout + Co",
-    "description": "<p><b>Trade center III, booth 64</b></p><p>Trade Center 3, Booth 64 At Mitchabout + Co, we create personalized cutting boards, engraved charcuterie boards, and custom home décor designed to celebrate life’s most meaningful moments. From weddings and anniversaries to housewarmings and everyday gatherings, each piece is thoughtfully crafted to be both functional and beautifully displayed. Our collection of custom cheese boards, luxury serving boards, and engraved kitchen essentials is designed for those who appreciate elevated details and timeless design. Whether you’re hosting, gifting, or creating a space that feels like home, our pieces are made to be used, admired, and remembered. Www.Mitchabout.com</p><p><a href=\"https://Www.Mitchabout.com\" target=\"_blank\" rel=\"noopener\">Www.Mitchabout.com</a></p>",
-    "address": "Trade center III, booth 64",
-    "lat": 32.56212847,
-    "lng": -95.86119477,
-    "categoryId": "99b2d6c4-d868-45d8-b129-d67eb9cbbd23",
-    "categoryName": "Handmade / Artisan",
+    "description": "<p>4000 Pavilion, Booth 4218</p><p>At Mitchabout + Co, we create personalized cutting boards, engraved charcuterie boards, and custom home décor designed to celebrate life’s most meaningful moments. From weddings and anniversaries to housewarmings and everyday gatherings, each piece is thoughtfully crafted to be both functional and beautifully displayed. Our collection of custom cheese boards, luxury serving boards, and engraved kitchen essentials is designed for those who appreciate elevated details and timeless design. Whether you’re hosting, gifting, or creating a space that feels like home, our pieces are made to be used, admired, and remembered.</p><p>www.Mitchabout.com</p><p><a href=\"https://Www.Mitchabout.com\" target=\"_blank\" rel=\"noopener\">Www.Mitchabout.com</a></p>",
+    "address": "4000 Pavilion, Booth 4218",
+    "lat": 32.56212814,
+    "lng": -95.86119544,
+    "categoryId": "6399f794-c719-4e48-8ee5-11c1e64a6d12",
+    "categoryName": "Home",
     "inactive": {
       "address": true
     },
@@ -13027,7 +13002,11 @@
       "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1780228869540.png",
       "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1780228890092.png",
       "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1780228844906.png",
-      "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1780228969136.jpeg"
+      "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1780228969136.jpeg",
+      "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1790424185512.png",
+      "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1790424496287.png",
+      "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1790424534508.png",
+      "https://vfm.buzzonmarketing.com/vendor-photos/a8fc619f-11d1-4f5f-84ab-26883103031b/1790424239144.png"
     ],
     "catalogStoreType": "product"
   },
@@ -13250,10 +13229,10 @@
     "id": "b0016700-954a-41ae-8bf2-5933965d2edc",
     "externalId": "ab0f2255-23b0-4659-b131-587ff9bff17b",
     "name": "The Woods Way Collective",
-    "description": "<p><b>4000 Pavilion 4350/4351</b></p><p>Needlepoint Kits, Canvases &amp; Accessories Door Wreaths, Monogrammed Sashes &amp; Premium Ribbon Hand-Tied Bows Floral and Container Arrangements...</p>",
-    "address": "4000 Pavilion 4350/4351",
-    "lat": 32.56449018,
-    "lng": -95.86129795,
+    "description": "<p><b>Arbor 2: 162-163</b></p><p>Needlepoint Kits, Canvases &amp; Accessories Door Wreaths, Monogrammed Sashes &amp; Premium Ribbon Hand-Tied Bows Floral and Container Arrangements...</p>",
+    "address": "Arbor 2: 162-163",
+    "lat": 32.5604283,
+    "lng": -95.861657,
     "categoryId": "6399f794-c719-4e48-8ee5-11c1e64a6d12",
     "categoryName": "Home",
     "inactive": {
@@ -13263,7 +13242,9 @@
     "pitch": 60,
     "bearing": 0,
     "logoUrl": "",
-    "photos": []
+    "photos": [],
+    "booth": "162-163",
+    "pavilion": "Arbor 2"
   },
   {
     "id": "b2c92c9f-7e18-47c1-8aff-0a5062e6ea1e",
@@ -13604,6 +13585,25 @@
     "lng": -95.86145222,
     "categoryId": "6399f794-c719-4e48-8ee5-11c1e64a6d12",
     "categoryName": "Home",
+    "inactive": {
+      "address": true
+    },
+    "zoom": 20.02,
+    "pitch": 60,
+    "bearing": 0,
+    "logoUrl": "",
+    "photos": []
+  },
+  {
+    "id": "eef8a06a-d968-4842-a30b-91b8800654d9",
+    "externalId": "1212b9d0-8005-4a64-8b6c-3b82f4e350b7",
+    "name": "Lara's Toy World",
+    "description": "<p><b>Pavilion 3 #22-23</b></p><p>Toy</p>",
+    "address": "Pavilion 3 #22-23",
+    "lat": 32.56358092,
+    "lng": -95.86085952,
+    "categoryId": "46c82a58-7236-4d60-af2c-bb329173029b",
+    "categoryName": "Toys / Games / Puzzles",
     "inactive": {
       "address": true
     },
