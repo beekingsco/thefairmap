@@ -43,7 +43,7 @@ body.marketing-page .site-header.texture,
 body.marketing-page .mobile-nav.texture {
   background-image:
     linear-gradient(rgba(10, 44, 34, 0.72), rgba(10, 44, 34, 0.72)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/13558040/file/977106dac8923699b28e1c56e2fa25f0.jpg");
+    url("/assets/vfm/977106dac8923699b28e1c56e2fa25f0.jpg");
   background-size: cover;
   background-position: center;
 }
@@ -369,15 +369,14 @@ body.marketing-page .support-note {
 body.marketing-page.maps-page .hero-media {
   background:
     linear-gradient(rgba(12, 55, 45, 0.34), rgba(12, 55, 45, 0.48)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/10542734/file/d4deabfcb760e5254d8c10ce1ef89e3b.jpg");
+    url("/assets/vfm/d4deabfcb760e5254d8c10ce1ef89e3b.jpg");
   background-size: cover;
   background-position: center;
 }
 
 body.marketing-page.story-page .hero-media {
   background:
-    linear-gradient(rgba(35, 24, 16, 0.34), rgba(14, 42, 34, 0.44)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/10995650/file/8da26e98bc7338040bd4dcb693f1bd89.jpg");
+    linear-gradient(rgba(35, 24, 16, 0.34), rgba(14, 42, 34, 0.44));
   background-size: cover;
   background-position: center;
 }
@@ -385,15 +384,14 @@ body.marketing-page.story-page .hero-media {
 body.marketing-page.dates-page .hero-media {
   background:
     linear-gradient(rgba(12, 49, 41, 0.36), rgba(16, 52, 43, 0.48)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/15189067/file/931702d11ab922f606c918993fa3f790.png");
+    url("/assets/vfm/931702d11ab922f606c918993fa3f790.png");
   background-size: cover;
   background-position: center top;
 }
 
 body.marketing-page.shop-page .hero-media {
   background:
-    linear-gradient(rgba(25, 19, 14, 0.34), rgba(14, 42, 34, 0.42)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/11003813/file/c3d626b6cb17fdbbfd54c33f9314ded6.jpg");
+    linear-gradient(rgba(25, 19, 14, 0.34), rgba(14, 42, 34, 0.42));
   background-size: cover;
   background-position: center;
 }
@@ -556,8 +554,7 @@ body.marketing-page.shop-page .shop-lane-card p {
 
 body.marketing-page.sell-page .hero-media {
   background:
-    linear-gradient(rgba(13, 48, 40, 0.38), rgba(13, 48, 40, 0.5)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/10542736/file/b3b8aa465c6026e057446a5ef22459aa.jpg");
+    linear-gradient(rgba(13, 48, 40, 0.38), rgba(13, 48, 40, 0.5));
   background-size: cover;
   background-position: center;
 }
@@ -565,7 +562,7 @@ body.marketing-page.sell-page .hero-media {
 body.marketing-page.vendor-page .hero-media {
   background:
     linear-gradient(rgba(13, 48, 40, 0.38), rgba(13, 48, 40, 0.5)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/16381228/file/30bf0cb6addb409f7eea99d4190c7a66.png");
+    url("/assets/vfm/30bf0cb6addb409f7eea99d4190c7a66.png");
   background-size: cover;
   background-position: center top;
 }

@@ -49,7 +49,7 @@ a {
 .texture {
   background-image:
     linear-gradient(rgba(10, 44, 34, 0.72), rgba(10, 44, 34, 0.72)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/13558040/file/977106dac8923699b28e1c56e2fa25f0.jpg");
+    url("/assets/vfm/977106dac8923699b28e1c56e2fa25f0.jpg");
   background-size: cover;
   background-position: center;
 }
@@ -651,7 +651,7 @@ a {
   padding: 76px 0 86px;
   background:
     linear-gradient(rgba(10, 44, 34, 0.86), rgba(10, 44, 34, 0.86)),
-    url("https://statics.myclickfunnels.com/workspace/eOQKpZ/image/13558040/file/977106dac8923699b28e1c56e2fa25f0.jpg");
+    url("/assets/vfm/977106dac8923699b28e1c56e2fa25f0.jpg");
   background-size: cover;
   background-position: center;
   color: var(--ink);
