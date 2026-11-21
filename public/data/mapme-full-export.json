@@ -3846,20 +3846,24 @@
     },
     {
       "id": "0ce7d620-b9e1-4b73-bf4e-70729bdc7ccf",
-      "externalId": "d1fd71e4-0d77-4c24-91a1-8f2cda6259a5",
+      "externalId": "0153e464-a6ad-4282-b447-ebf6eb44c8cc",
       "name": "Fairytale Footprints",
-      "description": "<strong>Pavilion 4500: Booth 4420-4423</strong><br>A children’s boutique that sells affordable and trendy clothes for boys and girls from newborn to size 12.<br>",
-      "address": "-95.86104,32.56554",
-      "lat": 32.565517,
-      "lng": -95.861056,
-      "categoryId": "46c82a58-7236-4d60-af2c-bb329173029b",
-      "categoryName": "Toys / Games / Puzzles",
+      "description": "<p><b>Row 46</b></p><p>A children’s boutique that sells affordable and trendy clothes for boys and girls from newborn to size 12.</p>",
+      "address": "Row 46",
+      "lat": 32.56234,
+      "lng": -95.86214,
+      "categoryId": "6399f794-c719-4e48-8ee5-11c1e64a6d12",
+      "categoryName": "Home",
       "inactive": {
         "address": true
       },
       "zoom": 20.02,
       "pitch": 60,
-      "bearing": 0
+      "bearing": 0,
+      "booth": "Row 46",
+      "pavilion": "Row 46",
+      "logoUrl": "",
+      "photos": []
     },
     {
       "id": "1bf9d03b-9a83-499d-89e0-c7eb86e56ee1",
@@ -14159,10 +14163,29 @@
       "name": "Lara's Toy World",
       "description": "<p><b>Pavilion 3 #22-23</b></p><p>Toy</p>",
       "address": "Pavilion 3 #22-23",
-      "lat": 32.56358092,
-      "lng": -95.86085952,
+      "lat": 32.56349263,
+      "lng": -95.86097154,
       "categoryId": "46c82a58-7236-4d60-af2c-bb329173029b",
       "categoryName": "Toys / Games / Puzzles",
+      "inactive": {
+        "address": true
+      },
+      "zoom": 20.02,
+      "pitch": 60,
+      "bearing": 0,
+      "logoUrl": "",
+      "photos": []
+    },
+    {
+      "id": "1b57f2dd-1cb6-449c-b446-9ca625e33485",
+      "externalId": "881c4e6e-93c0-4f6a-a594-37764a206802",
+      "name": "Baked and Infused",
+      "description": "<p><b>AB1-49-50A</b></p><p>Baked &amp; Infused brings G2 Homestead and Golden Crumb together for First Monday weekend! Based in Canton, Texas,...</p>",
+      "address": "AB1-49-50A",
+      "lat": 32.56125896,
+      "lng": -95.86122458,
+      "categoryId": "6399f794-c719-4e48-8ee5-11c1e64a6d12",
+      "categoryName": "Home",
       "inactive": {
         "address": true
       },
